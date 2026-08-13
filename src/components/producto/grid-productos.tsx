@@ -8,11 +8,14 @@ export function GridProductos({
   productos,
   className,
   prioritarios = 0,
+  maxMovil,
 }: {
   productos: Producto[];
   className?: string;
   /** Cuántas tarjetas cargan su imagen con prioridad (las del primer fold). */
   prioritarios?: number;
+  /** Límite máximo de productos visibles en móvil. El resto se muestra a partir de md. */
+  maxMovil?: number;
 }) {
   return (
     <div
@@ -21,17 +24,18 @@ export function GridProductos({
         className,
       )}
     >
-      {productos.map((p, i) => (
-        <div
-          key={p.id}
-          className="animate-subir"
-          // Escalonado de 55 ms, tope a los 12 primeros: más allá el usuario
-          // ya hizo scroll y una espera acumulada solo se sentiría lenta.
-          style={{ animationDelay: `${Math.min(i, 12) * 55}ms` }}
-        >
-          <TarjetaProducto producto={p} prioridad={i < prioritarios} />
-        </div>
-      ))}
+      {productos.map((p, i) => {
+        const ocultarEnMovil = maxMovil !== undefined && i >= maxMovil;
+        return (
+          <div
+            key={p.id}
+            className={cn("animate-subir", ocultarEnMovil && "hidden md:block")}
+            style={{ animationDelay: `${Math.min(i, 12) * 55}ms` }}
+          >
+            <TarjetaProducto producto={p} prioridad={i < prioritarios} />
+          </div>
+        );
+      })}
     </div>
   );
 }

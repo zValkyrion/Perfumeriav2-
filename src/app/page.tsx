@@ -121,7 +121,7 @@ export default function Home() {
             titulo="Novedades"
             enlace="/catalogo?orden=novedades"
           />
-          <GridProductos productos={NOVEDADES.slice(0, 8)} />
+          <GridProductos productos={NOVEDADES.slice(0, 8)} maxMovil={6} />
         </Contenedor>
       </Seccion>
 
