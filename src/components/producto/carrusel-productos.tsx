@@ -19,7 +19,7 @@ export function CarruselProductos({
   return (
     <div
       className={cn(
-        "snap-row -mx-4 gap-3 px-4 pb-2 lg:-mx-8 lg:gap-5 lg:px-8",
+        "snap-row -mx-4 flex gap-3 px-4 pb-2 lg:-mx-8 lg:gap-5 lg:px-8",
         className,
       )}
       role="region"

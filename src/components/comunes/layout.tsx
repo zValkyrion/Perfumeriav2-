@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Revelar } from "./revelar";
+import { TituloRevelado } from "./efectos";
 
 /** Contenedor de página: 1400px, px-4 en móvil y px-8 en desktop (§6.3). */
 export function Contenedor({
@@ -27,18 +29,21 @@ export function Seccion({
   className,
   denso = false,
   id,
+  revelar = false,
 }: {
   children: ReactNode;
   className?: string;
   denso?: boolean;
   id?: string;
+  /** Aparece al entrar en pantalla, una sola vez (§6.7). */
+  revelar?: boolean;
 }) {
   return (
     <section
       id={id}
       className={cn(denso ? "py-10 lg:py-14" : "py-14 lg:py-24", className)}
     >
-      {children}
+      {revelar ? <Revelar>{children}</Revelar> : children}
     </section>
   );
 }
@@ -51,6 +56,7 @@ export function TituloSeccion({
   enlace,
   enlaceTexto = "Ver todos",
   className,
+  revelado = false,
 }: {
   eyebrow?: string;
   titulo: string;
@@ -58,7 +64,12 @@ export function TituloSeccion({
   enlace?: string;
   enlaceTexto?: string;
   className?: string;
+  /** Revela el título palabra por palabra tras una máscara. */
+  revelado?: boolean;
 }) {
+  const claseTitulo =
+    "font-display text-[26px] leading-[1.1] tracking-tight text-balance lg:text-[40px]";
+
   return (
     <div
       className={cn(
@@ -68,9 +79,11 @@ export function TituloSeccion({
     >
       <div className="max-w-2xl">
         {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
-        <h2 className="font-display text-[26px] leading-[1.1] tracking-tight text-balance lg:text-[40px]">
-          {titulo}
-        </h2>
+        {revelado ? (
+          <TituloRevelado texto={titulo} className={claseTitulo} />
+        ) : (
+          <h2 className={claseTitulo}>{titulo}</h2>
+        )}
         {descripcion ? (
           <p className="text-fg-muted mt-3 text-[15px] leading-relaxed lg:text-base">
             {descripcion}

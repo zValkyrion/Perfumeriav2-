@@ -5,6 +5,7 @@ import { Lock, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { Precio } from "@/components/comunes/precio";
 import type { ResumenCarrito } from "@/lib/carrito";
 import { mejorPlazo } from "@/lib/volumen";
@@ -79,7 +80,7 @@ export function ResumenPedido({
         <div className="border-border-soft flex items-baseline justify-between border-t pt-3 text-lg font-medium">
           <dt>Total</dt>
           <dd>
-            <Precio valor={resumen.total} moneda />
+            <NumeroAnimado valor={resumen.total} formato="moneda" />
           </dd>
         </div>
       </dl>

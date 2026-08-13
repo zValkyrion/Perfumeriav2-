@@ -22,11 +22,15 @@ export function GridProductos({
       )}
     >
       {productos.map((p, i) => (
-        <TarjetaProducto
+        <div
           key={p.id}
-          producto={p}
-          prioridad={i < prioritarios}
-        />
+          className="animate-subir"
+          // Escalonado de 55 ms, tope a los 12 primeros: más allá el usuario
+          // ya hizo scroll y una espera acumulada solo se sentiría lenta.
+          style={{ animationDelay: `${Math.min(i, 12) * 55}ms` }}
+        >
+          <TarjetaProducto producto={p} prioridad={i < prioritarios} />
+        </div>
       ))}
     </div>
   );
@@ -35,7 +39,7 @@ export function GridProductos({
 /** Esqueleto con la misma caja que la tarjeta real: CLS ≈ 0 (§15). */
 export function SkeletonProducto() {
   return (
-    <div className="border-border-soft bg-surface overflow-hidden rounded-md border">
+    <div className="border-border-soft bg-surface skeleton-oro overflow-hidden rounded-md border">
       <Skeleton className="bg-surface-2 aspect-3/4 rounded-none" />
       <div className="space-y-2 p-3 lg:p-3.5">
         <Skeleton className="bg-surface-2 h-2.5 w-1/2" />
@@ -52,7 +56,9 @@ export function GridSkeleton({ cantidad = 10 }: { cantidad?: number }) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 2xl:grid-cols-5">
       {Array.from({ length: cantidad }, (_, i) => (
-        <SkeletonProducto key={i} />
+        <div key={i} style={{ animationDelay: `${i * 45}ms` }} className="animate-aparecer">
+          <SkeletonProducto />
+        </div>
       ))}
     </div>
   );

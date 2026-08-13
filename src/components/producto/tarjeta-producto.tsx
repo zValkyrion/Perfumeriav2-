@@ -69,28 +69,37 @@ export function TarjetaProducto({
           aria-label={`Ver ${producto.nombre} de ${marca}`}
         />
 
+        {/* La primera toma se acerca despacio; la segunda entra encima.
+            Dos capas en cruce leen como una foto viva, no como un cambio. */}
         <Imagen
           src={producto.imagenes[0]!}
           alt={`${producto.nombre}, ${producto.concentracion} de ${marca}`}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw"
           priority={prioridad}
-          className="transition-opacity duration-500 group-hover:opacity-0"
+          className="transition-[opacity,transform] duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105 group-hover:opacity-0"
         />
-        {/* Segunda toma al hover; en táctil simplemente no se dispara. */}
         <Imagen
           src={producto.imagenes[1]!}
           alt=""
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw"
-          className="scale-105 opacity-0 transition-all duration-500 group-hover:scale-100 group-hover:opacity-100"
+          className="scale-110 opacity-0 transition-[opacity,transform] duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-100 group-hover:opacity-100"
+        />
+
+        {/* Velo inferior: aparece con el CTA para que el botón tenga apoyo */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent opacity-0 transition-opacity duration-300 lg:group-hover:opacity-100"
         />
 
         {producto.badges.length > 0 ? (
           <ul className="absolute top-2.5 left-2.5 z-20 flex flex-col items-start gap-1.5">
-            {producto.badges.slice(0, 2).map((b) => (
+            {producto.badges.slice(0, 2).map((b, i) => (
               <li
                 key={b}
+                // Entrada escalonada: los distintivos aterrizan uno tras otro
+                style={{ animationDelay: `${120 + i * 90}ms` }}
                 className={cn(
-                  "rounded-full px-2 py-1 text-[10px] font-medium tracking-wide uppercase backdrop-blur-sm",
+                  "animate-escala rounded-full px-2 py-1 text-[10px] font-medium tracking-wide uppercase backdrop-blur-sm",
                   b === "3x2"
                     ? "bg-gold-gradient text-bg"
                     : b === "Últimas piezas"
@@ -116,22 +125,24 @@ export function TarjetaProducto({
               ? `Quitar ${producto.nombre} de favoritos`
               : `Guardar ${producto.nombre} en favoritos`
           }
-          className="bg-bg/70 text-fg-muted hover:text-gold-light absolute top-2 right-2 z-20 grid size-11 place-items-center rounded-full backdrop-blur-sm transition-colors"
+          className="bg-bg/70 text-fg-muted hover:text-gold-light presionable absolute top-2 right-2 z-20 grid size-11 place-items-center rounded-full backdrop-blur-sm transition-colors"
         >
+          {/* Cambiar la key remonta el icono y dispara el latido al marcar */}
           <Heart
+            key={String(favorito)}
             size={17}
             aria-hidden
-            className={cn(favorito && "fill-gold text-gold")}
+            className={cn(favorito && "fill-gold text-gold animate-latido")}
           />
         </button>
 
         {/* CTA: siempre visible en móvil, aparece al hover en escritorio. */}
-        <div className="absolute inset-x-2.5 bottom-2.5 z-20 lg:translate-y-2 lg:opacity-0 lg:transition-all lg:duration-300 lg:group-hover:translate-y-0 lg:group-hover:opacity-100">
+        <div className="absolute inset-x-2.5 bottom-2.5 z-20 lg:translate-y-3 lg:opacity-0 lg:transition-[opacity,transform] lg:duration-[320ms] lg:ease-[cubic-bezier(0.16,1,0.3,1)] lg:group-hover:translate-y-0 lg:group-hover:opacity-100">
           <button
             type="button"
             onClick={agregarAlCarrito}
             disabled={presentacion.stock === 0}
-            className="bg-gold-gradient text-bg flex h-11 w-full items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-[filter] hover:brightness-110 disabled:opacity-50"
+            className="bg-gold-gradient text-bg btn-brillo presionable flex h-11 w-full items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-[filter] hover:brightness-110 disabled:opacity-50"
           >
             <Plus size={15} aria-hidden />
             {presentacion.stock === 0 ? "Agotado" : "Agregar"}

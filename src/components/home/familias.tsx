@@ -7,12 +7,13 @@ import { FAMILIAS } from "@/data/taxonomia";
  */
 export function Familias({ conteos }: { conteos: Record<string, number> }) {
   return (
-    <div className="snap-row -mx-4 gap-4 px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-9 lg:gap-4 lg:px-0">
-      {FAMILIAS.map((f) => (
+    <div className="snap-row -mx-4 flex gap-4 px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-9 lg:gap-4 lg:overflow-visible lg:px-0">
+      {FAMILIAS.map((f, i) => (
         <Link
           key={f.slug}
           href={`/catalogo?familia=${encodeURIComponent(f.nombre)}`}
-          className="group flex w-20 shrink-0 flex-col items-center gap-2.5 text-center lg:w-auto"
+          style={{ animationDelay: `${i * 55}ms` }}
+          className="group animate-subir flex w-20 shrink-0 flex-col items-center gap-2.5 text-center lg:w-full"
         >
           <span
             aria-hidden

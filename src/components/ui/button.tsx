@@ -20,11 +20,12 @@ const buttonVariants = cva(
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
         /* --- Variantes AURA (§6.5) --- */
-        gold: "bg-gold-gradient text-bg font-medium hover:brightness-110 active:brightness-95",
+        gold: "bg-gold-gradient text-bg btn-brillo presionable font-medium hover:brightness-110 active:brightness-95",
         goldOutline:
-          "border-gold text-gold-light hover:bg-gold-muted border bg-transparent",
+          "border-gold text-gold-light hover:bg-gold-muted presionable border bg-transparent",
         goldGhost: "text-fg-muted hover:text-gold-light hover:underline",
-        whatsapp: "bg-[#25D366] font-medium text-[#04310f] hover:brightness-110",
+        whatsapp:
+          "bg-[#25D366] presionable font-medium text-[#04310f] hover:brightness-110",
       },
       size: {
         default:

@@ -83,7 +83,7 @@ export function Galeria({
 
       {/* Carrusel con scroll-snap — solo móvil */}
       <div className="lg:hidden">
-        <div className="snap-row -mx-4">
+        <div className="snap-row -mx-4 flex">
           {imagenes.map((src, i) => (
             <div key={src} className="bg-surface relative aspect-3/4 w-full shrink-0">
               <Imagen

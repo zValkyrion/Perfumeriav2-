@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Imagen } from "@/components/comunes/imagen";
+import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { Precio, PrecioAnterior } from "@/components/comunes/precio";
 import { resumenCarrito } from "@/lib/carrito";
 import { presentacionPrincipal } from "@/data/productos";
@@ -59,8 +60,12 @@ export function DrawerCarrito({ sugeridos }: { sugeridos: Producto[] }) {
               <BarraEscalon resumen={resumen} className="mb-4" />
 
               <ul className="divide-border-soft divide-y">
-                {resumen.lineas.map((linea) => (
-                  <li key={linea.clave} className="flex gap-3 py-3.5">
+                {resumen.lineas.map((linea, i) => (
+                  <li
+                    key={linea.clave}
+                    style={{ animationDelay: `${i * 60}ms` }}
+                    className="animate-subir flex gap-3 py-3.5"
+                  >
                     <Link
                       href={linea.enlace}
                       onClick={() => setDrawer(false)}
@@ -135,7 +140,7 @@ export function DrawerCarrito({ sugeridos }: { sugeridos: Producto[] }) {
               {complementos.length > 0 ? (
                 <div className="border-border-soft mt-5 border-t pt-5">
                   <p className="eyebrow mb-3">Complementa tu pedido</p>
-                  <div className="snap-row -mx-4 gap-2.5 px-4">
+                  <div className="snap-row -mx-4 flex gap-2.5 px-4">
                     {complementos.map((p) => {
                       const pres = presentacionPrincipal(p);
                       return (
@@ -209,7 +214,7 @@ export function DrawerCarrito({ sugeridos }: { sugeridos: Producto[] }) {
                 <div className="border-border-soft flex justify-between border-t pt-2 text-base font-medium">
                   <dt>Total</dt>
                   <dd>
-                    <Precio valor={resumen.total} moneda />
+                    <NumeroAnimado valor={resumen.total} formato="moneda" />
                   </dd>
                 </div>
               </dl>

@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Eye, Heart, PackageCheck, RotateCcw, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { Precio, PrecioAnterior, Descuento } from "@/components/comunes/precio";
 import { Stepper } from "@/components/carrito/stepper";
 import { precio as fmt, precioPorMl } from "@/lib/format";
@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 
 export function CompraProducto({ producto }: { producto: Producto }) {
   const router = useRouter();
-  const reducido = useReducedMotion();
 
   const inicial =
     producto.presentaciones.find((p) => p.ml === 100) ??
@@ -112,21 +111,13 @@ export function CompraProducto({ producto }: { producto: Producto }) {
       {/* 4 · Bloque de precio */}
       <div className="mb-5">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span
-              key={unitario}
-              initial={reducido ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reducido ? undefined : { opacity: 0, y: -8, position: "absolute" }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-            >
-              <Precio
-                valor={unitario}
-                moneda
-                className="text-[32px] leading-none font-medium"
-              />
-            </motion.span>
-          </AnimatePresence>
+          {/* Cuenta hasta el nuevo precio al cambiar de escalón: el usuario
+              ve caer la cifra, que es justo lo que queremos que note (§6.7). */}
+          <NumeroAnimado
+            valor={unitario}
+            formato="moneda"
+            className="text-[32px] leading-none font-medium"
+          />
 
           {presentacion.precioAnterior && escalon.descuento === 0 ? (
             <>

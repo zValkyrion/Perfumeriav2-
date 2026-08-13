@@ -5,7 +5,7 @@ import {
   Seccion,
   TituloSeccion,
 } from "@/components/comunes/layout";
-import { Revelar } from "@/components/comunes/revelar";
+import { Tilt } from "@/components/comunes/efectos";
 import { Banner3x2 } from "@/components/home/banner-3x2";
 import { BloqueMayoreo } from "@/components/home/bloque-mayoreo";
 import { Categorias } from "@/components/home/categorias";
@@ -58,7 +58,7 @@ export default function Home() {
       <TiraGarantias />
 
       {/* 3 · Compra por categoría */}
-      <Seccion denso>
+      <Seccion denso revelar>
         <Contenedor>
           <TituloSeccion
             eyebrow="Encuentra el tuyo"
@@ -74,6 +74,7 @@ export default function Home() {
       <Seccion denso id="mas-vendidos">
         <Contenedor>
           <TituloSeccion
+            revelado
             eyebrow="Los que no fallan"
             titulo="Más vendidos"
             descripcion="Los diez perfumes que más salen de nuestra bodega, ordenados por número de reseñas reales."
@@ -90,14 +91,12 @@ export default function Home() {
       <Banner3x2 />
 
       {/* 6 · Mayoreo */}
-      <Seccion>
-        <Revelar>
-          <BloqueMayoreo />
-        </Revelar>
+      <Seccion revelar>
+        <BloqueMayoreo />
       </Seccion>
 
       {/* 7 · Familias olfativas */}
-      <Seccion denso>
+      <Seccion denso revelar>
         <Contenedor>
           <TituloSeccion
             eyebrow="Por carácter"
@@ -121,33 +120,34 @@ export default function Home() {
       </Seccion>
 
       {/* 9 · Lotes destacados */}
-      <Seccion>
+      <Seccion revelar>
         <Contenedor>
           <TituloSeccion
+            revelado
             eyebrow="Para revender"
             titulo="Lotes de mayoreo"
             descripcion="Precio de distribuidor, envío gratis y material de venta incluido. La utilidad estimada asume que vendes al precio de menudeo publicado aquí."
             enlace="/lotes"
           />
+          {/* Las tarjetas de lote se inclinan siguiendo al puntero: son la
+              pieza de mayor ticket de la home y aguantan bien el gesto. */}
           <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
             {LOTES_DESTACADOS.map((lote) => (
-              <TarjetaLote
-                key={lote.slug}
-                lote={lote}
-                destacada={lote.masVendido}
-              />
+              <Tilt key={lote.slug} className="h-full">
+                <TarjetaLote lote={lote} destacada={lote.masVendido} />
+              </Tilt>
             ))}
           </div>
         </Contenedor>
       </Seccion>
 
       {/* 10 · Prueba social */}
-      <Seccion className="bg-surface/40 border-border-soft border-y">
+      <Seccion revelar className="bg-surface/40 border-border-soft border-y">
         <PruebaSocial />
       </Seccion>
 
       {/* 11 · Así recibes tu pedido */}
-      <Seccion>
+      <Seccion revelar>
         <PasosEnvio />
       </Seccion>
 
@@ -160,7 +160,7 @@ export default function Home() {
       </Seccion>
 
       {/* 13 · Preguntas frecuentes */}
-      <Seccion className="border-border-soft border-t">
+      <Seccion revelar className="border-border-soft border-t">
         <Contenedor>
           <div className="grid gap-8 lg:grid-cols-[380px_1fr] lg:gap-16">
             <div>

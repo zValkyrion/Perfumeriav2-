@@ -288,11 +288,11 @@ export default function MayoreoPage() {
             eyebrow="Quienes ya venden"
             titulo="Revendedores de EL REY DE LOS PERFUMES"
           />
-          <ul className="snap-row -mx-4 gap-4 px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-4 lg:px-0">
+          <ul className="snap-row -mx-4 flex gap-4 px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0">
             {TESTIMONIOS_MAYOREO.map((t) => (
               <li
                 key={t.autor}
-                className="border-border-soft bg-surface flex w-[80%] shrink-0 flex-col rounded-md border p-5 sm:w-[48%] lg:w-auto"
+                className="border-border-soft bg-surface flex w-[80%] shrink-0 flex-col rounded-md border p-5 sm:w-[48%] lg:w-full"
               >
                 <p className="text-fg-muted flex-1 text-sm leading-relaxed">
                   “{t.texto}”

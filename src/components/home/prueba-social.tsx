@@ -1,10 +1,11 @@
 import { BadgeCheck } from "lucide-react";
+import { ContadorEnVista } from "@/components/comunes/efectos";
 import { Estrellas } from "@/components/comunes/estrellas";
 import { Contenedor } from "@/components/comunes/layout";
 import { MARCA } from "@/data/contenido";
 import { RESEÑAS_DESTACADAS } from "@/data/resenas";
 import { getProductoPorId } from "@/data/productos";
-import { formatoFechaCorta, numero } from "@/lib/format";
+import { formatoFechaCorta } from "@/lib/format";
 
 function iniciales(nombre: string) {
   return nombre
@@ -24,8 +25,15 @@ export function PruebaSocial() {
     <Contenedor>
       <div className="mb-8 text-center lg:mb-12">
         <p className="eyebrow mb-3">Lo que dicen quienes ya compraron</p>
+        {/* La cifra cuenta desde cero al entrar en pantalla: la prueba social
+            se vuelve un gesto, no un dato más en la página. */}
         <h2 className="font-display text-[26px] leading-tight tracking-tight lg:text-[40px]">
-          +{numero(MARCA.clientes)} clientes y revendedores satisfechos
+          <ContadorEnVista
+            valor={MARCA.clientes}
+            prefijo="+"
+            className="text-gold-gradient"
+          />{" "}
+          clientes y revendedores satisfechos
         </h2>
         <div className="mt-3 flex items-center justify-center gap-2.5">
           <Estrellas valor={MARCA.ratingGlobal} tamano={18} />
@@ -36,13 +44,13 @@ export function PruebaSocial() {
         </div>
       </div>
 
-      <ul className="snap-row -mx-4 gap-4 px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-3 lg:px-0">
+      <ul className="snap-row -mx-4 flex gap-4 px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0">
         {RESEÑAS_DESTACADAS.map((r) => {
           const producto = getProductoPorId(r.productoId);
           return (
             <li
               key={r.id}
-              className="border-border-soft bg-surface flex w-[85%] shrink-0 flex-col rounded-md border p-5 sm:w-[60%] lg:w-auto"
+              className="border-border-soft bg-surface flex w-[85%] shrink-0 flex-col rounded-md border p-5 sm:w-[60%] lg:w-full"
             >
               <div className="flex items-center gap-3">
                 <span

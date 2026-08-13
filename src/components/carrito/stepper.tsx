@@ -35,7 +35,7 @@ export function Stepper({
         disabled={valor <= min}
         aria-label={`Quitar una unidad de ${etiqueta}`}
         className={cn(
-          "text-fg-muted hover:text-fg grid h-full place-items-center rounded-l-full transition-colors disabled:opacity-30",
+          "text-fg-muted hover:text-fg presionable grid h-full place-items-center rounded-l-full transition-colors disabled:opacity-30",
           ancho,
         )}
       >
@@ -60,7 +60,7 @@ export function Stepper({
         disabled={valor >= max}
         aria-label={`Agregar una unidad de ${etiqueta}`}
         className={cn(
-          "text-fg-muted hover:text-fg grid h-full place-items-center rounded-r-full transition-colors disabled:opacity-30",
+          "text-fg-muted hover:text-fg presionable grid h-full place-items-center rounded-r-full transition-colors disabled:opacity-30",
           ancho,
         )}
       >

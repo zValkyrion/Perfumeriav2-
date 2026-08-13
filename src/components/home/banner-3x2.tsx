@@ -48,14 +48,45 @@ export function Banner3x2() {
 
   return (
     <section className="relative isolate overflow-hidden border-y border-[#C9A227]/25 bg-black">
-      {/* Destello dorado, sin neón ni degradado morado (§1.3) */}
+      {/* Tres capas de destello que se desplazan a distinta velocidad al
+          hacer scroll: el fondo casi no se mueve y el frente sí, que es lo
+          que crea la sensación de profundidad. Sin neón ni degradado
+          morado (§1.3): todo es el mismo dorado de marca. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          backgroundImage:
-            "radial-gradient(ellipse 60% 100% at 50% 0%, rgba(201,162,39,0.22), transparent 70%)",
-        }}
+        className="capa-parallax pointer-events-none absolute inset-0 -z-10"
+        style={
+          {
+            "--desde": "4%",
+            "--hasta": "-4%",
+            backgroundImage:
+              "radial-gradient(ellipse 60% 100% at 50% 0%, rgba(201,162,39,0.22), transparent 70%)",
+          } as React.CSSProperties
+        }
+      />
+      <div
+        aria-hidden
+        className="capa-parallax pointer-events-none absolute inset-0 -z-10"
+        style={
+          {
+            "--desde": "16%",
+            "--hasta": "-16%",
+            backgroundImage:
+              "radial-gradient(circle 340px at 18% 120%, rgba(232,199,102,0.16), transparent 70%)",
+          } as React.CSSProperties
+        }
+      />
+      <div
+        aria-hidden
+        className="capa-parallax pointer-events-none absolute inset-0 -z-10"
+        style={
+          {
+            "--desde": "28%",
+            "--hasta": "-28%",
+            backgroundImage:
+              "radial-gradient(circle 260px at 84% -10%, rgba(201,162,39,0.20), transparent 70%)",
+          } as React.CSSProperties
+        }
       />
 
       <Contenedor>

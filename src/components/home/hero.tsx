@@ -17,7 +17,7 @@ import { numero } from "@/lib/format";
 export function Hero({ precioDesde }: { precioDesde: number }) {
   return (
     <section className="grain relative isolate flex h-[85dvh] min-h-[560px] items-end overflow-hidden lg:h-[92dvh]">
-      <div className="absolute inset-0 -z-10">
+      <div className="deriva-hero absolute inset-0 -z-10">
         <Imagen
           src="/hero.webp"
           alt="Frasco de perfume EL REY DE LOS PERFUMES iluminado sobre fondo negro"
@@ -29,21 +29,32 @@ export function Hero({ precioDesde }: { precioDesde: number }) {
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
       </div>
 
+      {/* El contenido entra en cascada de arriba abajo: primero la promesa,
+          luego el precio y al final la acción. Cada escalón son 90 ms. */}
       <Contenedor className="pb-16 lg:pb-24">
         <div className="max-w-xl">
-          <p className="eyebrow mb-4">Nueva colección</p>
+          <p className="eyebrow animate-subir mb-4">Nueva colección</p>
 
-          <h1 className="font-display text-[clamp(2.5rem,10vw,3.5rem)] leading-[0.98] tracking-tight text-balance lg:text-[clamp(3.5rem,5vw,4.5rem)]">
+          <h1
+            style={{ animationDelay: "90ms" }}
+            className="font-display animate-subir text-[clamp(2.5rem,10vw,3.5rem)] leading-[0.98] tracking-tight text-balance lg:text-[clamp(3.5rem,5vw,4.5rem)]"
+          >
             El lujo tiene un aroma.
           </h1>
 
-          <p className="text-fg-muted mt-4 max-w-md text-[15px] leading-relaxed lg:text-lg">
+          <p
+            style={{ animationDelay: "180ms" }}
+            className="text-fg-muted animate-subir mt-4 max-w-md text-[15px] leading-relaxed lg:text-lg"
+          >
             Perfumes 100% originales al mejor precio de México. Menudeo y
             mayoreo desde 3 piezas.
           </p>
 
           {/* Señal de precio + prueba social, antes del primer scroll (§1.2.2) */}
-          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+          <div
+            style={{ animationDelay: "270ms" }}
+            className="animate-subir mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm"
+          >
             <span className="text-fg">
               Desde{" "}
               <Precio
@@ -58,7 +69,10 @@ export function Hero({ precioDesde }: { precioDesde: number }) {
             </span>
           </div>
 
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+          <div
+            style={{ animationDelay: "360ms" }}
+            className="animate-subir mt-7 flex flex-col gap-3 sm:flex-row"
+          >
             <Button asChild variant="gold" size="touch-lg">
               <Link href="/catalogo">Comprar ahora</Link>
             </Button>
@@ -67,7 +81,10 @@ export function Hero({ precioDesde }: { precioDesde: number }) {
             </Button>
           </div>
 
-          <ul className="text-fg-muted mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs">
+          <ul
+            style={{ animationDelay: "450ms" }}
+            className="text-fg-muted animate-subir mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs"
+          >
             <li className="inline-flex items-center gap-1.5">
               <ShieldCheck size={14} className="text-gold" aria-hidden />
               100% originales

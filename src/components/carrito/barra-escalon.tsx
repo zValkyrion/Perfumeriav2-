@@ -1,6 +1,7 @@
 "use client";
 
 import { Truck } from "lucide-react";
+import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { precio } from "@/lib/format";
 import type { ResumenCarrito } from "@/lib/carrito";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,7 @@ export function BarraEscalon({
     return (
       <div
         className={cn(
-          "border-gold/30 bg-gold-muted rounded-md border px-3.5 py-3",
+          "border-gold/30 bg-gold-muted animate-escala rounded-md border px-3.5 py-3",
           className,
         )}
       >
@@ -60,7 +61,7 @@ export function BarraEscalon({
           y bajas al {Math.round(siguiente.escalon.descuento * 100)}% —
         </span>{" "}
         <span className="text-success font-medium">
-          ahorras {precio(siguiente.ahorroAdicional)} más
+          ahorras <NumeroAnimado valor={siguiente.ahorroAdicional} /> más
         </span>
       </p>
 
@@ -73,7 +74,7 @@ export function BarraEscalon({
         aria-label={`Progreso hacia el escalón ${siguiente.escalon.nombre}`}
       >
         <div
-          className="bg-gold-gradient h-full rounded-full transition-[width] duration-500"
+          className="bg-gold-gradient h-full rounded-full transition-[width] duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           style={{ width: `${Math.max(6, siguiente.progreso * 100)}%` }}
         />
       </div>

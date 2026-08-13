@@ -146,6 +146,75 @@ la página real.
   hidratación.
 - **ESLint**: 0 errores, 0 warnings.
 
+---
+
+## 9. Sistema de movimiento
+
+### Principio
+
+Una sola paleta de movimiento para todo el sitio: **4 curvas y 4 duraciones**
+declaradas como tokens en `globals.css`. Si cada componente inventa su propio
+easing la interfaz se siente descoordinada aunque cada pieza suelta esté bien.
+
+| Token | Valor | Para qué |
+| --- | --- | --- |
+| `--ease-out-soft` | `cubic-bezier(.16,1,.3,1)` | Salidas largas y elegantes |
+| `--ease-suave` | `cubic-bezier(.4,0,.2,1)` | Entra y sale, color y opacidad |
+| `--ease-entrada` | `cubic-bezier(.32,.72,0,1)` | Paneles y sheets |
+| `--ease-resorte` | `cubic-bezier(.34,1.56,.64,1)` | Rebote corto en CTAs y badges |
+| `--dur-rapida` 140ms | | Feedback táctil |
+| `--dur-media` 260ms | | Hover de tarjeta |
+| `--dur-lenta` 420ms | | Imagen y paneles |
+| `--dur-entrada` 520ms | | Revelado de sección |
+
+### Reparto de efectos
+
+Cada bloque grande lleva **un** gesto distinto, para que ninguno se convierta
+en un tic. El §1.3 prohíbe "animaciones de entrada en absolutamente todo".
+
+| Sección | Efecto |
+| --- | --- |
+| Hero | Contenido en cascada (90 ms por escalón) + deriva de la imagen ligada al scroll |
+| Tarjeta de producto | Doble capa de imagen en cruce con zoom, badges escalonados, latido del corazón, CTA que asciende |
+| Rejilla y carruseles | Entrada escalonada de 55 ms, con tope a las 12 primeras |
+| Banner 3x2 | Parallax de tres capas a distinta velocidad |
+| Bloque mayoreo | Cortina `clip-path` que descubre la foto + titular por palabras |
+| Prueba social | La cifra de clientes cuenta desde cero al entrar en pantalla |
+| Pasos de envío | Entrada secuencial y filete dorado que se dibuja |
+| Lotes destacados | Inclinación 3D siguiendo al puntero |
+| Precios | Conteo hasta el nuevo valor al cambiar de escalón |
+| Navegación | Subrayado que crece desde el centro, mega-menú con columnas escalonadas |
+
+### Decisiones técnicas
+
+- **La transición de ruta solo anima opacidad.** Un ancestro con `transform`
+  deja de ser ancestro para `position: fixed`, y dentro de `<main>` viven el
+  CTA fijo de la ficha y las barras del checkout. El desplazamiento vertical lo
+  aportan los bloques internos.
+- **Las cifras se escriben en el DOM, no en el estado.** Un conteo son decenas
+  de fotogramas; pasarlos por `setState` provocaría otros tantos renders. El
+  valor correcto va en el HTML inicial, así que se ve bien aunque el JavaScript
+  no llegue nunca.
+- **Parallax y deriva usan animaciones CSS ligadas al scroll**
+  (`animation-timeline`), sin un solo listener de scroll. Van dentro de
+  `@supports`: donde el navegador no las soporta —hoy Safari y Firefox— el
+  elemento simplemente se queda quieto y no se rompe nada.
+- **`prefers-reduced-motion` sigue anulándolo todo** con la regla global, y
+  además los componentes de Framer Motion lo consultan para no montar siquiera
+  la animación.
+
+### Defecto corregido en esta fase
+
+`.snap-row` incluía `display: flex`, que ganaba sobre el `lg:grid` de las
+secciones que se convierten en rejilla en escritorio. Combinado con
+`lg:w-auto` y una imagen en `position: absolute`, las tarjetas colapsaban a
+ancho cero: **"Compra por categoría" desaparecía en pantallas de escritorio**.
+La utilidad pasa a definir solo el comportamiento de scroll y cada uso declara
+su `display`; los anchos pasan a `lg:w-full`. Afectaba también a familias
+olfativas, prueba social y testimonios de mayoreo.
+
+---
+
 ### Lo que queda fuera de esta entrega
 
 - Revisión visual con capturas y auditoría Lighthouse: no se pudieron ejecutar

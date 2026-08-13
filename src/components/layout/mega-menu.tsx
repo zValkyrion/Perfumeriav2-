@@ -19,7 +19,7 @@ export function MegaMenu() {
             <Link
               href={seccion.href}
               className={cn(
-                "hover:text-fg inline-flex h-11 items-center rounded-full px-3 text-[13px] font-medium tracking-wide transition-colors",
+                "subrayado-nav hover:text-fg inline-flex h-11 items-center rounded-full px-3 text-[13px] font-medium tracking-wide transition-colors",
                 seccion.destacado
                   ? "text-gold-light hover:text-gold uppercase"
                   : "text-fg-muted",
@@ -31,7 +31,7 @@ export function MegaMenu() {
             {seccion.grupos ? (
               <div
                 className={cn(
-                  "invisible absolute inset-x-0 top-full z-50 translate-y-1 opacity-0 transition-[opacity,transform] duration-200",
+                  "invisible absolute inset-x-0 top-full z-50 -translate-y-1.5 opacity-0 transition-[opacity,transform] duration-[240ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
                   "group-hover:visible group-hover:translate-y-0 group-hover:opacity-100",
                   "group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100",
                 )}
@@ -50,7 +50,13 @@ export function MegaMenu() {
                       )}
                     >
                       {seccion.grupos.map((grupo, i) => (
-                        <div key={i}>
+                        <div
+                          key={i}
+                          // Las columnas aterrizan una tras otra al abrir:
+                          // guía la lectura de izquierda a derecha.
+                          style={{ transitionDelay: `${60 + i * 55}ms` }}
+                          className="translate-y-1 opacity-0 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100"
+                        >
                           <p className="eyebrow mb-3 min-h-4">{grupo.titulo}</p>
                           <ul className="space-y-1">
                             {grupo.enlaces.map((e) => (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Cortina, TituloRevelado } from "@/components/comunes/efectos";
 import { Imagen } from "@/components/comunes/imagen";
 import { Contenedor } from "@/components/comunes/layout";
 import { UTILIDAD_MAXIMA } from "@/data/lotes";
@@ -19,19 +20,24 @@ export function BloqueMayoreo() {
   return (
     <Contenedor>
       <div className="border-border-soft grid overflow-hidden rounded-lg border lg:grid-cols-2">
-        <div className="bg-bg relative order-1 aspect-4/3 lg:order-none lg:aspect-auto lg:min-h-[440px]">
-          <Imagen
-            src="/lotes/lote-24-negocio.webp"
-            alt="Lote de mayoreo EL REY DE LOS PERFUMES con veinticuatro perfumes"
-            sizes="(max-width: 1024px) 100vw, 50vw"
-          />
-        </div>
+        {/* La foto se descubre como una cortina de izquierda a derecha
+            mientras se desescala: material que se despliega, no un fundido. */}
+        <Cortina className="bg-bg relative order-1 aspect-4/3 lg:order-none lg:aspect-auto lg:min-h-[440px]">
+          <div className="absolute inset-0">
+            <Imagen
+              src="/lotes/lote-24-negocio.webp"
+              alt="Lote de mayoreo EL REY DE LOS PERFUMES con veinticuatro perfumes"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+            />
+          </div>
+        </Cortina>
 
         <div className="order-2 p-6 lg:order-none lg:p-12">
           <p className="eyebrow mb-3">Mayoreo</p>
-          <h2 className="font-display text-[26px] leading-tight tracking-tight text-balance lg:text-[40px]">
-            Convierte el perfume en tu negocio.
-          </h2>
+          <TituloRevelado
+            texto="Convierte el perfume en tu negocio."
+            className="font-display text-[26px] leading-tight tracking-tight text-balance lg:text-[40px]"
+          />
           <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
             Gana hasta{" "}
             <strong className="text-gold-light font-medium">

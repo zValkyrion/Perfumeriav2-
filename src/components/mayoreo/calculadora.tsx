@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { Precio } from "@/components/comunes/precio";
 import { precioRedondo } from "@/lib/format";
 import { ESCALONES, escalonPara, precioUnitario } from "@/lib/volumen";
@@ -97,12 +98,12 @@ export function Calculadora({ ticketPromedio }: { ticketPromedio: number }) {
       <dl className="border-border-soft mt-7 grid gap-4 border-t pt-6 sm:grid-cols-2">
         <Dato
           etiqueta="Te sale a"
-          valor={<Precio valor={unitario} />}
+          valor={<NumeroAnimado valor={unitario} />}
           nota="por pieza"
         />
         <Dato
           etiqueta="Inviertes"
-          valor={<Precio valor={inversion} />}
+          valor={<NumeroAnimado valor={inversion} />}
           nota={`${piezas} ${piezas === 1 ? "pieza" : "piezas"}`}
         />
         <Dato
@@ -112,7 +113,7 @@ export function Calculadora({ ticketPromedio }: { ticketPromedio: number }) {
         />
         <Dato
           etiqueta="Ganas"
-          valor={<Precio valor={utilidad} />}
+          valor={<NumeroAnimado valor={utilidad} />}
           nota={`margen del ${Math.round(margen * 100)}%`}
           destacado
         />

@@ -34,12 +34,13 @@ export function Categorias({ conteos }: { conteos: Record<string, number> }) {
   });
 
   return (
-    <div className="snap-row -mx-4 gap-3 px-4 lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-4 lg:px-0">
-      {tarjetas.map((t) => (
+    <div className="snap-row -mx-4 flex gap-3 px-4 lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-4 lg:overflow-visible lg:px-0">
+      {tarjetas.map((t, i) => (
         <Link
           key={t.slug}
           href={t.href}
-          className="group border-border-soft relative w-[45%] shrink-0 overflow-hidden rounded-md border sm:w-[30%] lg:w-auto"
+          style={{ animationDelay: `${i * 70}ms` }}
+          className="group border-border-soft animate-subir relative w-[45%] shrink-0 overflow-hidden rounded-md border sm:w-[30%] lg:w-full"
         >
           <div className="relative aspect-4/5 overflow-hidden">
             <Imagen

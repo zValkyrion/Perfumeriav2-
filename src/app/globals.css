@@ -59,12 +59,28 @@
   /* Breakpoint móvil base (§6.3) */
   --breakpoint-xs: 23.4375rem;
 
-  /* Movimiento (§6.7) — nada por encima de 700ms */
-  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  /* ── Movimiento (§6.7) — nada por encima de 700ms ──────────────────────
+     Cuatro curvas y cuatro duraciones para todo el sitio. Que el movimiento
+     sea consistente es lo que separa una interfaz "animada" de una fluida:
+     si cada componente inventa su propio easing, se nota. */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1); /* salida larga, elegante */
+  --ease-suave: cubic-bezier(0.4, 0, 0.2, 1); /* estándar, entra y sale */
+  --ease-entrada: cubic-bezier(0.32, 0.72, 0, 1); /* paneles y sheets */
+  --ease-resorte: cubic-bezier(0.34, 1.56, 0.64, 1); /* rebote corto, CTAs */
+
+  --dur-rapida: 140ms; /* feedback táctil: press, hover de icono */
+  --dur-media: 260ms; /* hover de tarjeta, cambio de color */
+  --dur-lenta: 420ms; /* imagen, paneles */
+  --dur-entrada: 520ms; /* revelado de sección al hacer scroll */
 
   --animate-marquee: marquee 38s linear infinite;
   --animate-shimmer: shimmer 2.2s ease-in-out infinite;
-  --animate-latido: latido 0.32s var(--ease-out-soft) 1;
+  --animate-latido: latido 0.32s var(--ease-resorte) 1;
+  --animate-aparecer: aparecer var(--dur-lenta) var(--ease-out-soft) both;
+  --animate-subir: subir var(--dur-entrada) var(--ease-out-soft) both;
+  --animate-escala: escala var(--dur-media) var(--ease-resorte) both;
+  --animate-brillo: brillo 1.6s ease-in-out infinite;
+  --animate-flotar: flotar 5s ease-in-out infinite;
 
   @keyframes latido {
     0%,
@@ -72,7 +88,58 @@
       transform: scale(1);
     }
     45% {
-      transform: scale(1.2);
+      transform: scale(1.22);
+    }
+  }
+
+  @keyframes aparecer {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes subir {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes escala {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Barrido de luz para skeletons: comunica "cargando" mejor que un pulso */
+  @keyframes brillo {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(200%);
+    }
+  }
+
+  @keyframes flotar {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
     }
   }
 
@@ -266,15 +333,161 @@
   /* Elevación en oscuro: borde + luminosidad, nunca shadow-lg (§1.3) */
   .lift {
     transition:
-      transform 0.25s var(--ease-out-soft),
-      border-color 0.25s var(--ease-out-soft),
-      background-color 0.25s var(--ease-out-soft);
+      transform var(--dur-media) var(--ease-out-soft),
+      border-color var(--dur-media) var(--ease-out-soft),
+      background-color var(--dur-media) var(--ease-out-soft);
   }
   @media (hover: hover) {
     .lift:hover {
-      transform: translateY(-2px);
+      transform: translateY(-3px);
       border-color: rgb(201 162 39 / 0.35);
       background-color: var(--color-surface-2);
+    }
+  }
+
+  /**
+   * Barrido de luz sobre el botón primario al pasar el cursor.
+   * Es el único "brillo" del sistema y solo vive en la acción principal:
+   * refuerza la jerarquía del §1.2.3 en vez de decorar por decorar.
+   */
+  .btn-brillo {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .btn-brillo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    transform: translateX(-120%) skewX(-18deg);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.38),
+      transparent
+    );
+    transition: transform 0.7s var(--ease-out-soft);
+    pointer-events: none;
+  }
+  @media (hover: hover) {
+    .btn-brillo:hover::after {
+      transform: translateX(120%) skewX(-18deg);
+    }
+  }
+
+  /* Respuesta táctil: todo lo pulsable se hunde un poco */
+  .presionable {
+    transition: transform var(--dur-rapida) var(--ease-suave);
+  }
+  .presionable:active {
+    transform: scale(0.96);
+  }
+
+  /* Subrayado dorado que crece desde el centro en la navegación */
+  .subrayado-nav {
+    position: relative;
+  }
+  .subrayado-nav::after {
+    content: "";
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    height: 1px;
+    width: 0;
+    translate: -50% 0;
+    background-image: linear-gradient(90deg, transparent, #e8c766, transparent);
+    transition: width var(--dur-media) var(--ease-out-soft);
+  }
+  .subrayado-nav:hover::after,
+  .subrayado-nav:focus-visible::after,
+  .subrayado-nav[data-activo="true"]::after {
+    width: calc(100% - 12px);
+  }
+
+  /* Skeleton con barrido en vez de parpadeo: se lee como progreso */
+  .skeleton-oro {
+    position: relative;
+    overflow: hidden;
+  }
+  .skeleton-oro::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgb(201 162 39 / 0.09),
+      transparent
+    );
+    animation: var(--animate-brillo);
+  }
+
+  /**
+   * Entrada de página (la usa TransicionRuta).
+   *
+   * Solo opacidad, a propósito: un ancestro con `transform` deja de ser
+   * ancestro para `position: fixed`, y dentro de <main> viven el CTA fijo de
+   * la ficha y las barras del checkout. El desplazamiento vertical lo aportan
+   * los bloques internos con `Revelar`.
+   */
+  .entrada-ruta {
+    animation: aparecer var(--dur-lenta) var(--ease-suave) backwards;
+  }
+
+  /**
+   * Deriva del hero ligada al scroll, sin JavaScript ni listeners.
+   * `scroll(root block)` solo existe en navegadores con animaciones ligadas al
+   * scroll; donde no, la imagen simplemente se queda quieta. Es un
+   * desplazamiento del 6%: el §6.7 prohíbe el parallax agresivo, no el matiz.
+   */
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .deriva-hero {
+        animation: deriva linear both;
+        animation-timeline: scroll(root block);
+        animation-range: 0 90vh;
+      }
+    }
+  }
+
+  @keyframes deriva {
+    to {
+      transform: translateY(6%) scale(1.06);
+    }
+  }
+
+  /* Inclinación 3D: las variables las escribe el componente Tilt */
+  .tilt {
+    transform: perspective(900px) rotateX(var(--giro-x, 0deg))
+      rotateY(var(--giro-y, 0deg));
+    transform-style: preserve-3d;
+    transition: transform 0.4s var(--ease-out-soft);
+  }
+
+  /**
+   * Capa con parallax ligado al scroll.
+   *
+   * `--desde` y `--hasta` los fija cada capa, así que una misma clase produce
+   * profundidad: el fondo se mueve poco, el frente se mueve más. Solo en
+   * navegadores con animaciones ligadas al scroll; en el resto no pasa nada.
+   */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .capa-parallax {
+        animation: parallax linear both;
+        animation-timeline: view();
+        animation-range: entry 0% exit 100%;
+      }
+    }
+  }
+
+  @keyframes parallax {
+    from {
+      transform: translateY(var(--desde, 10%));
+    }
+    to {
+      transform: translateY(var(--hasta, -10%));
     }
   }
 
@@ -286,9 +499,16 @@
     display: none;
   }
 
-  /* Carruseles táctiles (§14) */
+  /**
+   * Carruseles táctiles (§14).
+   *
+   * Define solo el comportamiento de scroll, nunca el `display`: al llevar
+   * `flex` dentro, ganaba sobre el `lg:grid` de las secciones que se convierten
+   * en rejilla en escritorio y las tarjetas colapsaban. Cada uso declara su
+   * propio display.
+   */
   .snap-row {
-    @apply scrollbar-none flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain;
+    @apply scrollbar-none snap-x snap-mandatory overflow-x-auto overscroll-x-contain;
   }
   .snap-row > * {
     @apply snap-start;

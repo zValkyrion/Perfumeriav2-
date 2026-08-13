@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { BotonWhatsApp } from "@/components/layout/whatsapp";
 import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
+import { TransicionRuta } from "@/components/comunes/transicion-ruta";
 import { MAS_VENDIDOS, indiceCompacto } from "@/data/productos";
 import "./globals.css";
 
@@ -72,7 +73,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Header indice={indice} />
 
         <main id="contenido" className="flex-1 pb-16 md:pb-0">
-          {children}
+          <TransicionRuta>{children}</TransicionRuta>
         </main>
 
         <Footer />
