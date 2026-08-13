@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --version; npm --version; Write-Output \"---skills dirs---\"; foreach \\($p in @\\(\"$env:USERPROFILE\\\\.claude\\\\skills\", \"C:\\\\Users\\\\pipes\\\\OneDrive\\\\Documentos\\\\GitHub\\\\Perfumeriav2\\\\.claude\\\\skills\", \"$env:USERPROFILE\\\\.claude\\\\plugins\"\\)\\) { if \\(Test-Path $p\\) { Write-Output \"EXISTS: $p\"; Get-ChildItem $p -Name } else { Write-Output \"MISSING: $p\" } })",
+      "PowerShell(foreach \\($p in @\\(\"next\",\"react\",\"react-dom\",\"tailwindcss\",\"framer-motion\",\"zustand\",\"embla-carousel-react\",\"lucide-react\",\"zod\",\"react-hook-form\"\\)\\) { $v = \\(npm view $p version 2>$null\\); Write-Output \"$p = $v\" })",
+      "PowerShell(node -e \"const fs=require\\('fs'\\);const p=process.cwd\\(\\);try{fs.accessSync\\(p,fs.constants.W_OK\\);console.log\\('node W_OK: pass'\\)}catch\\(e\\){console.log\\('node W_OK: FAIL',e.code\\)};try{fs.writeFileSync\\(p+'/.nodetest','x'\\);console.log\\('node write: pass'\\);fs.unlinkSync\\(p+'/.nodetest'\\)}catch\\(e\\){console.log\\('node write: FAIL',e.code,e.message\\)}\")"
+    ]
+  }
+}

@@ -1,0 +1,300 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   AURA — Sistema de diseño "Lujo Oscuro"
+   Tokens de marca. El dorado es acento, nunca fondo (<10%).
+   ============================================================ */
+@theme {
+  /* Superficies */
+  --color-bg: #0a0a0b;
+  --color-surface: #131316;
+  --color-surface-2: #1c1c21;
+  --color-border-strong: #2a2a31;
+  --color-border-soft: #1f1f25;
+
+  /* Oro — color de marca */
+  --color-gold: #c9a227;
+  --color-gold-light: #e8c766;
+  --color-gold-deep: #8c6f14;
+  --color-gold-muted: rgb(201 162 39 / 0.12);
+
+  /* Texto */
+  --color-fg: #f5f5f4;
+  --color-fg-muted: #a1a1aa;
+  /* #71717A del brief da 4.08:1 sobre --color-bg y reprueba §15 (4.5:1).
+     Elevado al mínimo accesible; ver DESIGN_NOTES.md. */
+  --color-fg-subtle: #8a8a94;
+
+  /* Semánticos */
+  --color-success: #3fb27f;
+  --color-danger: #e5484d;
+  --color-warning: #f5a524;
+
+  /* Familias olfativas — gradientes característicos (§8.7) */
+  --color-fam-amaderado: #8c6f14;
+  --color-fam-oriental: #b5651d;
+  --color-fam-floral: #c2708f;
+  --color-fam-citrico: #b7bf3a;
+  --color-fam-fougere: #5f8a5f;
+  --color-fam-chipre: #7a6a4f;
+  --color-fam-gourmand: #a9713f;
+  --color-fam-acuatico: #4a8fa8;
+  --color-fam-especiado: #a8453a;
+
+  /* Radios (§6.1) */
+  --radius: 16px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Tipografía */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+
+  /* Breakpoint móvil base (§6.3) */
+  --breakpoint-xs: 23.4375rem;
+
+  /* Movimiento (§6.7) — nada por encima de 700ms */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-marquee: marquee 38s linear infinite;
+  --animate-shimmer: shimmer 2.2s ease-in-out infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes shimmer {
+    0%,
+    100% {
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
+
+/* Puente con el contrato de variables de shadcn/ui */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-display);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+}
+
+/* La tienda vive siempre en oscuro: :root y .dark comparten valores. */
+:root,
+.dark {
+  --background: #0a0a0b;
+  --foreground: #f5f5f4;
+  --card: #131316;
+  --card-foreground: #f5f5f4;
+  --popover: #131316;
+  --popover-foreground: #f5f5f4;
+  --primary: #c9a227;
+  --primary-foreground: #0a0a0b;
+  --secondary: #1c1c21;
+  --secondary-foreground: #f5f5f4;
+  --muted: #1c1c21;
+  --muted-foreground: #a1a1aa;
+  --accent: #1c1c21;
+  --accent-foreground: #f5f5f4;
+  --destructive: #e5484d;
+  --border: #2a2a31;
+  --input: #2a2a31;
+  --ring: #c9a227;
+  --chart-1: #c9a227;
+  --chart-2: #e8c766;
+  --chart-3: #8c6f14;
+  --chart-4: #a1a1aa;
+  --chart-5: #3fb27f;
+  --sidebar: #131316;
+  --sidebar-foreground: #f5f5f4;
+  --sidebar-primary: #c9a227;
+  --sidebar-primary-foreground: #0a0a0b;
+  --sidebar-accent: #1c1c21;
+  --sidebar-accent-foreground: #f5f5f4;
+  --sidebar-border: #2a2a31;
+  --sidebar-ring: #c9a227;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg text-fg;
+    /* Evita el scroll horizontal accidental sin ocultar la causa (§14). */
+    overflow-x: clip;
+    font-feature-settings: "cv02", "cv03", "cv04";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+  }
+
+  /* Anillo de foco dorado de 2px (§15) */
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--color-gold);
+    color: var(--color-bg);
+  }
+
+  /* Los precios siempre en cifras tabulares (§6.2) */
+  [data-precio] {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  /* Degradado dorado oficial (§6.1) */
+  .bg-gold-gradient {
+    background-image: linear-gradient(
+      135deg,
+      #8c6f14 0%,
+      #e8c766 45%,
+      #c9a227 100%
+    );
+  }
+
+  .text-gold-gradient {
+    background-image: linear-gradient(
+      135deg,
+      #8c6f14 0%,
+      #e8c766 45%,
+      #c9a227 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Filo dorado de 1px para separar secciones sin usar sombra */
+  .rule-gold {
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-gold-deep),
+      var(--color-gold-light),
+      var(--color-gold-deep),
+      transparent
+    );
+  }
+
+  /* Eyebrow de sección (§6.2) */
+  .eyebrow {
+    @apply text-[11px] font-medium tracking-[0.2em] text-gold-light uppercase;
+  }
+
+  /* Grano sutil sobre el hero — evita el look "plano digital" (§6.4) */
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Elevación en oscuro: borde + luminosidad, nunca shadow-lg (§1.3) */
+  .lift {
+    transition:
+      transform 0.25s var(--ease-out-soft),
+      border-color 0.25s var(--ease-out-soft),
+      background-color 0.25s var(--ease-out-soft);
+  }
+  @media (hover: hover) {
+    .lift:hover {
+      transform: translateY(-2px);
+      border-color: rgb(201 162 39 / 0.35);
+      background-color: var(--color-surface-2);
+    }
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Carruseles táctiles (§14) */
+  .snap-row {
+    @apply scrollbar-none flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain;
+  }
+  .snap-row > * {
+    @apply snap-start;
+  }
+}
+
+/* Respeta prefers-reduced-motion: desactiva todo el movimiento (§6.7) */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
