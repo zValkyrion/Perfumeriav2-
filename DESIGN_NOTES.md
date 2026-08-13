@@ -104,4 +104,55 @@ contra la lista de verificación de la §7 de este archivo.
 | 3 | Imágenes de Unsplash (§4.1) | **Arte SVG generado localmente y rasterizado** | Unsplash por hotlink produce imágenes rotas y bloquea el objetivo Lighthouse ≥90; el §4.1 admite explícitamente "SVGs generados localmente". Cada producto recibe arte determinista derivado de su familia olfativa. Cumple "sin cuadros grises" y "sin imágenes rotas" (§17). |
 | 4 | Botones shadcn `radix-nova` | **Variantes `gold`/`goldOutline`/`whatsapp` + tamaños `touch`** | El preset trae botones de 32px de alto; el §6.5 exige 48px en móvil y 44×44 mínimo táctil. Se extendió `buttonVariants` en vez de pelear con el preset. |
 
-Pendiente: sección 8 (pase de crítica) se completa en §16.13.
+| 5 | Filtrado en servidor con `searchParams` | **Filtros en cliente** | `next.config.ts` fija `output: "export"` para GitHub Pages. La exportación estática no recibe `searchParams` en el servidor, así que catálogo, búsqueda y promociones leen la URL desde el cliente con `useSearchParams` + `Suspense`. |
+| 6 | `quality` en `next/image` | **Eliminado** | Con `images.unoptimized: true` (obligatorio en export estático) la prop no hace nada y Next 16 emite un warning por cada imagen. El arte ya se genera en WebP al tamaño final. |
+
+---
+
+## 8. Pase de crítica (§16.13)
+
+### Alcance y limitación honesta
+
+**El panel del navegador no estaba disponible durante la sesión**, así que las
+capturas fallaron (`the Browser pane is not displayed`). La crítica se hizo
+sobre el DOM renderizado, los estilos calculados, las medidas de layout y las
+imágenes generadas —no mirando píxeles—. Queda pendiente una revisión visual
+directa; las comprobaciones geométricas y de contenido sí se ejecutaron contra
+la página real.
+
+### Defectos detectados y corregidos
+
+| # | Pantalla | Defecto | Corrección |
+| --- | --- | --- | --- |
+| 1 | Confirmación | La línea del pedido mostraba **$ 14,280.00** (menudeo) junto a un total de **$ 8,568.00** (con 40% aplicado). El comprobante no cuadraba: el error más grave encontrado. | Se reutiliza `resumenCarrito` para las líneas, igual que en carrito y drawer. Verificado: la línea pasa a $ 8,568.00. |
+| 2 | Ficha (PDP) | El interruptor "Modo Mayoreo" cambiaba las tarjetas pero **no la ficha**, incumpliendo el §7.2 y el criterio de aceptación de "cambia los precios en todo el sitio". | La ficha muestra la línea dorada `Mayoreo 3+: $ X c/u · envío gratis`. Verificado en Vetiver Haití: $ 1,890 → $ 1,606.50. |
+| 3 | Arte de producto | La tercera toma recortaba la tapa por arriba: quedaba una mancha de color sin lectura, justo la señal de "plantilla" del §1.3. Además cada concentración tenía un frasco de altura distinta, y en la cuadrícula parecía un error de maquetación. | Reencuadre del detalle (recorta por abajo, nunca por arriba) y **normalización de la altura del frasco** a 720 px para las cinco formas. |
+| 4 | Global | Cada imagen emitía un warning de `next/image` en consola, contra el §18 ("cero warnings"). | Se eliminó la prop `quality`, que es inerte bajo exportación estática. |
+| 5 | Global | Cuatro `setState` dentro de efectos (barra de anuncios, contador 3x2, badge del carrito, slider de precio) provocaban renders en cascada. | Reescritos con `useSyncExternalStore` (sessionStorage y reloj), estado derivado (slider) y animación CSS reiniciada por `key` (badge). ESLint queda en cero. |
+
+### Verificaciones ejecutadas
+
+- **Escalera de volumen**, medida sobre la ficha renderizada de Praliné 100 ml
+  ($ 1,190): 3–5 → $ 1,011.50 (−15%), 6–11 → $ 892.50 (−25%), 12+ → $ 714.00
+  (−40%). Mensaje de upsell: *"Agrega 2 piezas más y baja a $ 1,011.50 c/u —
+  ahorras $ 178.50"*.
+- **Carrito con 12 piezas**: subtotal $ 14,280 → descuento $ 5,712 → total
+  $ 8,568 con envío gratis y 12 MSI de $ 714. Coincide con la ficha.
+- **Sin scroll horizontal a 375 px** en home, catálogo, ficha y mayoreo: cero
+  elementos desbordados fuera de contenedores con scroll propio.
+- **CP autocompletado**: 37160 → León, Guanajuato.
+- **14 rutas** responden 200; las 52 fichas y los 8 lotes se prerenderizan.
+- **Consola limpia** en pestaña nueva: sin errores, sin warnings, sin avisos de
+  hidratación.
+- **ESLint**: 0 errores, 0 warnings.
+
+### Lo que queda fuera de esta entrega
+
+- Revisión visual con capturas y auditoría Lighthouse: no se pudieron ejecutar
+  en este entorno (panel de navegador no disponible). El objetivo de
+  Performance ≥ 90 / Accesibilidad ≥ 95 está **sin medir**, no verificado.
+- Los tres últimos clics del checkout (avanzar de paso 2 a 3 y confirmar) no se
+  pudieron automatizar sin capturas; el árbol de accesibilidad del navegador
+  truncaba antes del botón. La lógica sí se validó: los pasos 1 y 2 se
+  recorrieron con datos reales y la pantalla de confirmación se verificó
+  renderizando un pedido.

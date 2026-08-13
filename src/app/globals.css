@@ -64,6 +64,17 @@
 
   --animate-marquee: marquee 38s linear infinite;
   --animate-shimmer: shimmer 2.2s ease-in-out infinite;
+  --animate-latido: latido 0.32s var(--ease-out-soft) 1;
+
+  @keyframes latido {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(1.2);
+    }
+  }
 
   @keyframes marquee {
     from {

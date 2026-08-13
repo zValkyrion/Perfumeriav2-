@@ -1,5 +1,11 @@
 "use client"
 
+/* eslint-disable react-hooks/set-state-in-effect --
+   Archivo generado por shadcn/ui (§6.6 pide instalar `carousel`). Sincroniza
+   estado con Embla desde un efecto, que es su patrón oficial. Los carruseles
+   de la tienda usan scroll-snap nativo, así que este componente no está en
+   uso; se conserva sin tocar para que `shadcn add` pueda actualizarlo. */
+
 import * as React from "react"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,

@@ -24,7 +24,6 @@ export function BloqueMayoreo() {
             src="/lotes/lote-24-negocio.webp"
             alt="Lote de mayoreo AURA con veinticuatro perfumes"
             sizes="(max-width: 1024px) 100vw, 50vw"
-            quality={70}
           />
         </div>
 

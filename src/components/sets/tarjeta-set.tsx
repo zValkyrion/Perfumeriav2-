@@ -24,7 +24,6 @@ export function TarjetaSet({ set }: { set: SetRegalo }) {
           src={set.imagen}
           alt={set.nombre}
           sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 33vw"
-          quality={65}
         />
       </div>
 

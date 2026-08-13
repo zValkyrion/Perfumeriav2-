@@ -42,7 +42,6 @@ export function TarjetaLote({
           src={lote.imagen}
           alt={`${lote.nombre}: ${lote.piezas} perfumes surtidos`}
           sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 33vw"
-          quality={65}
         />
       </Link>
 

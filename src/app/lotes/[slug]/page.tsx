@@ -83,7 +83,6 @@ export default async function LoteDetallePage({
               alt={`${lote.nombre}: ${lote.piezas} perfumes surtidos`}
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
-              quality={78}
             />
             {lote.masVendido ? (
               <span className="bg-gold-gradient text-bg absolute top-4 left-4 rounded-full px-3 py-1.5 text-[11px] font-semibold tracking-wide uppercase">

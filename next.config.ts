@@ -11,7 +11,13 @@ const basePath = repo ? `/${repo}` : "";
 const nextConfig: NextConfig = {
   output: "export",
   basePath: basePath || undefined,
+  assetPrefix: basePath ? `${basePath}/` : undefined,
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
+  },
   images: {
+    // La exportación estática no lleva optimizador de imágenes; el arte de
+    // producto ya se genera en WebP al tamaño correcto (scripts/generar-imagenes.ts).
     unoptimized: true,
   },
 };

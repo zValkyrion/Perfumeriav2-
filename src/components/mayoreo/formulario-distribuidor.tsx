@@ -31,18 +31,19 @@ const VOLUMENES = [
 /** Alta de distribuidor (§11). Simulada: no hay backend, solo validación. */
 export function FormularioDistribuidor() {
   const [listo, setListo] = useState(false);
+  // El Select ya es controlado, así que su valor vive en useState y se
+  // sincroniza con el formulario por setValue. Evita `watch()`, que el
+  // compilador de React no puede memoizar.
+  const [volumen, setVolumen] = useState("");
   const {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<DatosDistribuidor>({
     resolver: zodResolver(esquemaDistribuidor),
     mode: "onBlur",
   });
-
-  const volumen = watch("volumen");
 
   if (listo) {
     return (
@@ -152,9 +153,10 @@ export function FormularioDistribuidor() {
           <input type="hidden" {...register("volumen")} />
           <Select
             value={volumen}
-            onValueChange={(v) =>
-              setValue("volumen", v, { shouldValidate: true })
-            }
+            onValueChange={(v) => {
+              setVolumen(v);
+              setValue("volumen", v, { shouldValidate: true });
+            }}
           >
             <SelectTrigger id="dist-volumen" className="h-12 w-full">
               <SelectValue placeholder="Elige una opción" />

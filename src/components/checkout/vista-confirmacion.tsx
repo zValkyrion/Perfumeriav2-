@@ -7,10 +7,7 @@ import { Contenedor } from "@/components/comunes/layout";
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio } from "@/components/comunes/precio";
 import { MARCA } from "@/data/contenido";
-import { getLote } from "@/data/lotes";
-import { getProductoPorId, getPresentacion } from "@/data/productos";
-import { getSet } from "@/data/sets";
-import { ML_PAQUETE } from "@/lib/carrito";
+import { resumenCarrito } from "@/lib/carrito";
 import { formatoFechaLarga } from "@/lib/format";
 import { useTienda } from "@/store/tienda";
 
@@ -40,31 +37,10 @@ export function VistaConfirmacion() {
     );
   }
 
-  const lineas = pedido.items.map((item) => {
-    if (item.ml === ML_PAQUETE) {
-      const lote = getLote(item.productoId);
-      const set = getSet(item.productoId);
-      const paquete = lote ?? set;
-      return {
-        clave: item.productoId,
-        nombre: paquete?.nombre ?? "Paquete",
-        detalle: lote ? `${lote.piezas} piezas` : "Set de regalo",
-        imagen: paquete?.imagen ?? "/hero.webp",
-        cantidad: item.cantidad,
-        precio: (paquete?.precio ?? 0) * item.cantidad,
-      };
-    }
-    const producto = getProductoPorId(item.productoId);
-    const pres = producto ? getPresentacion(producto, item.ml) : null;
-    return {
-      clave: `${item.productoId}-${item.ml}`,
-      nombre: producto?.nombre ?? "Producto",
-      detalle: `${item.ml} ml`,
-      imagen: producto?.imagenes[0] ?? "/hero.webp",
-      cantidad: item.cantidad,
-      precio: (pres?.precio ?? 0) * item.cantidad,
-    };
-  });
+  // Se reutiliza el mismo motor del carrito para que el precio de cada línea
+  // lleve aplicado el descuento por volumen: si no, el comprobante mostraría
+  // precios de menudeo junto a un total ya rebajado y no cuadraría.
+  const { lineas } = resumenCarrito(pedido.items);
 
   return (
     <Contenedor className="py-10 lg:py-16">
@@ -109,16 +85,16 @@ export function VistaConfirmacion() {
             {lineas.map((l) => (
               <li key={l.clave} className="flex items-center gap-3 py-4">
                 <span className="bg-bg relative size-16 shrink-0 overflow-hidden rounded">
-                  <Imagen src={l.imagen} alt="" sizes="64px" quality={45} />
+                  <Imagen src={l.imagen} alt="" sizes="64px" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="font-display block truncate">{l.nombre}</span>
                   <span className="text-fg-subtle block text-xs">
-                    {l.detalle} · {l.cantidad}{" "}
-                    {l.cantidad === 1 ? "pieza" : "piezas"}
+                    {l.subtitulo} · {l.item.cantidad}{" "}
+                    {l.item.cantidad === 1 ? "pieza" : "piezas"}
                   </span>
                 </span>
-                <Precio valor={l.precio} className="shrink-0 text-sm" />
+                <Precio valor={l.subtotal} className="shrink-0 text-sm" />
               </li>
             ))}
           </ul>

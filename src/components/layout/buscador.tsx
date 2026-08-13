@@ -157,7 +157,6 @@ export function Buscador({ indice }: { indice: EntradaIndice[] }) {
                           src={r.imagen}
                           alt=""
                           sizes="56px"
-                          quality={45}
                         />
                       </span>
                       <span className="min-w-0 flex-1">

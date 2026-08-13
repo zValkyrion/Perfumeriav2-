@@ -23,7 +23,6 @@ export function Hero({ precioDesde }: { precioDesde: number }) {
           alt="Frasco de perfume AURA iluminado sobre fondo negro"
           sizes="100vw"
           priority
-          quality={80}
           className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />

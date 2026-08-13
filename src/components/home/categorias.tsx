@@ -46,7 +46,6 @@ export function Categorias({ conteos }: { conteos: Record<string, number> }) {
               src={t.imagen}
               alt=""
               sizes="(max-width: 1024px) 45vw, 16vw"
-              quality={60}
               className="transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />

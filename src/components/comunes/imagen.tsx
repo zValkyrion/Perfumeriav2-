@@ -2,6 +2,8 @@ import Image from "next/image";
 import { blurDe } from "@/data/blur";
 import { cn } from "@/lib/utils";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 /**
  * `next/image` con el placeholder blur generado en tiempo de build. Evita el
  * salto de layout y el cuadro gris mientras carga (§15: CLS ≈ 0).
@@ -22,10 +24,14 @@ export function Imagen({
   quality?: number;
 }) {
   const blur = blurDe(src);
+  const fullSrc =
+    src.startsWith("/") && basePath && !src.startsWith(basePath)
+      ? `${basePath}${src}`
+      : src;
 
   return (
     <Image
-      src={src}
+      src={fullSrc}
       alt={alt}
       fill
       sizes={sizes}

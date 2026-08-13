@@ -1,13 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Contenedor } from "@/components/comunes/layout";
 import { FIN_PROMO_3X2 } from "@/data/contenido";
 
-function restante(fin: number) {
-  const ms = fin - Date.now();
+/**
+ * El reloj es un store externo que emite una vez por segundo. En el servidor
+ * el snapshot es `null`, así que se pinta el hueco reservado y no hay
+ * desajuste de hidratación —ni un efecto que llame a setState.
+ */
+function suscribirReloj(alCambiar: () => void) {
+  const id = setInterval(alCambiar, 1000);
+  return () => clearInterval(id);
+}
+
+const ahoraCliente = () => Math.floor(Date.now() / 1000);
+const ahoraServidor = () => null;
+
+function restante(fin: number, ahora: number) {
+  const ms = fin - ahora * 1000;
   if (ms <= 0) return null;
   return {
     dias: Math.floor(ms / 86_400_000),
@@ -26,15 +39,12 @@ function restante(fin: number) {
  */
 export function Banner3x2() {
   const fin = new Date(FIN_PROMO_3X2).getTime();
-  const [tiempo, setTiempo] = useState<ReturnType<typeof restante>>(null);
-  const [montado, setMontado] = useState(false);
-
-  useEffect(() => {
-    setMontado(true);
-    setTiempo(restante(fin));
-    const id = setInterval(() => setTiempo(restante(fin)), 1000);
-    return () => clearInterval(id);
-  }, [fin]);
+  const ahora = useSyncExternalStore(
+    suscribirReloj,
+    ahoraCliente,
+    ahoraServidor,
+  );
+  const tiempo = ahora === null ? null : restante(fin, ahora);
 
   return (
     <section className="relative isolate overflow-hidden border-y border-[#C9A227]/25 bg-black">
@@ -61,7 +71,7 @@ export function Banner3x2() {
           </div>
 
           <div className="flex flex-col items-center gap-5 lg:items-end">
-            {montado && tiempo ? (
+            {tiempo ? (
               <div>
                 <p className="text-fg-subtle mb-2 text-center text-[11px] tracking-[0.16em] uppercase lg:text-right">
                   Termina en

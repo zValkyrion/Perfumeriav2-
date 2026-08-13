@@ -47,7 +47,7 @@ export function Galeria({
                   : "border-border-soft hover:border-border-strong",
               )}
             >
-              <Imagen src={src} alt="" sizes="80px" quality={40} />
+              <Imagen src={src} alt="" sizes="80px" />
             </button>
           </li>
         ))}
@@ -77,7 +77,6 @@ export function Galeria({
             alt={alt(activa)}
             sizes="(max-width: 1024px) 100vw, 45vw"
             priority
-            quality={82}
           />
         </div>
       </div>
@@ -92,7 +91,6 @@ export function Galeria({
                 alt={alt(i)}
                 sizes="100vw"
                 priority={i === 0}
-                quality={78}
               />
             </div>
           ))}

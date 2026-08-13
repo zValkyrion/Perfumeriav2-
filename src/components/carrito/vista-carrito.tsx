@@ -85,7 +85,6 @@ export function VistaCarrito() {
                     src={linea.imagen}
                     alt={linea.nombre}
                     sizes="112px"
-                    quality={55}
                   />
                 </Link>
 
@@ -188,7 +187,6 @@ export function VistaCarrito() {
                         src={linea.imagen}
                         alt={linea.nombre}
                         sizes="64px"
-                        quality={45}
                       />
                     </Link>
                     <div className="min-w-0 flex-1">

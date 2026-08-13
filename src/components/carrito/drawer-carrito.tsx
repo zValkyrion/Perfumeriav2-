@@ -70,7 +70,6 @@ export function DrawerCarrito({ sugeridos }: { sugeridos: Producto[] }) {
                         src={linea.imagen}
                         alt={linea.nombre}
                         sizes="80px"
-                        quality={50}
                       />
                     </Link>
 
@@ -150,7 +149,6 @@ export function DrawerCarrito({ sugeridos }: { sugeridos: Producto[] }) {
                               src={p.imagenes[0]!}
                               alt={p.nombre}
                               sizes="112px"
-                              quality={50}
                             />
                           </Link>
                           <p className="font-display mt-1.5 truncate text-[13px]">

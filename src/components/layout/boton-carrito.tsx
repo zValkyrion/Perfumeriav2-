@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import { useTienda } from "@/store/tienda";
 import { cn } from "@/lib/utils";
@@ -16,15 +15,6 @@ export function BotonCarrito({ className }: { className?: string }) {
   );
   const hidratado = useTienda((s) => s.hidratado);
   const abrirDrawer = useTienda((s) => s.abrirDrawer);
-  const [late, setLate] = useState(false);
-
-  // Pequeño latido al cambiar la cantidad (§6.7).
-  useEffect(() => {
-    if (!hidratado || piezas === 0) return;
-    setLate(true);
-    const t = setTimeout(() => setLate(false), 320);
-    return () => clearTimeout(t);
-  }, [piezas, hidratado]);
 
   const visible = hidratado ? piezas : 0;
 
@@ -42,14 +32,9 @@ export function BotonCarrito({ className }: { className?: string }) {
         className,
       )}
     >
-      <ShoppingBag
-        size={20}
-        aria-hidden
-        className={cn(
-          "transition-transform duration-300",
-          late && "scale-120 motion-reduce:scale-100",
-        )}
-      />
+      {/* Cambiar la `key` remonta el icono y reinicia la animación CSS: el
+          latido del §6.7 sin estado ni temporizadores que limpiar. */}
+      <ShoppingBag key={visible} size={20} aria-hidden className="animate-latido" />
       {visible > 0 ? (
         <span
           data-precio

@@ -844,7 +844,7 @@ function ResumenLineas({
         {resumen.lineas.map((l) => (
           <li key={l.clave} className="flex items-center gap-3 py-3">
             <span className="bg-bg relative size-14 shrink-0 overflow-hidden rounded">
-              <Imagen src={l.imagen} alt="" sizes="56px" quality={45} />
+              <Imagen src={l.imagen} alt="" sizes="56px" />
               <span
                 data-precio
                 className="bg-gold-gradient text-bg absolute -top-1 -right-1 grid size-5 place-items-center rounded-full text-[10px] font-semibold"

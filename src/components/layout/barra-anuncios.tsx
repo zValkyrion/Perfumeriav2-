@@ -1,22 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 import { ANUNCIOS } from "@/data/contenido";
 
 const CLAVE = "aura-anuncios-cerrado";
 
 /**
- * Marquee de anuncios (§7.1). Se cierra con ✕ y recuerda el cierre en
- * sessionStorage. El primer render coincide con el del servidor y el estado
- * guardado se aplica en el efecto, para no romper la hidratación.
+ * sessionStorage tratado como store externo.
+ *
+ * `useSyncExternalStore` da un snapshot distinto para servidor (siempre
+ * visible) y cliente (lo que diga sessionStorage), que es justo lo que hace
+ * falta para no romper la hidratación — y sin un efecto que llame a setState.
  */
-export function BarraAnuncios() {
-  const [cerrado, setCerrado] = useState(false);
+const escuchas = new Set<() => void>();
 
-  useEffect(() => {
-    if (sessionStorage.getItem(CLAVE) === "1") setCerrado(true);
-  }, []);
+function suscribir(alCambiar: () => void) {
+  escuchas.add(alCambiar);
+  return () => {
+    escuchas.delete(alCambiar);
+  };
+}
+
+function leerCliente() {
+  return sessionStorage.getItem(CLAVE) === "1";
+}
+
+function leerServidor() {
+  return false;
+}
+
+function cerrarAnuncios() {
+  sessionStorage.setItem(CLAVE, "1");
+  for (const avisar of escuchas) avisar();
+}
+
+/** Marquee de anuncios (§7.1). Se cierra con ✕ y recuerda el cierre. */
+export function BarraAnuncios() {
+  const cerrado = useSyncExternalStore(suscribir, leerCliente, leerServidor);
 
   if (cerrado) return null;
 
@@ -66,10 +87,7 @@ export function BarraAnuncios() {
 
       <button
         type="button"
-        onClick={() => {
-          setCerrado(true);
-          sessionStorage.setItem(CLAVE, "1");
-        }}
+        onClick={cerrarAnuncios}
         aria-label="Cerrar avisos"
         className="from-bg via-bg text-fg-subtle hover:text-fg absolute inset-y-0 right-0 grid w-11 place-items-center bg-gradient-to-l to-transparent pl-3"
       >

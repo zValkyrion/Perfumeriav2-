@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import {
@@ -208,10 +208,13 @@ function FiltroPrecio() {
   const { params, asignarVarios } = useFiltrosUrl();
   const min = Number(params.get("precioMin") ?? PRECIO_MIN);
   const max = Number(params.get("precioMax") ?? PRECIO_MAX);
-  const [rango, setRango] = useState<number[]>([min, max]);
 
-  // Si la URL cambia por otra vía (chip, limpiar), el slider se sincroniza.
-  useEffect(() => setRango([min, max]), [min, max]);
+  // Solo se guarda el valor mientras se arrastra; el resto del tiempo el
+  // slider se deriva de la URL. Así no hace falta un efecto que sincronice
+  // estado con props, y si el filtro se limpia desde un chip el slider
+  // vuelve solo a su sitio.
+  const [arrastre, setArrastre] = useState<number[] | null>(null);
+  const rango = arrastre ?? [min, max];
 
   return (
     <AccordionItem value="precio" className="border-border-soft">
@@ -225,8 +228,9 @@ function FiltroPrecio() {
           max={PRECIO_MAX}
           step={50}
           minStepsBetweenThumbs={1}
-          onValueChange={setRango}
+          onValueChange={setArrastre}
           onValueCommit={(v) => {
+            setArrastre(null);
             // Un solo cambio de URL para ambos extremos: dos `asignar`
             // seguidos se pisarían, porque el segundo lee la URL anterior.
             const tocado = v[0] !== PRECIO_MIN || v[1] !== PRECIO_MAX;

@@ -32,6 +32,7 @@ export function CompraProducto({ producto }: { producto: Producto }) {
 
   const agregar = useTienda((s) => s.agregar);
   const abrirDrawer = useTienda((s) => s.abrirDrawer);
+  const modoMayoreo = useTienda((s) => s.modoMayoreo);
   const favorito = useTienda((s) => s.favoritos.includes(producto.id));
   const alternarFavorito = useTienda((s) => s.alternarFavorito);
 
@@ -161,6 +162,15 @@ export function CompraProducto({ producto }: { producto: Producto }) {
             </>
           ) : null}
         </p>
+
+        {/* El interruptor del header también manda aquí (§7.2) */}
+        {modoMayoreo && elegible && escalon.descuento === 0 ? (
+          <p className="text-gold-light mt-2 text-[13px] font-medium">
+            Mayoreo 3+:{" "}
+            <Precio valor={precioUnitario(presentacion.precio, 3)} /> c/u ·
+            envío gratis
+          </p>
+        ) : null}
       </div>
 
       {/* 5 · Tabla de mayoreo interactiva */}

@@ -188,7 +188,6 @@ export default async function PedidoPage({
                         src={producto.imagenes[0]!}
                         alt={producto.nombre}
                         sizes="64px"
-                        quality={45}
                       />
                     </Link>
                     <div className="min-w-0 flex-1">
