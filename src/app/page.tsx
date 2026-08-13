@@ -7,6 +7,7 @@ import {
 } from "@/components/comunes/layout";
 import { Tilt } from "@/components/comunes/efectos";
 import { Banner3x2 } from "@/components/home/banner-3x2";
+import { BloqueFrasco } from "@/components/home/bloque-frasco";
 import { BloqueMayoreo } from "@/components/home/bloque-mayoreo";
 import { Categorias } from "@/components/home/categorias";
 import { Familias } from "@/components/home/familias";
@@ -89,6 +90,11 @@ export default function Home() {
 
       {/* 5 · Banner 3x2 */}
       <Banner3x2 />
+
+      {/* 5b · El frasco en 3D, la única pieza manipulable de la home */}
+      <Seccion>
+        <BloqueFrasco />
+      </Seccion>
 
       {/* 6 · Mayoreo */}
       <Seccion revelar>

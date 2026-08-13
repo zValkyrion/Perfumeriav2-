@@ -21,7 +21,9 @@ const inter = Inter({
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["300", "400", "600"],
+  // El 700 es lo que habilita la tipografía audaz de los titulares ancla; los
+  // pesos ligeros siguen ahí para el resto de títulos (§6.2).
+  weight: ["300", "400", "600", "700"],
   display: "swap",
 });
 

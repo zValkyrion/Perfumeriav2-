@@ -36,7 +36,7 @@ export function BloqueMayoreo() {
           <p className="eyebrow mb-3">Mayoreo</p>
           <TituloRevelado
             texto="Convierte el perfume en tu negocio."
-            className="font-display text-[26px] leading-tight tracking-tight text-balance lg:text-[40px]"
+            className="titular-medio"
           />
           <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
             Gana hasta{" "}

@@ -52,7 +52,7 @@ export default function MayoreoPage() {
           <div className="grid items-center gap-10 py-14 lg:grid-cols-2 lg:gap-16 lg:py-20">
             <div>
               <p className="eyebrow mb-3">Mayoreo EL REY DE LOS PERFUMES</p>
-              <h1 className="font-display text-[clamp(2.25rem,8vw,3rem)] leading-[1.02] tracking-tight text-balance lg:text-[3.5rem]">
+              <h1 className="titular-audaz">
                 Convierte el perfume en tu negocio.
               </h1>
               <p className="text-fg-muted mt-4 max-w-lg text-[15px] leading-relaxed lg:text-lg">
@@ -66,12 +66,8 @@ export default function MayoreoPage() {
                   <dt className="text-fg-subtle text-[11px] tracking-[0.14em] uppercase">
                     Descuento máximo
                   </dt>
-                  <dd
-                    data-precio
-                    className="font-display text-gold-gradient text-3xl"
-                  >
-                    40%
-                  </dd>
+                  {/* La cifra ancla del negocio, en tamaño de titular */}
+                  <dd className="cifra-audaz text-gold-gradient">40%</dd>
                 </div>
                 <div>
                   <dt className="text-fg-subtle text-[11px] tracking-[0.14em] uppercase">

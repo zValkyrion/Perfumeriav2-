@@ -315,6 +315,47 @@
     );
   }
 
+  /**
+   * Tipografía audaz.
+   *
+   * Titulares que funcionan como elemento gráfico, no como etiqueta: peso alto,
+   * cuerpo grande y fluido con `clamp()`, interletrado negativo e interlineado
+   * apretado. Cuanto mayor es el cuerpo, más sobra el espacio entre letras;
+   * por eso el tracking va en negativo y no en cero.
+   *
+   * Se reserva a los cuatro titulares ancla del sitio. Aplicada a todo dejaría
+   * de crear jerarquía y además haría ilegible el texto largo, que es el error
+   * clásico de esta tendencia.
+   */
+  .titular-audaz {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.75rem, 9vw, 5.5rem);
+    line-height: 0.94;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  /** Variante intermedia para titulares de sección con protagonismo. */
+  .titular-medio {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  /** Cifra enorme: precios ancla, porcentajes y métricas de mayoreo. */
+  .cifra-audaz {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Eyebrow de sección (§6.2) */
   .eyebrow {
     @apply text-[11px] font-medium tracking-[0.2em] text-gold-light uppercase;
@@ -444,7 +485,13 @@
   @supports (animation-timeline: scroll()) {
     @media (prefers-reduced-motion: no-preference) {
       .deriva-hero {
-        animation: deriva linear both;
+        /* En formato largo a propósito: el atajo `animation:` fija la duración
+           en 0s y una animación ligada al scroll necesita `auto` para tomar su
+           progreso del recorrido. Con 0s salta al final y no se mueve nunca. */
+        animation-name: deriva;
+        animation-duration: auto;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
         animation-timeline: scroll(root block);
         animation-range: 0 90vh;
       }
@@ -454,6 +501,61 @@
   @keyframes deriva {
     to {
       transform: translateY(6%) scale(1.06);
+    }
+  }
+
+  /**
+   * Foco por grupo: al señalar un elemento, sus hermanos se apagan.
+   *
+   * Concentra la atención sin mover nada de sitio, que es lo que se busca en
+   * una fila de opciones equivalentes. Solo con puntero fino: en táctil no hay
+   * hover y dejaría la fila atenuada sin motivo.
+   */
+  .foco-grupo > * {
+    transition:
+      opacity var(--dur-media) var(--ease-suave),
+      transform var(--dur-media) var(--ease-out-soft);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .foco-grupo:hover > * {
+      opacity: 0.32;
+    }
+    .foco-grupo > *:hover,
+    .foco-grupo > *:focus-visible {
+      opacity: 1;
+    }
+  }
+
+  /**
+   * Frasco 3D.
+   *
+   * Dos capas anidadas: la exterior gira sola con una animación CSS y la
+   * interior recoge el arrastre del usuario. Separarlas evita que el gesto
+   * manual y la animación se peleen por la misma propiedad `transform`.
+   */
+  .escena-3d {
+    perspective: 1100px;
+    perspective-origin: 50% 45%;
+  }
+  .giro-auto {
+    transform-style: preserve-3d;
+    animation: girar 26s linear infinite;
+  }
+  .giro-auto[data-quieto="true"] {
+    animation-play-state: paused;
+  }
+  .giro-manual {
+    transform-style: preserve-3d;
+    transform: rotateX(var(--gx, -8deg)) rotateY(var(--gy, 0deg));
+  }
+  .cara-3d {
+    position: absolute;
+    backface-visibility: hidden;
+  }
+
+  @keyframes girar {
+    to {
+      transform: rotateY(360deg);
     }
   }
 
@@ -475,9 +577,12 @@
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .capa-parallax {
-        animation: parallax linear both;
+        animation-name: parallax;
+        animation-duration: auto;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
         animation-timeline: view();
-        animation-range: entry 0% exit 100%;
+        animation-range: cover 0% cover 100%;
       }
     }
   }

@@ -37,7 +37,7 @@ export function Hero({ precioDesde }: { precioDesde: number }) {
 
           <h1
             style={{ animationDelay: "90ms" }}
-            className="font-display animate-subir text-[clamp(2.5rem,10vw,3.5rem)] leading-[0.98] tracking-tight text-balance lg:text-[clamp(3.5rem,5vw,4.5rem)]"
+            className="titular-audaz animate-subir"
           >
             El lujo tiene un aroma.
           </h1>

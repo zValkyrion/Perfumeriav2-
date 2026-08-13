@@ -149,6 +149,79 @@ export function ContadorEnVista({
 }
 
 /**
+ * Capa con desplazamiento parallax.
+ *
+ * Donde el navegador soporta animaciones ligadas al scroll, el trabajo lo hace
+ * la clase `.capa-parallax` en CSS y corre en el compositor, sin JavaScript.
+ * Donde no —hoy Safari y Firefox— entra este respaldo con un listener pasivo
+ * limitado por `requestAnimationFrame`. La clase se aplica siempre para que el
+ * HTML del servidor y el del cliente coincidan; es el efecto quien decide si
+ * hace falta mover nada a mano.
+ */
+export function CapaParallax({
+  desde,
+  hasta,
+  className,
+  style,
+}: {
+  /** Desplazamiento inicial en % de la altura del elemento. */
+  desde: number;
+  hasta: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const nodo = useRef<HTMLDivElement>(null);
+  const reducido = useReducedMotion();
+
+  useEffect(() => {
+    if (reducido) return;
+    if (CSS.supports("animation-timeline: view()")) return;
+
+    const el = nodo.current;
+    if (!el) return;
+
+    let pendiente = 0;
+
+    const pintar = () => {
+      pendiente = 0;
+      const r = el.getBoundingClientRect();
+      const alto = window.innerHeight;
+      // Progreso de 0 a 1 mientras el elemento cruza la pantalla completa.
+      const p = Math.min(1, Math.max(0, (alto - r.top) / (alto + r.height)));
+      el.style.transform = `translateY(${(desde + (hasta - desde) * p).toFixed(2)}%)`;
+    };
+
+    const alMover = () => {
+      if (!pendiente) pendiente = requestAnimationFrame(pintar);
+    };
+
+    pintar();
+    window.addEventListener("scroll", alMover, { passive: true });
+    window.addEventListener("resize", alMover);
+    return () => {
+      window.removeEventListener("scroll", alMover);
+      window.removeEventListener("resize", alMover);
+      if (pendiente) cancelAnimationFrame(pendiente);
+    };
+  }, [desde, hasta, reducido]);
+
+  return (
+    <div
+      ref={nodo}
+      aria-hidden
+      className={cn("capa-parallax pointer-events-none absolute inset-0", className)}
+      style={
+        {
+          ...style,
+          "--desde": `${desde}%`,
+          "--hasta": `${hasta}%`,
+        } as React.CSSProperties
+      }
+    />
+  );
+}
+
+/**
  * Inclinación 3D sutil siguiendo al puntero.
  *
  * Escribe variables CSS en el nodo desde el propio manejador, sin estado ni

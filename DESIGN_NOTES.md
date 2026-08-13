@@ -203,6 +203,53 @@ en un tic. El §1.3 prohíbe "animaciones de entrada en absolutamente todo".
   además los componentes de Framer Motion lo consultan para no montar siquiera
   la animación.
 
+### Tipografía audaz
+
+La tendencia consiste en titulares que funcionan como **elemento gráfico y no
+como etiqueta**: peso alto, cuerpo grande y el resto de la composición
+deliberadamente simple. Dos reglas técnicas la acompañan: cuanto mayor es el
+cuerpo, más sobra el espacio entre letras —de ahí el interletrado **negativo**—
+y más se cierra el interlineado (0.9–1.05). La recomendación unánime es no
+llevarla al texto largo, donde destruye la legibilidad.
+
+Aplicación en este sitio, con tres clases y no una:
+
+| Clase | Peso | Cuerpo | Tracking | Dónde |
+| --- | --- | --- | --- | --- |
+| `.titular-audaz` | 700 | `clamp(2.75rem, 9vw, 5.5rem)` | −0.035em | Hero, banner 3x2, hero de mayoreo |
+| `.titular-medio` | 600 | `clamp(2rem, 5vw, 3.25rem)` | −0.025em | Bloque mayoreo, bloque del frasco |
+| `.cifra-audaz` | 700 | `clamp(2.5rem, 7vw, 4.5rem)` | −0.04em | El 40% de mayoreo |
+
+Se añadió el peso 700 de Cormorant Garamond, que antes no se cargaba. Queda
+restringida a **cuatro titulares ancla**: extendida a todos los `h2` dejaría de
+crear jerarquía, que es justo lo que se busca con ella.
+
+### Elemento 3D interactivo
+
+`Frasco3D` construye un frasco con tres cajas de cinco caras en CSS 3D —no es
+una imagen ni WebGL—, así que no añade dependencias, pesa cero kilobytes extra
+y se ve nítido en cualquier densidad de pantalla.
+
+- **Dos capas anidadas**: la exterior gira sola con una animación CSS, la
+  interior recoge el arrastre. Separarlas evita que el gesto del usuario y la
+  animación se peleen por la misma propiedad `transform`.
+- El giro se escribe **directamente en el nodo**: un arrastre son decenas de
+  eventos por segundo y pasarlos por estado provocaría otros tantos renders.
+- Accesible por teclado (flechas, con `Shift` para pasos mayores), con
+  `role="img"` y etiqueta descriptiva. Con `prefers-reduced-motion` no rota
+  solo, pero se sigue pudiendo girar a mano.
+- La inclinación vertical está acotada a −32°/+20°: si se pudiera volcar del
+  todo se vería que las caras son planas.
+
+### Micro-interacciones de botón
+
+Viven en la **base** de `buttonVariants`, así que las heredan todas las
+variantes sin excepción: hundimiento (`translate-y` + `scale .97`) al pulsar,
+transición de color y borde, y un empujón del icono al pasar el cursor. Se usan
+utilidades de Tailwind y no la clase propia `.presionable` porque Tailwind
+compone `scale` y `translate` en una sola `transform`; un `transform` propio
+habría pisado el hundimiento que ya traía el componente.
+
 ### Defecto corregido en esta fase
 
 `.snap-row` incluía `display: flex`, que ganaba sobre el `lg:grid` de las

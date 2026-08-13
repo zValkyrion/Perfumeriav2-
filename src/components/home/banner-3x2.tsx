@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { CapaParallax } from "@/components/comunes/efectos";
 import { Contenedor } from "@/components/comunes/layout";
 import { FIN_PROMO_3X2 } from "@/data/contenido";
 
@@ -52,48 +53,39 @@ export function Banner3x2() {
           hacer scroll: el fondo casi no se mueve y el frente sí, que es lo
           que crea la sensación de profundidad. Sin neón ni degradado
           morado (§1.3): todo es el mismo dorado de marca. */}
-      <div
-        aria-hidden
-        className="capa-parallax pointer-events-none absolute inset-0 -z-10"
-        style={
-          {
-            "--desde": "4%",
-            "--hasta": "-4%",
-            backgroundImage:
-              "radial-gradient(ellipse 60% 100% at 50% 0%, rgba(201,162,39,0.22), transparent 70%)",
-          } as React.CSSProperties
-        }
+      <CapaParallax
+        desde={10}
+        hasta={-10}
+        className="-z-10"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 60% 100% at 50% 0%, rgba(201,162,39,0.22), transparent 70%)",
+        }}
       />
-      <div
-        aria-hidden
-        className="capa-parallax pointer-events-none absolute inset-0 -z-10"
-        style={
-          {
-            "--desde": "16%",
-            "--hasta": "-16%",
-            backgroundImage:
-              "radial-gradient(circle 340px at 18% 120%, rgba(232,199,102,0.16), transparent 70%)",
-          } as React.CSSProperties
-        }
+      <CapaParallax
+        desde={28}
+        hasta={-28}
+        className="-z-10"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle 340px at 18% 120%, rgba(232,199,102,0.16), transparent 70%)",
+        }}
       />
-      <div
-        aria-hidden
-        className="capa-parallax pointer-events-none absolute inset-0 -z-10"
-        style={
-          {
-            "--desde": "28%",
-            "--hasta": "-28%",
-            backgroundImage:
-              "radial-gradient(circle 260px at 84% -10%, rgba(201,162,39,0.20), transparent 70%)",
-          } as React.CSSProperties
-        }
+      <CapaParallax
+        desde={48}
+        hasta={-48}
+        className="-z-10"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle 260px at 84% -10%, rgba(201,162,39,0.20), transparent 70%)",
+        }}
       />
 
       <Contenedor>
         <div className="flex flex-col items-center gap-6 py-12 text-center lg:flex-row lg:justify-between lg:gap-10 lg:py-14 lg:text-left">
           <div className="max-w-xl">
             <p className="eyebrow mb-2">Promoción por tiempo limitado</p>
-            <h2 className="font-display text-[clamp(2rem,8vw,2.75rem)] leading-[1.02] tracking-tight lg:text-[3.25rem]">
+            <h2 className="titular-audaz">
               <span className="text-gold-gradient">3x2</span> en toda la tienda
             </h2>
             <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">

@@ -5,7 +5,22 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  [
+    "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap outline-none select-none",
+    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+    "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+    // ── Micro-interacción común a todos los botones ──────────────────────
+    // Se usan utilidades de Tailwind y no la clase `.presionable`: Tailwind
+    // compone `scale` y `translate` en una sola transform, mientras que un
+    // `transform` propio pisaría el hundimiento que ya trae el componente.
+    "transition-[transform,background-color,border-color,color,box-shadow,filter] duration-[160ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+    "active:not-aria-[haspopup]:translate-y-px active:scale-[0.97]",
+    // Los iconos acompañan al botón con un empujón hacia delante.
+    "[&_svg]:transition-transform [&_svg]:duration-200 [&_svg]:ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+    "hover:[&_svg]:translate-x-px",
+  ],
   {
     variants: {
       variant: {
@@ -20,12 +35,11 @@ const buttonVariants = cva(
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
         /* --- Variantes AURA (§6.5) --- */
-        gold: "bg-gold-gradient text-bg btn-brillo presionable font-medium hover:brightness-110 active:brightness-95",
+        gold: "bg-gold-gradient text-bg btn-brillo font-medium hover:brightness-110 active:brightness-95",
         goldOutline:
-          "border-gold text-gold-light hover:bg-gold-muted presionable border bg-transparent",
+          "border-gold text-gold-light hover:bg-gold-muted hover:border-gold-light border bg-transparent",
         goldGhost: "text-fg-muted hover:text-gold-light hover:underline",
-        whatsapp:
-          "bg-[#25D366] presionable font-medium text-[#04310f] hover:brightness-110",
+        whatsapp: "bg-[#25D366] font-medium text-[#04310f] hover:brightness-110",
       },
       size: {
         default:
