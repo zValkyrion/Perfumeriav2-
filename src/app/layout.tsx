@@ -25,18 +25,18 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://auraperfumes.mx"),
+  metadataBase: new URL("https://elreydelosperfumes.mx"),
   title: {
-    default: "AURA Perfumes — Perfumería fina al mayoreo y menudeo",
-    template: "%s | AURA Perfumes",
+    default: "EL REY DE LOS PERFUMES — Perfumería fina al mayoreo y menudeo",
+    template: "%s | EL REY DE LOS PERFUMES",
   },
   description:
     "Perfumes 100% originales al mejor precio de México. Menudeo y mayoreo desde 3 piezas, envío gratis y hasta 6 meses sin intereses.",
   openGraph: {
     type: "website",
     locale: "es_MX",
-    siteName: "AURA Perfumes",
-    title: "AURA Perfumes — El lujo tiene un aroma.",
+    siteName: "EL REY DE LOS PERFUMES",
+    title: "EL REY DE LOS PERFUMES — El lujo tiene un aroma.",
     description:
       "Perfumes 100% originales al mejor precio de México. Menudeo y mayoreo desde 3 piezas.",
   },

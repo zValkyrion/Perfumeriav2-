@@ -786,7 +786,7 @@ export const SEMILLAS: readonly Semilla[] = [
     fondo: ["Oud", "Labdanum", "Cuero"],
     corta: "Tabaco y miel sobre oud, potencia máxima",
     larga:
-      "Kairo Noche es el más contundente del catálogo entero de AURA. Canela y nuez moscada abren dulces y densas, el tabaco y la miel del corazón lo vuelven casi licoroso, y el oud del fondo se queda durante todo el día siguiente.\n\nLa casa lo etiqueta como fragancia de invierno y noche, y con razón: en un clima cálido resulta abrumador. Un toque en el cuello y otro en la muñeca es la dosis correcta; más de eso es un error que solo se comete una vez.",
+      "Kairo Noche es el más contundente del catálogo entero de EL REY DE LOS PERFUMES. Canela y nuez moscada abren dulces y densas, el tabaco y la miel del corazón lo vuelven casi licoroso, y el oud del fondo se queda durante todo el día siguiente.\n\nLa casa lo etiqueta como fragancia de invierno y noche, y con razón: en un clima cálido resulta abrumador. Un toque en el cuello y otro en la muñeca es la dosis correcta; más de eso es un error que solo se comete una vez.",
     base: 3190,
     rebaja: 0.2,
     mls: [50, 100],
@@ -811,7 +811,7 @@ export const SEMILLAS: readonly Semilla[] = [
     fondo: ["Cedro", "Almizcle", "Musgo de roble"],
     corta: "La raíz haitiana en su lectura más limpia",
     larga:
-      "Vetiver Haití es el patrón de la casa y la referencia contra la que se miden todos sus demás lanzamientos. Pomelo y bergamota abren nítidos, y a los cinco minutos la raíz ya está instalada: terrosa, verde, con ese amargor característico.\n\nLa salvia del corazón le añade un giro aromático y el musgo de roble del fondo lo emparenta con los fougères clásicos. Funciona los doce meses del año y es probablemente el perfume más versátil de todo el catálogo de AURA.",
+      "Vetiver Haití es el patrón de la casa y la referencia contra la que se miden todos sus demás lanzamientos. Pomelo y bergamota abren nítidos, y a los cinco minutos la raíz ya está instalada: terrosa, verde, con ese amargor característico.\n\nLa salvia del corazón le añade un giro aromático y el musgo de roble del fondo lo emparenta con los fougères clásicos. Funciona los doce meses del año y es probablemente el perfume más versátil de todo el catálogo de EL REY DE LOS PERFUMES.",
     base: 1890,
     rebaja: 0.15,
     mls: [50, 100],

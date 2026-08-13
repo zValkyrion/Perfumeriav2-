@@ -4,7 +4,7 @@ import { MARCA } from "@/data/contenido";
 
 export const metadata: Metadata = {
   title: "Términos y condiciones",
-  description: "Términos y condiciones de uso de la tienda en línea de AURA Perfumes.",
+  description: "Términos y condiciones de uso de la tienda en línea de EL REY DE LOS PERFUMES.",
   robots: { index: true, follow: true },
 };
 
@@ -69,7 +69,7 @@ export default function TerminosPage() {
 
       <Bloque titulo="6. Propiedad intelectual">
         <p>
-          La marca AURA, sus textos, su identidad visual y las descripciones de
+          La marca EL REY DE LOS PERFUMES, sus textos, su identidad visual y las descripciones de
           producto de este sitio son originales y pertenecen a sus autores. Las
           casas de perfumería mencionadas son ficticias.
         </p>

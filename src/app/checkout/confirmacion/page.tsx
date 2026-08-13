@@ -3,7 +3,7 @@ import { VistaConfirmacion } from "@/components/checkout/vista-confirmacion";
 
 export const metadata: Metadata = {
   title: "Pedido confirmado",
-  description: "Gracias por tu compra en AURA Perfumes.",
+  description: "Gracias por tu compra en EL REY DE LOS PERFUMES.",
   robots: { index: false, follow: false },
 };
 

@@ -22,7 +22,7 @@ export function BloqueMayoreo() {
         <div className="bg-bg relative order-1 aspect-4/3 lg:order-none lg:aspect-auto lg:min-h-[440px]">
           <Imagen
             src="/lotes/lote-24-negocio.webp"
-            alt="Lote de mayoreo AURA con veinticuatro perfumes"
+            alt="Lote de mayoreo EL REY DE LOS PERFUMES con veinticuatro perfumes"
             sizes="(max-width: 1024px) 100vw, 50vw"
           />
         </div>

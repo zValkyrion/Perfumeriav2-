@@ -2,8 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /**
- * Wordmark de AURA: serif con el punto dorado (§7.2). Es texto real, no una
- * imagen — escala perfecto, pesa cero y lo lee un lector de pantalla.
+ * Wordmark de EL REY DE LOS PERFUMES: serif con el punto dorado (§7.2).
  */
 export function Logo({
   className,
@@ -15,12 +14,12 @@ export function Logo({
   const marca = (
     <span
       className={cn(
-        "font-display inline-flex items-baseline text-2xl leading-none font-normal tracking-[0.22em] sm:text-[26px]",
+        "font-display inline-flex items-baseline text-lg font-medium tracking-[0.1em] sm:text-xl md:text-2xl leading-none",
         className,
       )}
     >
-      AURA
-      <span aria-hidden className="text-gold ml-[3px] text-[1.4em] leading-none">
+      EL REY DE LOS PERFUMES
+      <span aria-hidden className="text-gold ml-[2px] text-[1.2em] leading-none">
         .
       </span>
     </span>
@@ -29,7 +28,7 @@ export function Logo({
   if (!href) return marca;
 
   return (
-    <Link href={href} aria-label="AURA Perfumes — ir al inicio" className="shrink-0">
+    <Link href={href} aria-label="EL REY DE LOS PERFUMES — ir al inicio" className="shrink-0">
       {marca}
     </Link>
   );

@@ -41,7 +41,7 @@ const SEMILLAS_SET: readonly SemillaSet[] = [
     extras: [
       "Vetiver Haití 100 ml",
       "Bruma Cítrica 200 ml",
-      "Caja de regalo AURA con listón",
+      "Caja de regalo EL REY DE LOS PERFUMES con listón",
       "Tarjeta de dedicatoria escrita a mano",
     ],
     descuento: 0.18,
@@ -55,7 +55,7 @@ const SEMILLAS_SET: readonly SemillaSet[] = [
     extras: [
       "Tuberosa Blanca 50 ml",
       "Bruma de Frambuesa 200 ml",
-      "Caja de regalo AURA con listón",
+      "Caja de regalo EL REY DE LOS PERFUMES con listón",
       "Tarjeta de dedicatoria escrita a mano",
     ],
     descuento: 0.18,
@@ -98,7 +98,7 @@ const SEMILLAS_SET: readonly SemillaSet[] = [
       "Sal y Higuera 50 ml",
       "Monoi 100 ml",
       "Costa Amalfi 100 ml",
-      "Neceser impermeable AURA",
+      "Neceser impermeable EL REY DE LOS PERFUMES",
     ],
     descuento: 0.24,
   },

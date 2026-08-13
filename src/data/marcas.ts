@@ -1,6 +1,6 @@
 import type { Marca } from "@/types";
 
-/** Las 12 casas de AURA. Marcas ficticias, originales (§17). */
+/** Las 12 casas de EL REY DE LOS PERFUMES. Marcas ficticias, originales (§17). */
 export const MARCAS: readonly Marca[] = [
   {
     slug: "maison-lumiere",

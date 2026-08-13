@@ -35,7 +35,7 @@ const SEMILLAS_LOTE: readonly SemillaLote[] = [
     incluye: [
       "6 perfumes de 6 modelos distintos",
       "Envío gratis a todo México",
-      "Bolsas de regalo AURA incluidas",
+      "Bolsas de regalo EL REY DE LOS PERFUMES incluidas",
       "Lista de precios sugeridos de venta",
     ],
   },
@@ -58,7 +58,7 @@ const SEMILLAS_LOTE: readonly SemillaLote[] = [
     incluye: [
       "12 perfumes · 6 modelos, 2 de cada uno",
       "Envío gratis y seguro de paquetería",
-      "Bolsas de regalo y etiquetas AURA",
+      "Bolsas de regalo y etiquetas EL REY DE LOS PERFUMES",
       "Guía de venta para redes sociales",
     ],
   },
@@ -134,7 +134,7 @@ const SEMILLAS_LOTE: readonly SemillaLote[] = [
     incluye: [
       "12 perfumes masculinos · 6 modelos",
       "Envío gratis a todo México",
-      "Bolsas de regalo AURA incluidas",
+      "Bolsas de regalo EL REY DE LOS PERFUMES incluidas",
       "Lista de precios sugeridos de venta",
     ],
   },
@@ -157,7 +157,7 @@ const SEMILLAS_LOTE: readonly SemillaLote[] = [
     incluye: [
       "12 perfumes femeninos · 6 modelos",
       "Envío gratis a todo México",
-      "Bolsas de regalo AURA incluidas",
+      "Bolsas de regalo EL REY DE LOS PERFUMES incluidas",
       "Guía de venta para redes sociales",
     ],
   },

@@ -20,7 +20,7 @@ export function Hero({ precioDesde }: { precioDesde: number }) {
       <div className="absolute inset-0 -z-10">
         <Imagen
           src="/hero.webp"
-          alt="Frasco de perfume AURA iluminado sobre fondo negro"
+          alt="Frasco de perfume EL REY DE LOS PERFUMES iluminado sobre fondo negro"
           sizes="100vw"
           priority
           className="object-cover object-center"

@@ -5,7 +5,7 @@ import { PRODUCTOS } from "@/data/productos";
 export const metadata: Metadata = {
   title: "Catálogo completo",
   description:
-    "Los 52 perfumes de AURA: diseñador, árabes, nicho e inspirados. Filtra por familia olfativa, precio, marca y ocasión. Mayoreo desde 3 piezas.",
+    "Los 52 perfumes de EL REY DE LOS PERFUMES: diseñador, árabes, nicho e inspirados. Filtra por familia olfativa, precio, marca y ocasión. Mayoreo desde 3 piezas.",
 };
 
 export default function CatalogoPage() {

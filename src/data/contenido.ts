@@ -1,12 +1,12 @@
 /** Datos de marca, copy institucional y contenido editorial de la tienda. */
 
 export const MARCA = {
-  nombre: "AURA Perfumes",
+  nombre: "EL REY DE LOS PERFUMES",
   tagline: "Perfumería fina para quien emprende y para quien se consiente.",
   whatsapp: "477 123 4567",
   whatsappLink:
     "https://wa.me/524771234567?text=Hola%2C%20vengo%20de%20la%20tienda%20en%20l%C3%ADnea%20y%20tengo%20una%20duda",
-  correo: "hola@auraperfumes.mx",
+  correo: "contacto@elreydelosperfumes.mx",
   instagram: "https://instagram.com",
   facebook: "https://facebook.com",
   tiktok: "https://tiktok.com",

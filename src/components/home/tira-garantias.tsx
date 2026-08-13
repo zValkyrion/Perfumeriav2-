@@ -1,5 +1,13 @@
+"use client";
+
 import { CreditCard, PackageCheck, RotateCcw, Truck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import Autoplay from "embla-carousel-autoplay";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
 import { Contenedor } from "@/components/comunes/layout";
 import { GARANTIAS } from "@/data/contenido";
 
@@ -10,19 +18,17 @@ const ICONOS: Record<string, LucideIcon> = {
   devolucion: RotateCcw,
 };
 
-/** Tira de garantías (§8.2). Scroll horizontal en móvil, cuatro columnas arriba. */
+/** Tira de garantías (§8.2). Carrusel automático en móvil, cuatro columnas en escritorio. */
 export function TiraGarantias() {
   return (
-    <div className="border-border-soft border-y">
+    <div className="border-border-soft border-y overflow-hidden">
       <Contenedor>
-        <ul className="snap-row -mx-4 gap-6 px-4 py-5 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-8 lg:px-0 lg:py-6">
+        {/* En escritorio: 4 columnas fijas */}
+        <ul className="hidden lg:grid lg:grid-cols-4 lg:gap-8 lg:py-6">
           {GARANTIAS.map((g) => {
             const Icono = ICONOS[g.icono] ?? PackageCheck;
             return (
-              <li
-                key={g.titulo}
-                className="flex w-[72%] shrink-0 items-start gap-3 sm:w-[46%] lg:w-auto"
-              >
+              <li key={g.titulo} className="flex items-start gap-3">
                 <Icono
                   size={20}
                   aria-hidden
@@ -39,6 +45,50 @@ export function TiraGarantias() {
             );
           })}
         </ul>
+
+        {/* En móvil: carrusel con movimiento automático (Autoplay) */}
+        <div className="py-4 lg:hidden">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            plugins={[
+              Autoplay({
+                delay: 2500,
+                stopOnInteraction: false,
+              }),
+            ]}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-3">
+              {GARANTIAS.map((g) => {
+                const Icono = ICONOS[g.icono] ?? PackageCheck;
+                return (
+                  <CarouselItem
+                    key={g.titulo}
+                    className="basis-[82%] sm:basis-[50%] pl-3"
+                  >
+                    <div className="border-border-soft/60 bg-surface/50 flex items-start gap-3 rounded-lg border p-3">
+                      <Icono
+                        size={20}
+                        aria-hidden
+                        className="text-gold mt-0.5 shrink-0"
+                        strokeWidth={1.6}
+                      />
+                      <div>
+                        <p className="text-[13px] font-medium">{g.titulo}</p>
+                        <p className="text-fg-subtle mt-0.5 text-xs leading-snug">
+                          {g.texto}
+                        </p>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                );
+              })}
+            </CarouselContent>
+          </Carousel>
+        </div>
       </Contenedor>
     </div>
   );

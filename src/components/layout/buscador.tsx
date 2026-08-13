@@ -69,7 +69,7 @@ export function Buscador({ indice }: { indice: EntradaIndice[] }) {
           className="bg-bg/95 border-border-soft h-auto max-h-[85dvh] overflow-y-auto backdrop-blur-xl"
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>Buscar en AURA</SheetTitle>
+            <SheetTitle>Buscar en EL REY DE LOS PERFUMES</SheetTitle>
           </SheetHeader>
 
           <div className="mx-auto w-full max-w-3xl px-4 pt-2 pb-6 lg:px-8">

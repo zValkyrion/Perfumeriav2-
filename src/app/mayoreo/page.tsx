@@ -51,7 +51,7 @@ export default function MayoreoPage() {
         <Contenedor>
           <div className="grid items-center gap-10 py-14 lg:grid-cols-2 lg:gap-16 lg:py-20">
             <div>
-              <p className="eyebrow mb-3">Mayoreo AURA</p>
+              <p className="eyebrow mb-3">Mayoreo EL REY DE LOS PERFUMES</p>
               <h1 className="font-display text-[clamp(2.25rem,8vw,3rem)] leading-[1.02] tracking-tight text-balance lg:text-[3.5rem]">
                 Convierte el perfume en tu negocio.
               </h1>
@@ -240,7 +240,7 @@ export default function MayoreoPage() {
         <Contenedor>
           <TituloSeccion
             eyebrow="Por qué con nosotros"
-            titulo="Seis razones para comprar mayoreo en AURA"
+            titulo="Seis razones para comprar mayoreo en EL REY DE LOS PERFUMES"
           />
           <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
             {RAZONES_MAYOREO.map((r, i) => (
@@ -286,7 +286,7 @@ export default function MayoreoPage() {
         <Contenedor>
           <TituloSeccion
             eyebrow="Quienes ya venden"
-            titulo="Revendedores de AURA"
+            titulo="Revendedores de EL REY DE LOS PERFUMES"
           />
           <ul className="snap-row -mx-4 gap-4 px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-4 lg:px-0">
             {TESTIMONIOS_MAYOREO.map((t) => (

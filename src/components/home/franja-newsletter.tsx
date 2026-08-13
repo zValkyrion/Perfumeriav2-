@@ -16,7 +16,7 @@ export function FranjaNewsletter() {
 
       <Contenedor>
         <div className="mx-auto max-w-xl py-14 text-center lg:py-20">
-          <p className="eyebrow mb-3">Boletín AURA</p>
+          <p className="eyebrow mb-3">Boletín EL REY DE LOS PERFUMES</p>
           <h2 className="font-display text-[26px] leading-tight tracking-tight text-balance lg:text-[36px]">
             10% de descuento en tu primera compra.
           </h2>

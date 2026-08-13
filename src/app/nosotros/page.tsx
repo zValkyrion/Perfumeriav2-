@@ -24,7 +24,7 @@ export default function NosotrosPage() {
           que te explicara la diferencia entre un Eau de Toilette y un Parfum.
         </p>
         <p>
-          AURA se construyó para ocupar ese hueco. Trabajamos con distribuidores
+          EL REY DE LOS PERFUMES se construyó para ocupar ese hueco. Trabajamos con distribuidores
           autorizados, publicamos el precio real en la ficha —no un “consulta
           disponibilidad”— y damos el mismo trato a quien compra un frasco que a
           quien compra cincuenta.
