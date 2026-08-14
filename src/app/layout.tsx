@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { BotonWhatsApp } from "@/components/layout/whatsapp";
 import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
+import { SelectorTemas } from "@/components/comunes/selector-temas";
 import { TransicionRuta } from "@/components/comunes/transicion-ruta";
 import { MAS_VENDIDOS, indiceCompacto } from "@/data/productos";
 import "./globals.css";
@@ -63,6 +64,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`dark ${inter.variable} ${cormorant.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        {/* TEMPORAL (pruebas de tema): aplica la colorimetría guardada antes
+            del primer pintado para que no se vea el cambio de color. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('aura-tema');if(t&&t!=='oro'){document.documentElement.dataset.tema=t}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="bg-bg text-fg flex min-h-full flex-col">
         <a
           href="#contenido"
@@ -82,6 +92,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <BottomNav />
         <BotonWhatsApp />
         <DrawerCarrito sugeridos={sugeridos} />
+        {/* TEMPORAL: selector de colorimetrías. Borra esta línea, el
+            componente y el bloque "TEMAS DE PRUEBA" de globals.css. */}
+        <SelectorTemas />
 
         <Toaster
           position="bottom-center"

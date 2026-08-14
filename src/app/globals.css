@@ -194,40 +194,161 @@
   --color-card: var(--card);
 }
 
-/* La tienda vive siempre en oscuro: :root y .dark comparten valores. */
+/**
+ * El contrato de variables de shadcn se DERIVA de los tokens de AURA.
+ *
+ * Así un tema solo necesita redefinir la docena de `--color-*` de su paleta y
+ * todo lo demás —tarjetas, popovers, bordes, anillos de foco— se recalcula
+ * solo. Antes había que repetir treinta hexadecimales por tema.
+ */
 :root,
 .dark {
-  --background: #0a0a0b;
-  --foreground: #f5f5f4;
-  --card: #131316;
-  --card-foreground: #f5f5f4;
-  --popover: #131316;
-  --popover-foreground: #f5f5f4;
-  --primary: #c9a227;
-  --primary-foreground: #0a0a0b;
-  --secondary: #1c1c21;
-  --secondary-foreground: #f5f5f4;
-  --muted: #1c1c21;
-  --muted-foreground: #a1a1aa;
-  --accent: #1c1c21;
-  --accent-foreground: #f5f5f4;
-  --destructive: #e5484d;
-  --border: #2a2a31;
-  --input: #2a2a31;
-  --ring: #c9a227;
-  --chart-1: #c9a227;
-  --chart-2: #e8c766;
-  --chart-3: #8c6f14;
-  --chart-4: #a1a1aa;
-  --chart-5: #3fb27f;
-  --sidebar: #131316;
-  --sidebar-foreground: #f5f5f4;
-  --sidebar-primary: #c9a227;
-  --sidebar-primary-foreground: #0a0a0b;
-  --sidebar-accent: #1c1c21;
-  --sidebar-accent-foreground: #f5f5f4;
-  --sidebar-border: #2a2a31;
-  --sidebar-ring: #c9a227;
+  --grad-oro: linear-gradient(
+    135deg,
+    var(--color-gold-deep) 0%,
+    var(--color-gold-light) 45%,
+    var(--color-gold) 100%
+  );
+
+  --background: var(--color-bg);
+  --foreground: var(--color-fg);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-fg);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-fg);
+  --primary: var(--color-gold);
+  --primary-foreground: var(--color-bg);
+  --secondary: var(--color-surface-2);
+  --secondary-foreground: var(--color-fg);
+  --muted: var(--color-surface-2);
+  --muted-foreground: var(--color-fg-muted);
+  --accent: var(--color-surface-2);
+  --accent-foreground: var(--color-fg);
+  --destructive: var(--color-danger);
+  --border: var(--color-border-strong);
+  --input: var(--color-border-strong);
+  --ring: var(--color-gold);
+  --chart-1: var(--color-gold);
+  --chart-2: var(--color-gold-light);
+  --chart-3: var(--color-gold-deep);
+  --chart-4: var(--color-fg-muted);
+  --chart-5: var(--color-success);
+  --sidebar: var(--color-surface);
+  --sidebar-foreground: var(--color-fg);
+  --sidebar-primary: var(--color-gold);
+  --sidebar-primary-foreground: var(--color-bg);
+  --sidebar-accent: var(--color-surface-2);
+  --sidebar-accent-foreground: var(--color-fg);
+  --sidebar-border: var(--color-border-strong);
+  --sidebar-ring: var(--color-gold);
+}
+
+/* ============================================================
+   TEMAS DE PRUEBA — bloque temporal para comparar colorimetrías.
+   Para quitarlos: borra este bloque, el componente SelectorTemas
+   y su línea en app/layout.tsx. Nada más depende de ellos.
+
+   Cada tema solo redefine su paleta; el resto se deriva del bloque
+   de arriba. Se usa `:root[data-tema]` (especificidad 0,2,0) para
+   ganarle siempre al `:root` que genera Tailwind desde @theme.
+   ============================================================ */
+
+/* Champán — más cálido y cremoso que el oro puro */
+:root[data-tema="champan"] {
+  --color-bg: #100c07;
+  --color-surface: #191309;
+  --color-surface-2: #241b0e;
+  --color-border-strong: #372a17;
+  --color-border-soft: #261d10;
+  --color-gold: #d9bd7f;
+  --color-gold-light: #f2e0b8;
+  --color-gold-deep: #8a6f3c;
+  --color-gold-muted: rgb(217 189 127 / 0.14);
+  --color-fg: #f7f1e6;
+  --color-fg-muted: #b6a891;
+  --color-fg-subtle: #94876f;
+}
+
+/* Platino — frío, mineral, muy minimalista */
+:root[data-tema="platino"] {
+  --color-bg: #0b0c0d;
+  --color-surface: #141618;
+  --color-surface-2: #1d2023;
+  --color-border-strong: #2e3236;
+  --color-border-soft: #212428;
+  --color-gold: #b9c2cc;
+  --color-gold-light: #e6ecf2;
+  --color-gold-deep: #6d757e;
+  --color-gold-muted: rgb(185 194 204 / 0.12);
+  --color-fg: #f2f4f6;
+  --color-fg-muted: #a5adb5;
+  --color-fg-subtle: #868e96;
+}
+
+/* Cobre — cálido y terroso, muy "árabe" */
+:root[data-tema="cobre"] {
+  --color-bg: #0e0907;
+  --color-surface: #18100c;
+  --color-surface-2: #231711;
+  --color-border-strong: #38241a;
+  --color-border-soft: #261911;
+  --color-gold: #c87a41;
+  --color-gold-light: #eaa571;
+  --color-gold-deep: #7d451f;
+  --color-gold-muted: rgb(200 122 65 / 0.14);
+  --color-fg: #f7eee7;
+  --color-fg-muted: #bda192;
+  --color-fg-subtle: #9b8375;
+}
+
+/* Esmeralda — verde botella con acento dorado */
+:root[data-tema="esmeralda"] {
+  --color-bg: #060b09;
+  --color-surface: #0c1512;
+  --color-surface-2: #12201b;
+  --color-border-strong: #1e3229;
+  --color-border-soft: #15241e;
+  --color-gold: #c9a227;
+  --color-gold-light: #e8c766;
+  --color-gold-deep: #7d6412;
+  --color-gold-muted: rgb(201 162 39 / 0.14);
+  --color-fg: #eef5f1;
+  --color-fg-muted: #9db3a8;
+  --color-fg-subtle: #7f9489;
+}
+
+/* Borgoña — vino profundo con oro rosado */
+:root[data-tema="borgona"] {
+  --color-bg: #0c0507;
+  --color-surface: #170a0e;
+  --color-surface-2: #221016;
+  --color-border-strong: #3a1b25;
+  --color-border-soft: #271219;
+  --color-gold: #d99a7c;
+  --color-gold-light: #f2c4ab;
+  --color-gold-deep: #8a4f3a;
+  --color-gold-muted: rgb(217 154 124 / 0.14);
+  --color-fg: #f8ecec;
+  --color-fg-muted: #bb9c9f;
+  --color-fg-subtle: #9b8084;
+}
+
+/* Marfil — el experimento en claro */
+:root[data-tema="marfil"] {
+  --color-bg: #f6f3ec;
+  --color-surface: #fffdf8;
+  --color-surface-2: #ece7db;
+  --color-border-strong: #d5cdbb;
+  --color-border-soft: #e4ddcf;
+  --color-gold: #b08d1e;
+  /* En claro, "gold-light" es el color de TEXTO sobre fondo claro, así que
+     aquí tiene que ser el tono oscuro; si no, el texto dorado desaparece. */
+  --color-gold-light: #6b5410;
+  --color-gold-deep: #8a6d16;
+  --color-gold-muted: rgb(176 141 30 / 0.16);
+  --color-fg: #1b1710;
+  --color-fg-muted: #5c5346;
+  --color-fg-subtle: #6f6657;
 }
 
 @layer base {
@@ -281,23 +402,14 @@
 }
 
 @layer utilities {
-  /* Degradado dorado oficial (§6.1) */
+  /* Degradado de acento (§6.1). Se deriva de los tokens, no de hexadecimales
+     sueltos, para que al cambiar de tema el degradado cambie con él. */
   .bg-gold-gradient {
-    background-image: linear-gradient(
-      135deg,
-      #8c6f14 0%,
-      #e8c766 45%,
-      #c9a227 100%
-    );
+    background-image: var(--grad-oro);
   }
 
   .text-gold-gradient {
-    background-image: linear-gradient(
-      135deg,
-      #8c6f14 0%,
-      #e8c766 45%,
-      #c9a227 100%
-    );
+    background-image: var(--grad-oro);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -381,7 +493,7 @@
   @media (hover: hover) {
     .lift:hover {
       transform: translateY(-3px);
-      border-color: rgb(201 162 39 / 0.35);
+      border-color: color-mix(in srgb, var(--color-gold) 35%, transparent);
       background-color: var(--color-surface-2);
     }
   }
@@ -437,7 +549,12 @@
     height: 1px;
     width: 0;
     translate: -50% 0;
-    background-image: linear-gradient(90deg, transparent, #e8c766, transparent);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-gold-light),
+      transparent
+    );
     transition: width var(--dur-media) var(--ease-out-soft);
   }
   .subrayado-nav:hover::after,
@@ -458,7 +575,7 @@
     background-image: linear-gradient(
       90deg,
       transparent,
-      rgb(201 162 39 / 0.09),
+      color-mix(in srgb, var(--color-gold) 9%, transparent),
       transparent
     );
     animation: var(--animate-brillo);
