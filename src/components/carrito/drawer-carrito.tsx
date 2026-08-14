@@ -233,7 +233,7 @@ export function DrawerCarrito({ sugeridos }: { sugeridos: Producto[] }) {
               </div>
 
               <p className="text-fg-subtle text-center text-[11px] leading-relaxed">
-                100% originales · Devoluciones sin costo 30 días ·
+                Calidad 1:1 · Devoluciones sin costo 30 días ·
                 {resumen.envioGratis ? " Envío gratis" : " Envío gratis desde 3 piezas"}
               </p>
             </div>

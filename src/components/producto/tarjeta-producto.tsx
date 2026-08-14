@@ -151,9 +151,19 @@ export function TarjetaProducto({
       </div>
 
       <div className="flex flex-1 flex-col p-3 lg:p-3.5">
-        <p className="text-fg-subtle text-[10px] tracking-[0.16em] uppercase">
-          {marca}
-        </p>
+        {/* El sello 1:1 va en todas las tarjetas: es la propuesta de valor de
+            la tienda, no un distintivo de unos pocos productos. */}
+        <div className="flex items-center gap-2">
+          <p className="text-fg-subtle truncate text-[10px] tracking-[0.16em] uppercase">
+            {marca}
+          </p>
+          <span
+            title="Fragancia y frasco idénticos al original"
+            className="border-gold/50 text-gold-light ml-auto shrink-0 rounded-full border px-1.5 py-px text-[10px] font-semibold"
+          >
+            1:1
+          </span>
+        </div>
 
         <h3 className="font-display mt-1 line-clamp-2 text-[15px] leading-snug lg:text-base">
           <Link href={`/producto/${producto.slug}`} className="hover:text-gold-light">

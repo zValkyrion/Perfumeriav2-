@@ -16,7 +16,7 @@ import { numero } from "@/lib/format";
  */
 export function Hero({ precioDesde }: { precioDesde: number }) {
   return (
-    <section className="grain relative isolate flex h-[85dvh] min-h-[560px] items-end overflow-hidden lg:h-[92dvh]">
+    <section className="grain zona-oscura relative isolate flex h-[85dvh] min-h-[560px] items-end overflow-hidden lg:h-[92dvh]">
       <div className="deriva-hero absolute inset-0 -z-10">
         <Imagen
           src="/hero.webp"
@@ -46,8 +46,8 @@ export function Hero({ precioDesde }: { precioDesde: number }) {
             style={{ animationDelay: "180ms" }}
             className="text-fg-muted animate-subir mt-4 max-w-md text-[15px] leading-relaxed lg:text-lg"
           >
-            Perfumes 100% originales al mejor precio de México. Menudeo y
-            mayoreo desde 3 piezas.
+            Calidad 1:1: la misma fragancia y el mismo frasco, a una fracción
+            del precio. Menudeo y mayoreo desde 3 piezas.
           </p>
 
           {/* Señal de precio + prueba social, antes del primer scroll (§1.2.2) */}
@@ -87,7 +87,7 @@ export function Hero({ precioDesde }: { precioDesde: number }) {
           >
             <li className="inline-flex items-center gap-1.5">
               <ShieldCheck size={14} className="text-gold" aria-hidden />
-              100% originales
+              Calidad 1:1
             </li>
             <li className="inline-flex items-center gap-1.5">
               <Truck size={14} className="text-gold" aria-hidden />

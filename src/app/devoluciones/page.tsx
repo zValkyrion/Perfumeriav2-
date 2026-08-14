@@ -4,7 +4,7 @@ import { Bloque, PaginaInfo } from "@/components/comunes/pagina-info";
 export const metadata: Metadata = {
   title: "Cambios y devoluciones",
   description:
-    "30 días para devolver, nosotros pagamos la guía. Y si no es original, te devolvemos el 100% de tu dinero.",
+    "30 días para devolver y nosotros pagamos la guía. Si no cumple el 1:1 que prometemos, te devolvemos el 100% de tu dinero.",
 };
 
 export default function DevolucionesPage() {
@@ -40,12 +40,16 @@ export default function DevolucionesPage() {
         </p>
       </Bloque>
 
-      <Bloque titulo="Garantía de originalidad">
+      <Bloque titulo="Garantía 1:1">
         <p>
-          Si al recibir tu pedido tienes cualquier duda sobre la autenticidad, te
-          devolvemos el 100% de tu dinero. Sin peritaje, sin discusión y sin
-          costo de envío para ti. Es la promesa sobre la que está construida la
-          tienda.
+          Vendemos equivalencias exactas: misma pirámide olfativa, misma
+          evolución en la piel y el mismo frasco. Si al probarlo consideras que
+          no cumple ese 1:1, te devolvemos el 100% de tu dinero. Sin peritaje,
+          sin discusión y sin costo de envío para ti.
+        </p>
+        <p>
+          Es la promesa sobre la que está construida la tienda, y por eso la
+          ponemos por escrito en vez de dejarla en una frase de mostrador.
         </p>
       </Bloque>
 

@@ -103,6 +103,7 @@ function flacon({ id, forma, fam, cx, baseY, escala = 1 }: OpcionesFlacon) {
 
   return `
   <g transform="translate(${cx} ${baseY}) scale(${escala})">
+    <ellipse cx="0" cy="14" rx="${w * 0.72}" ry="${w * 0.13}" fill="url(#sombra-${id})"/>
     <ellipse cx="0" cy="8" rx="${w * 0.95}" ry="${w * 0.17}" fill="url(#pool-${id})"/>
 
     <g opacity="0.26" transform="scale(1 -0.42)">
@@ -147,11 +148,17 @@ function defs(id: string, fam: Paleta, semilla: string) {
       <stop offset="100%" stop-color="#08080A"/>
     </radialGradient>
     <radialGradient id="halo-${id}" cx="50%" cy="34%" r="46%">
-      <stop offset="0%" stop-color="${fam.a}" stop-opacity="0.42"/>
+      <stop offset="0%" stop-color="${fam.a}" stop-opacity="0.30"/>
       <stop offset="100%" stop-color="${fam.a}" stop-opacity="0"/>
     </radialGradient>
+    <!-- Sombra neutra: se lee como apoyo tanto sobre fondo claro como oscuro,
+         a diferencia de un charco de color que solo funciona en oscuro. -->
+    <radialGradient id="sombra-${id}" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
     <radialGradient id="pool-${id}" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="${fam.a}" stop-opacity="0.55"/>
+      <stop offset="0%" stop-color="${fam.a}" stop-opacity="0.42"/>
       <stop offset="100%" stop-color="${fam.a}" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="vidrio-${id}" x1="0" y1="0" x2="1" y2="1" gradientTransform="rotate(${giro} 0.5 0.5)">
@@ -204,7 +211,12 @@ interface SujetoProducto {
 }
 
 /** Cuatro encuadres distintos, para que el hover y la galería aporten algo. */
-function svgProducto(producto: SujetoProducto, variante: number) {
+function svgProducto(
+  producto: SujetoProducto,
+  variante: number,
+  /** Solo el hero lleva fondo: es una imagen a pantalla completa. */
+  conFondo = false,
+) {
   const fam = FAMILIAS[producto.familia];
   const forma = FORMAS[producto.concentracion];
   const id = hash(producto.slug + variante).toString(36);
@@ -248,15 +260,17 @@ function svgProducto(producto: SujetoProducto, variante: number) {
       ${flacon({ id, forma, fam, cx: 330, baseY: 995, escala: base * 0.86 })}`;
   }
 
+  // Fondo transparente a propósito: el color lo pone el contenedor, así que la
+  // misma imagen sirve para el tema oscuro y para el claro sin regenerar nada.
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
     ${defs(id, fam, semilla)}
     ${defs(`${id}b`, fam, `${semilla}b`)}
   </defs>
-  <rect width="${W}" height="${H}" fill="url(#fondo-${id})"/>
+  ${conFondo ? `<rect width="${W}" height="${H}" fill="url(#fondo-${id})"/>` : ""}
   <ellipse cx="450" cy="430" rx="430" ry="430" fill="url(#halo-${id})"/>
   ${cuerpo}
-  <rect width="${W}" height="${H}" fill="url(#vineta-${id})"/>
+  ${conFondo ? `<rect width="${W}" height="${H}" fill="url(#vineta-${id})"/>` : ""}
 </svg>`;
 }
 
@@ -311,10 +325,8 @@ function svgConjunto({
     ${defs(id, fam, slug)}
     ${defsPorFrasco}
   </defs>
-  <rect width="${w}" height="${h}" fill="url(#fondo-${id})"/>
   <ellipse cx="${w / 2}" cy="${h * 0.42}" rx="${w * 0.52}" ry="${h * 0.5}" fill="url(#halo-${id})"/>
   ${frascos}
-  <rect width="${w}" height="${h}" fill="url(#vineta-${id})"/>
 </svg>`;
 }
 
@@ -413,6 +425,7 @@ async function main() {
   const hero = svgProducto(
     { slug: "hero-aura", familia: "Amaderado", concentracion: "Parfum" },
     1,
+    true,
   );
   await escribir(hero, join(publico, "hero.webp"), 1400);
   blurs["/hero.webp"] = await blurDataURL(hero);

@@ -48,7 +48,7 @@ export function Banner3x2() {
   const tiempo = ahora === null ? null : restante(fin, ahora);
 
   return (
-    <section className="relative isolate overflow-hidden border-y border-[#C9A227]/25 bg-black">
+    <section className="zona-oscura border-gold/25 relative isolate overflow-hidden border-y bg-black">
       {/* Tres capas de destello que se desplazan a distinta velocidad al
           hacer scroll: el fondo casi no se mueve y el frente sí, que es lo
           que crea la sensación de profundidad. Sin neón ni degradado

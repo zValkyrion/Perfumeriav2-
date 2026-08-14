@@ -2,7 +2,7 @@
 
 export const MARCA = {
   nombre: "EL REY DE LOS PERFUMES",
-  tagline: "Perfumería fina para quien emprende y para quien se consiente.",
+  tagline: "La misma fragancia. El mismo frasco. Sin pagar la etiqueta.",
   whatsapp: "477 123 4567",
   whatsappLink:
     "https://wa.me/524771234567?text=Hola%2C%20vengo%20de%20la%20tienda%20en%20l%C3%ADnea%20y%20tengo%20una%20duda",
@@ -22,17 +22,25 @@ export const MARCA = {
 export const FIN_PROMO_3X2 = "2026-08-31T23:59:59-06:00";
 
 export const ANUNCIOS = [
-  "✨ 100% ORIGINALES",
+  "✨ CALIDAD 1:1 — IDÉNTICO AL ORIGINAL",
   "🚚 ENVÍO GRATIS DESDE 3 PIEZAS",
   "💳 6 MESES SIN INTERESES",
   "🔥 3x2 EN TODA LA TIENDA",
 ] as const;
 
+/**
+ * Promesas de marca.
+ *
+ * El mensaje es la equivalencia 1:1, no la autenticidad: presumimos de que la
+ * fragancia y el frasco son idénticos, sin afirmar en ningún punto que sea el
+ * producto de la casa original. Prometer lo segundo sería engañoso y además
+ * expondría a la tienda a una reclamación.
+ */
 export const GARANTIAS = [
   {
     icono: "sello",
-    titulo: "100% originales",
-    texto: "Si no es original, te devolvemos el 100% de tu dinero.",
+    titulo: "Calidad 1:1",
+    texto: "Misma fragancia y mismo frasco. Nadie nota la diferencia.",
   },
   {
     icono: "camion",
@@ -46,16 +54,16 @@ export const GARANTIAS = [
   },
   {
     icono: "devolucion",
-    titulo: "Devoluciones sin costo",
-    texto: "Tienes 30 días para cambiarlo. Nosotros pagamos la guía.",
+    titulo: "Si no da el 1:1, te devolvemos",
+    texto: "30 días para probarlo. Nosotros pagamos la guía.",
   },
 ] as const;
 
 export const PASOS_ENVIO = [
   {
-    titulo: "Empaque sellado",
+    titulo: "Sale sellado y con su caja",
     texto:
-      "Cada frasco sale en su celofán de fábrica, protegido con burbuja y dentro de caja rígida. Nada viaja suelto.",
+      "Cada frasco viaja celofanado, con burbuja y dentro de caja rígida. Listo para regalar o para poner en tu mostrador.",
   },
   {
     titulo: "Guía de rastreo el mismo día",
@@ -71,8 +79,8 @@ export const PASOS_ENVIO = [
 
 export const FAQ_HOME = [
   {
-    p: "¿Los perfumes son originales?",
-    r: "Sí, todos. Trabajamos directo con distribuidores autorizados y cada pieza llega sellada de fábrica con su celofán original. Si al recibirlo tienes cualquier duda sobre la autenticidad, te devolvemos el 100% de tu dinero sin discutir y nosotros pagamos la guía de retorno.",
+    p: "¿Qué significa que sean 1:1?",
+    r: "Que replican al detalle la fragancia y el frasco de la casa en la que se inspiran: la misma pirámide olfativa, la misma evolución en la piel y una botella idéntica en forma, peso y acabado. No son el producto de esa casa ni lo vendemos como tal: es una equivalencia 1:1 a una fracción del precio, sin pagar la etiqueta ni la publicidad.",
   },
   {
     p: "¿Cuánto tarda mi pedido en llegar?",
@@ -93,6 +101,14 @@ export const FAQ_HOME = [
   {
     p: "¿Desde qué monto hay meses sin intereses?",
     r: "Desde $ 1,200.00 MXN tienes 3 meses; desde $ 2,500.00 MXN, 6 meses; desde $ 5,000.00 MXN, 9 meses; y desde $ 8,000.00 MXN, 12 meses. El plazo se elige en el paso de pago y se muestra la mensualidad exacta antes de confirmar.",
+  },
+  {
+    p: "¿De verdad huele igual? ¿Y cuánto dura?",
+    r: "Igual de salida, igual en el corazón e igual en el fondo: es la misma construcción olfativa, no un parecido lejano. En duración trabajamos con concentraciones altas, así que un Eau de Parfum nuestro rinde de 6 a 9 horas y un Parfum pasa de 10. Si al probarlo sientes que no da el 1:1 que prometemos, lo devuelves dentro de 30 días y pagamos nosotros la guía.",
+  },
+  {
+    p: "¿El frasco también es idéntico?",
+    r: "Sí: misma forma, mismo peso de vidrio, mismo tipo de tapa y el mismo atomizador de rocío fino. Es la parte que más miran quienes revenden, porque un frasco ligero o un atomizador que gotea delatan el producto al instante. Puedes girar uno en tres dimensiones en nuestra página de inicio.",
   },
   {
     p: "¿Qué pasa si el perfume no me gusta?",

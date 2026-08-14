@@ -250,6 +250,45 @@ utilidades de Tailwind y no la clase propia `.presionable` porque Tailwind
 compone `scale` y `translate` en una sola `transform`; un `transform` propio
 habría pisado el hundimiento que ya traía el componente.
 
+### Posicionamiento 1:1 y marcas de terceros
+
+El catálogo son equivalencias 1:1, así que el copy pasó de "100% originales" y
+"distribuidores autorizados" —incompatible con ese modelo y expuesto a
+reclamación— a presumir de la equivalencia **sin afirmar que sea el producto de
+la casa original**: "misma fragancia, mismo frasco, sin pagar la etiqueta".
+
+Se añadió un sello `1:1` en cada tarjeta y un bloque explicativo en la ficha,
+más dos preguntas nuevas en el FAQ ("¿de verdad huele igual?", "¿el frasco
+también es idéntico?").
+
+**No se usan nombres de marcas reales para identificar los productos.** Emplear
+una marca registrada ajena para vender una réplica es infracción de marca, con
+o sin la etiqueta 1:1, y el brief ya lo excluía (§17). La vía equivalente y
+legítima es la que ya está implementada: búsqueda por notas, familia olfativa y
+ocasión, que es como el cliente encuentra "el que huele como aquel".
+
+### Tema claro (marfil)
+
+Para que funcione en ambos temas hicieron falta dos cambios de fondo:
+
+1. **Arte de producto con fondo transparente.** Las 230 imágenes se generaban
+   con fondo negro y viñeta; sobre un tema claro eran recuadros negros. Ahora el
+   frasco flota con una sombra neutra y el color lo pone el contenedor, así que
+   la misma imagen sirve para los siete temas. Solo el hero conserva fondo
+   propio, por ser imagen a pantalla completa.
+2. **Clase `.zona-oscura`.** El hero y el banner 3x2 llevan fondo oscuro propio;
+   en un tema claro su texto habría quedado oscuro sobre negro. La clase
+   redefine los tokens de texto y de acento para todo el subárbol, de modo que
+   los componentes de dentro siguen usando `text-fg` sin enterarse.
+
+Contraste medido en marfil: nombre y precio de tarjeta 17.6:1, marca 5.6:1,
+titular del hero 19.3:1. Todos por encima del 4.5:1 del §15.
+
+> Nota de medición: al cambiar de tema en vivo, `.lift` transiciona el color de
+> fondo 260 ms. En un panel sin compositor esa transición se congela y
+> `getComputedStyle` devuelve el color de partida — parece un fallo del tema y
+> no lo es. Para medir, anular `transition` antes de leer.
+
 ### Defecto corregido en esta fase
 
 `.snap-row` incluía `display: flex`, que ganaba sobre el `lg:grid` de las

@@ -71,6 +71,20 @@ export function CompraProducto({ producto }: { producto: Producto }) {
 
   return (
     <div>
+      {/* Sello 1:1: lo primero que resuelve la duda de "¿huele igual?" */}
+      <div className="border-gold/35 bg-gold-muted mb-6 flex items-start gap-3 rounded-md border px-3.5 py-3">
+        <span className="border-gold/60 text-gold-light grid size-9 shrink-0 place-items-center rounded-full border text-[13px] font-semibold">
+          1:1
+        </span>
+        <p className="text-fg-muted text-[13px] leading-snug">
+          <strong className="text-gold-light font-medium">
+            Idéntico al original.
+          </strong>{" "}
+          Misma pirámide olfativa, misma evolución en la piel y el mismo frasco
+          en forma, peso y acabado.
+        </p>
+      </div>
+
       {/* 3 · Presentaciones */}
       {producto.presentaciones.length > 1 ? (
         <fieldset className="mb-6">
@@ -305,7 +319,7 @@ export function CompraProducto({ producto }: { producto: Producto }) {
         </li>
         <li className="flex items-center gap-1.5">
           <PackageCheck size={14} className="text-gold shrink-0" aria-hidden />
-          100% original
+          Calidad 1:1
         </li>
         <li className="flex items-center gap-1.5">
           <RotateCcw size={14} className="text-gold shrink-0" aria-hidden />

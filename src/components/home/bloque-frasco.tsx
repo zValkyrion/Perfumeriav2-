@@ -63,7 +63,7 @@ export function BloqueFrasco() {
               <Link href="/catalogo">Ver el catálogo</Link>
             </Button>
             <Button asChild variant="goldOutline" size="touch">
-              <Link href="/nosotros">Cómo garantizamos el original</Link>
+              <Link href="/nosotros">Qué significa 1:1</Link>
             </Button>
           </div>
         </div>

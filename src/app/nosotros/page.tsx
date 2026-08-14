@@ -13,21 +13,21 @@ export default function NosotrosPage() {
   return (
     <PaginaInfo
       eyebrow="Quiénes somos"
-      titulo="Perfumería fina para quien emprende y para quien se consiente."
-      entrada={`Somos un distribuidor mexicano de perfumes de diseñador, árabes e inspirados. Empezamos vendiendo por WhatsApp desde una sala en León y hoy despachamos a más de ${numero(MARCA.clientes)} clientes y revendedores en todo el país.`}
+      titulo="La misma fragancia. El mismo frasco. Sin pagar la etiqueta."
+      entrada={`Hacemos perfumería 1:1: equivalencias exactas de las grandes fragancias, en olor y en frasco, a una fracción del precio. Empezamos vendiendo por WhatsApp desde una sala en León y hoy despachamos a más de ${numero(MARCA.clientes)} clientes y revendedores en todo el país.`}
     >
       <Bloque titulo="Por qué existimos">
         <p>
-          Cuando arrancamos, comprar perfume original en México significaba
-          pagar precio de tienda departamental o arriesgarse en un tianguis. En
-          medio no había nada: ni catálogo serio, ni precios claros, ni alguien
-          que te explicara la diferencia entre un Eau de Toilette y un Parfum.
+          Un perfume de gama alta cuesta lo que cuesta por tres motivos: la
+          fórmula, el frasco y la etiqueta. De esos tres, el último es el más
+          caro y el único que no se huele. Ahí es donde entramos.
         </p>
         <p>
-          EL REY DE LOS PERFUMES se construyó para ocupar ese hueco. Trabajamos con distribuidores
-          autorizados, publicamos el precio real en la ficha —no un “consulta
-          disponibilidad”— y damos el mismo trato a quien compra un frasco que a
-          quien compra cincuenta.
+          EL REY DE LOS PERFUMES nació para que no tengas que elegir entre pagar
+          precio de tienda departamental o arriesgarte en un tianguis con algo
+          que se evapora en veinte minutos. Publicamos el precio real en la
+          ficha —no un “consulta disponibilidad”— y damos el mismo trato a quien
+          compra un frasco que a quien compra cincuenta.
         </p>
       </Bloque>
 
@@ -44,16 +44,23 @@ export default function NosotrosPage() {
         </p>
       </Bloque>
 
-      <Bloque titulo="Cómo garantizamos la originalidad">
+      <Bloque titulo="Qué quiere decir 1:1, exactamente">
         <p>
-          Cada pieza llega sellada de fábrica, con su celofán original. Compramos
-          por lote a distribuidores autorizados y conservamos la trazabilidad de
-          cada uno.
+          Quiere decir que replicamos la construcción olfativa completa, no un
+          parecido de salida: las mismas notas arriba, el mismo corazón y el
+          mismo fondo, con la misma evolución en la piel a lo largo del día. Y
+          que el frasco es idéntico en forma, peso de vidrio, tapa y
+          atomizador.
         </p>
         <p>
-          Si al recibir tu pedido tienes cualquier duda sobre la autenticidad, te
-          devolvemos el 100% de tu dinero y nosotros pagamos la guía de retorno.
-          Sin peritajes ni discusiones.
+          Lo que no somos: no somos la casa original ni vendemos su producto.
+          Somos su equivalencia exacta a una fracción del precio. Lo decimos
+          claro porque un cliente que sabe lo que compra vuelve, y uno que se
+          siente engañado no.
+        </p>
+        <p>
+          Si al probarlo consideras que no cumple ese 1:1, tienes 30 días para
+          devolverlo. Nosotros pagamos la guía de retorno, sin discusiones.
         </p>
       </Bloque>
 
