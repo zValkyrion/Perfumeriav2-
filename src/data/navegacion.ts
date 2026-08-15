@@ -1,5 +1,5 @@
 import { MARCAS } from "./marcas";
-import { CATEGORIAS } from "./taxonomia";
+import { CATEGORIAS, FAMILIAS } from "./taxonomia";
 import { LOTES } from "./lotes";
 
 export interface EnlaceNav {
@@ -38,12 +38,14 @@ const PERFUMES: GrupoNav[] = [
   },
   {
     titulo: "Por familia",
+    // Cada familia tiene página propia desde la Fase 4 de SEO; antes esto
+    // apuntaba a `/catalogo?familia=X`, que no es una URL indexable.
     enlaces: [
-      { label: "Amaderado", href: "/catalogo?familia=Amaderado" },
-      { label: "Oriental", href: "/catalogo?familia=Oriental" },
-      { label: "Floral", href: "/catalogo?familia=Floral" },
-      { label: "Cítrico", href: "/catalogo?familia=C%C3%ADtrico" },
-      { label: "Gourmand", href: "/catalogo?familia=Gourmand" },
+      ...FAMILIAS.filter((f) =>
+        ["amaderado", "oriental", "floral", "citrico", "gourmand"].includes(
+          f.slug,
+        ),
+      ).map((f) => ({ label: f.nombre, href: `/catalogo/${f.slug}` })),
       { label: "Ver todo el catálogo", href: "/catalogo" },
     ],
   },

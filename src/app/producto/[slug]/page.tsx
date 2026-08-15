@@ -34,6 +34,7 @@ import {
   relacionados,
 } from "@/data/productos";
 import { resenasDe } from "@/data/resenas";
+import { FAMILIA_POR_NOMBRE } from "@/data/taxonomia";
 import { numero } from "@/lib/format";
 import { migasDePan, producto as productoJsonLd } from "@/lib/jsonld";
 import { descripcionProducto, tituloProducto } from "@/lib/seo";
@@ -177,7 +178,14 @@ export default async function ProductoPage({
                   ({numero(producto.totalReseñas)} reseñas)
                 </span>
               </a>
-              <ChipFamilia familia={producto.familia} />
+              {/* El chip de familia lleva a su página: es el enlace que conecta
+                  la ficha con la landing de cola larga de su familia. */}
+              <Link
+                href={`/catalogo/${FAMILIA_POR_NOMBRE.get(producto.familia)?.slug ?? ""}`}
+                aria-label={`Ver todos los perfumes de la familia ${producto.familia.toLowerCase()}`}
+              >
+                <ChipFamilia familia={producto.familia} />
+              </Link>
             </div>
 
             <p className="text-fg-muted mt-4 text-[15px] leading-relaxed">
@@ -356,7 +364,7 @@ export default async function ProductoPage({
           <TituloSeccion
             eyebrow={`Más ${producto.familia.toLowerCase()}`}
             titulo="También te puede interesar"
-            enlace={`/catalogo?familia=${encodeURIComponent(producto.familia)}`}
+            enlace={`/catalogo/${FAMILIA_POR_NOMBRE.get(producto.familia)?.slug ?? ""}`}
           />
           <CarruselProductos productos={similares} />
         </Contenedor>

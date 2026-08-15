@@ -1,5 +1,4 @@
 import type { Lote, Marca, Producto } from "@/types";
-import type { Categoria } from "@/data/taxonomia";
 import { precioRedondo as redondo, precio as fmt } from "./format";
 
 /**
@@ -128,11 +127,20 @@ export function descripcionMarca(marca: Marca, cantidad: number): string {
 /* ── Categoría ────────────────────────────────────────────────────────── */
 
 /**
- * `cat.titulo` ya viene redactado como consulta real ("Perfumes para hombre"),
- * así que solo se le agrega el precio de entrada: en este mercado el precio es
- * lo que decide el clic entre diez resultados que dicen lo mismo.
+ * Sirve igual para categorías y para familias olfativas: las dos son facetas
+ * del catálogo y las dos traen el título ya redactado como consulta real
+ * ("Perfumes para hombre", "Perfumes amaderados").
  */
-export function tituloCategoria(categoria: Categoria, desde: number): string {
+export interface Faceta {
+  titulo: string;
+  descripcion: string;
+}
+
+/**
+ * Al título solo se le agrega el precio de entrada: en este mercado el precio
+ * es lo que decide el clic entre diez resultados que dicen lo mismo.
+ */
+export function tituloCategoria(categoria: Faceta, desde: number): string {
   // Sin centavos: en un título los decimales solo gastan caracteres.
   return `${categoria.titulo} desde ${redondo(desde)}`;
 }
@@ -144,7 +152,7 @@ export function tituloCategoria(categoria: Categoria, desde: number): string {
  * corte de Google, con la frase partida a media palabra.
  */
 export function descripcionCategoria(
-  categoria: Categoria,
+  categoria: Faceta,
   cantidad: number,
   desde: number,
 ): string {

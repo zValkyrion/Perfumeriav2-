@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { LOTES } from "@/data/lotes";
 import { MARCAS } from "@/data/marcas";
 import { PRODUCTOS } from "@/data/productos";
-import { CATEGORIAS } from "@/data/taxonomia";
+import { CATEGORIAS, FAMILIAS } from "@/data/taxonomia";
 import { urlAbsoluta } from "@/lib/sitio";
 
 // `sitemap.ts` es un Route Handler, y en modo `export` los handlers exigen esta
@@ -72,6 +72,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     ...CATEGORIAS.map((categoria) => ({
       url: urlAbsoluta(`/catalogo/${categoria.slug}`),
+      lastModified: MODIFICADO,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+
+    // Las familias olfativas son las landings de cola larga: "perfumes
+    // amaderados", "perfumes gourmand". Menos volumen que las categorías, pero
+    // mucha menos competencia.
+    ...FAMILIAS.map((familia) => ({
+      url: urlAbsoluta(`/catalogo/${familia.slug}`),
       lastModified: MODIFICADO,
       changeFrequency: "weekly" as const,
       priority: 0.7,
