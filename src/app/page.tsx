@@ -64,6 +64,13 @@ export default function Home() {
       {/* El FAQPage de estas preguntas vive en /faq, que es su página. La home
           muestra el acordeón pero no vuelve a marcarlo. */}
 
+      {/* El hero es una imagen sin texto, así que la home no tenía h1: ni el
+          rastreador ni un lector de pantalla sabían de qué trata la página.
+          Este encabezado no se ve, pero es el único de nivel 1 del documento. */}
+      <h1 className="sr-only">
+        Perfumes al mayoreo y menudeo en México — EL REY DE LOS PERFUMES
+      </h1>
+
       {/* 1 · Portada con la promesa y el precio de entrada */}
       <Hero precioDesde={desde} />
 

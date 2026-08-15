@@ -24,7 +24,7 @@ export function BannerPaquete() {
       <div className="grid items-center gap-7 lg:grid-cols-[1fr_1.05fr] lg:gap-12">
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border-soft bg-surface shadow-2xl">
           <Imagen
-            src="/paca-100-piezas.jpg"
+            src="/paca-100-piezas.webp"
             alt="Paca 100 Piezas - Con lo más vendido - Duplica tu inversión"
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority

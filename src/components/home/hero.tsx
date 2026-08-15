@@ -29,7 +29,7 @@ export function Hero({ precioDesde }: { precioDesde?: number } = {}) {
           title="Aprovechar 3x2 en Perfumes - Ir al Catálogo"
         >
           <Imagen
-            src="/hero-promo-3x2.png"
+            src="/hero-promo-3x2.webp"
             alt="3x2 en Toda la Tienda en Perfumes - El Rey de los Perfumes - Llévate 3 artículos y paga solo 2"
             sizes="100vw"
             priority

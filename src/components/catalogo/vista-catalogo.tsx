@@ -70,48 +70,44 @@ export function VistaCatalogo({
   vacioPersonalizado?: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className="py-10 text-center">Cargando...</div>}>
-      <VistaCatalogoContenido
-        base={base}
+    <Contenedor className="py-6 lg:py-10">
+      <EncabezadoCatalogo
         titulo={titulo}
         eyebrow={eyebrow}
         descripcion={descripcion}
         migas={migas}
-        initialParams={params}
-        vacioPersonalizado={vacioPersonalizado}
       />
-    </Suspense>
+
+      <Suspense fallback={<div className="py-10 text-center">Cargando...</div>}>
+        <RejillaCatalogo
+          base={base}
+          initialParams={params}
+          vacioPersonalizado={vacioPersonalizado}
+        />
+      </Suspense>
+    </Contenedor>
   );
 }
 
-function VistaCatalogoContenido({
-  base,
+/**
+ * Migas y encabezado. Va aparte y **fuera** de cualquier Suspense porque no
+ * depende de `useSearchParams`: cuando estaba dentro, la exportación estática
+ * servía "Cargando..." en lugar del h1 y del texto, y 22 rutas de catálogo,
+ * marca y familia llegaban al rastreador sin encabezado ni contenido.
+ */
+export function EncabezadoCatalogo({
   titulo,
   eyebrow,
   descripcion,
   migas = [],
-  initialParams,
-  vacioPersonalizado,
 }: {
-  base: Producto[];
   titulo: string;
   eyebrow?: string;
   descripcion?: string;
   migas?: Miga[];
-  initialParams?: ParamsBusqueda;
-  vacioPersonalizado?: React.ReactNode;
 }) {
-  const searchParams = useSearchParams();
-  const params = initialParams ?? (searchParams ? searchParamsToRecord(searchParams) : {});
-
-  const filtros = leerFiltros(params);
-  const filtrados = ordenar(aplicarFiltros(base, filtros), filtros.orden);
-  const visibles = filtrados.slice(0, filtros.mostrar);
-  const chips = chipsActivos(filtros);
-  const activos = contarActivos(filtros);
-
   return (
-    <Contenedor className="py-6 lg:py-10">
+    <>
       <Breadcrumb className="mb-5">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -147,7 +143,35 @@ function VistaCatalogoContenido({
           </p>
         ) : null}
       </header>
+    </>
+  );
+}
 
+/**
+ * Solo la parte que depende de la URL: filtros, orden y rejilla. Se exporta
+ * para que una página con su propia lógica de parámetros —/promociones— pueda
+ * componer encabezado estático y rejilla dinámica por separado.
+ */
+export function RejillaCatalogo({
+  base,
+  initialParams,
+  vacioPersonalizado,
+}: {
+  base: Producto[];
+  initialParams?: ParamsBusqueda;
+  vacioPersonalizado?: React.ReactNode;
+}) {
+  const searchParams = useSearchParams();
+  const params = initialParams ?? (searchParams ? searchParamsToRecord(searchParams) : {});
+
+  const filtros = leerFiltros(params);
+  const filtrados = ordenar(aplicarFiltros(base, filtros), filtros.orden);
+  const visibles = filtrados.slice(0, filtros.mostrar);
+  const chips = chipsActivos(filtros);
+  const activos = contarActivos(filtros);
+
+  return (
+    <>
       <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
         <aside className="hidden lg:block">
           <div className="sticky top-24 max-h-[calc(100dvh-8rem)] overflow-y-auto pr-2 pb-6">
@@ -185,7 +209,7 @@ function VistaCatalogoContenido({
           </div>
         </div>
       </div>
-    </Contenedor>
+    </>
   );
 }
 
