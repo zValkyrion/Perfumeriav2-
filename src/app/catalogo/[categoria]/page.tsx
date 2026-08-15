@@ -12,9 +12,10 @@ import {
 import { VistaCatalogo } from "@/components/catalogo/vista-catalogo";
 import { TarjetaSet } from "@/components/sets/tarjeta-set";
 import { Contenedor } from "@/components/comunes/layout";
-import { PRODUCTOS } from "@/data/productos";
+import { PRODUCTOS, precioDesde } from "@/data/productos";
 import { SETS } from "@/data/sets";
 import { CATEGORIAS, getCategoria } from "@/data/taxonomia";
+import { descripcionCategoria, ogDe, tituloCategoria } from "@/lib/seo";
 
 export function generateStaticParams() {
   return [...CATEGORIAS.map((c) => ({ categoria: c.slug })), { categoria: "sets" }];
@@ -37,10 +38,19 @@ export async function generateMetadata({
   const cat = getCategoria(categoria);
   if (!cat) return {};
 
+  const productos = PRODUCTOS.filter(cat.filtro);
+  const desde = Math.min(...productos.map(precioDesde));
+
   return {
-    title: cat.titulo,
-    description: cat.descripcion,
+    title: tituloCategoria(cat, desde),
+    description: descripcionCategoria(cat, productos.length, desde),
     alternates: { canonical: `/catalogo/${cat.slug}` },
+    openGraph: {
+      type: "website",
+      title: tituloCategoria(cat, desde),
+      description: cat.descripcion,
+      images: [ogDe(`/categorias/${cat.slug}.webp`, cat.titulo)],
+    },
   };
 }
 

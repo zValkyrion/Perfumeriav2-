@@ -34,6 +34,7 @@ import {
 } from "@/data/productos";
 import { resenasDe } from "@/data/resenas";
 import { numero, precio as fmt } from "@/lib/format";
+import { descripcionProducto, tituloProducto } from "@/lib/seo";
 
 const DURACION: Record<number, string> = {
   1: "1 a 2 horas",
@@ -66,13 +67,21 @@ export async function generateMetadata({
   const desde = precioDesde(producto);
 
   return {
-    title: `${producto.nombre} — ${marca}`,
-    description: `${producto.descripcionCorta}. ${producto.concentracion} desde ${fmt(desde)} MXN. Envío gratis desde 3 piezas y precio de mayoreo por volumen.`,
+    title: tituloProducto(producto, marca),
+    description: descripcionProducto(producto, desde),
     alternates: { canonical: `/producto/${producto.slug}` },
     openGraph: {
-      title: `${producto.nombre} — ${marca}`,
+      type: "website",
+      title: tituloProducto(producto, marca),
       description: producto.descripcionCorta,
-      images: [{ url: producto.imagenes[0]!, width: 900, height: 1200 }],
+      images: [
+        {
+          url: producto.imagenes[0]!,
+          width: 900,
+          height: 1200,
+          alt: `${producto.nombre}, ${producto.concentracion.toLowerCase()} de ${marca}`,
+        },
+      ],
     },
   };
 }

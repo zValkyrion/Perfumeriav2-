@@ -6,9 +6,11 @@ import { TarjetaLote } from "@/components/lotes/tarjeta-lote";
 import { LOTES } from "@/data/lotes";
 
 export const metadata: Metadata = {
-  title: "Lotes de mayoreo",
+  // "Paca" es la palabra que usa el revendedor mexicano; "lote" la que usa el
+  // sitio. El título lleva las dos para no perder ninguna de las dos consultas.
+  title: "Pacas de perfumes al mayoreo",
   description:
-    "Ocho lotes armados de 6 a 50 piezas, con precio de distribuidor, envío gratis y material de venta. Surtidos mixtos y temáticos.",
+    "Ocho lotes armados de 6 a 50 piezas a precio de distribuidor, con envío gratis a todo México, bolsas de regalo y lista de precios sugeridos de venta.",
   alternates: { canonical: "/lotes" },
 };
 

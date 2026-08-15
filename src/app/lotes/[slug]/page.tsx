@@ -19,6 +19,7 @@ import { GridProductos } from "@/components/producto/grid-productos";
 import { LOTES, getLote, valorMenudeoLote } from "@/data/lotes";
 import { getProducto } from "@/data/productos";
 import { precioRedondo, precio as fmt } from "@/lib/format";
+import { descripcionLote, ogDe, tituloLote } from "@/lib/seo";
 
 export function generateStaticParams() {
   return LOTES.map((l) => ({ slug: l.slug }));
@@ -32,9 +33,15 @@ export async function generateMetadata({
   if (!lote) return {};
 
   return {
-    title: lote.nombre,
-    description: `${lote.piezas} perfumes por ${fmt(lote.precio)} MXN — te sale a ${fmt(lote.precioIndividualEquivalente)} la pieza. ${lote.descripcion.slice(0, 90)}`,
+    title: tituloLote(lote),
+    description: descripcionLote(lote),
     alternates: { canonical: `/lotes/${lote.slug}` },
+    openGraph: {
+      type: "website",
+      title: tituloLote(lote),
+      description: lote.descripcion,
+      images: [ogDe(lote.imagen, `${lote.nombre}, lote de mayoreo`)],
+    },
   };
 }
 

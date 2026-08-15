@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 import { VistaCatalogo } from "@/components/catalogo/vista-catalogo";
 import { MARCAS, getMarca } from "@/data/marcas";
 import { porMarca } from "@/data/productos";
+import {
+  OG_POR_DEFECTO,
+  descripcionMarca,
+  ogDe,
+  tituloMarca,
+} from "@/lib/seo";
 
 export function generateStaticParams() {
   return MARCAS.map((m) => ({ slug: m.slug }));
@@ -16,9 +22,17 @@ export async function generateMetadata({
   if (!marca) return {};
 
   return {
-    title: `${marca.nombre} — ${marca.firma}`,
-    description: marca.descripcion.slice(0, 155),
+    title: tituloMarca(marca),
+    description: descripcionMarca(marca, porMarca(marca.slug).length),
     alternates: { canonical: `/marca/${marca.slug}` },
+    openGraph: {
+      type: "website",
+      title: tituloMarca(marca),
+      // La firma de la casa dice más que los primeros 155 caracteres de la
+      // descripción, que antes se cortaban a media palabra.
+      description: marca.firma,
+      images: [ogDe(OG_POR_DEFECTO.url, OG_POR_DEFECTO.alt)],
+    },
   };
 }
 

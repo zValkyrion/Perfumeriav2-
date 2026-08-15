@@ -10,6 +10,7 @@ import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
 import { SelectorTemas } from "@/components/comunes/selector-temas";
 import { TransicionRuta } from "@/components/comunes/transicion-ruta";
 import { MAS_VENDIDOS, indiceCompacto } from "@/data/productos";
+import { OG_POR_DEFECTO } from "@/lib/seo";
 import { SITIO_URL } from "@/lib/sitio";
 import "./globals.css";
 
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
   // pone el suyo.
   metadataBase: new URL(SITIO_URL),
   title: {
-    default: "EL REY DE LOS PERFUMES — Perfumería fina al mayoreo y menudeo",
+    default: "EL REY DE LOS PERFUMES — Perfumes al mayoreo y menudeo",
     template: "%s | EL REY DE LOS PERFUMES",
   },
   description:
@@ -48,6 +49,9 @@ export const metadata: Metadata = {
     title: "EL REY DE LOS PERFUMES — El lujo tiene un aroma.",
     description:
       "Perfumes 100% originales al mejor precio de México. Menudeo y mayoreo desde 3 piezas.",
+    // Imagen por defecto de las tarjetas de enlace. Las páginas con arte
+    // propio —producto, lote, categoría— la sobrescriben con el suyo.
+    images: [OG_POR_DEFECTO],
   },
   robots: { index: true, follow: true },
 };

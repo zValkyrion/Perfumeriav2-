@@ -23,9 +23,11 @@ import { precioRedondo } from "@/lib/format";
 import { ESCALONES, precioUnitario } from "@/lib/volumen";
 
 export const metadata: Metadata = {
-  title: "Mayoreo — convierte el perfume en tu negocio",
+  // "Perfumes al mayoreo" es la consulta con la que llega el revendedor. El
+  // gancho de negocio va en la description, no en el título.
+  title: "Perfumes al mayoreo en México",
   description:
-    "Precio de mayoreo desde 3 piezas, hasta 40% de descuento con 12 o más. Sin mínimo, sin papeleo y con envío gratis. Calcula tu ganancia.",
+    "Precio de distribuidor desde 3 piezas y hasta 40% de descuento con 12 o más. Sin mínimo de compra, sin papeleo y con envío gratis a todo México.",
   alternates: { canonical: "/mayoreo" },
 };
 
