@@ -88,6 +88,34 @@ function svg(): string {
 </svg>`;
 }
 
+/**
+ * Logotipo cuadrado para el `Organization` de JSON-LD. Google lo usa en el
+ * panel de conocimiento y lo pide cuadrado y sobre fondo sólido.
+ */
+function svgLogo(): string {
+  const L = 512;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${L}" viewBox="0 0 ${L} ${L}">
+  <defs>
+    <linearGradient id="oro" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="${ORO_HONDO}"/>
+      <stop offset="45%" stop-color="${ORO_CLARO}"/>
+      <stop offset="100%" stop-color="${ORO}"/>
+    </linearGradient>
+    <linearGradient id="liquido" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${ORO_CLARO}" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="${ORO_HONDO}" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="vidrio" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.03"/>
+    </linearGradient>
+  </defs>
+  <rect width="${L}" height="${L}" fill="${FONDO}"/>
+  ${frasco(256, 150, 1.15, 1)}
+  <text x="256" y="452" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="52" font-weight="700" fill="url(#oro)" letter-spacing="3">ERDLP</text>
+</svg>`;
+}
+
 async function main() {
   await mkdir(publico, { recursive: true });
 
@@ -96,9 +124,14 @@ async function main() {
   const jpg = await sharp(Buffer.from(svg()))
     .jpeg({ quality: 88, mozjpeg: true })
     .toBuffer();
-
   await writeFile(join(publico, "portada.jpg"), jpg);
-  console.log(`Listo: public/og/portada.jpg (${ANCHO}×${ALTO}, ${Math.round(jpg.length / 1024)} kB)`);
+
+  const logo = await sharp(Buffer.from(svgLogo())).png().toBuffer();
+  await writeFile(join(publico, "logo.png"), logo);
+
+  console.log(
+    `Listo: og/portada.jpg (${ANCHO}×${ALTO}, ${Math.round(jpg.length / 1024)} kB) y og/logo.png (512×512, ${Math.round(logo.length / 1024)} kB).`,
+  );
 }
 
 main().catch((e: unknown) => {

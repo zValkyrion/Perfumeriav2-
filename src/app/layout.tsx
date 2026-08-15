@@ -7,9 +7,11 @@ import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { BotonWhatsApp } from "@/components/layout/whatsapp";
 import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
+import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { SelectorTemas } from "@/components/comunes/selector-temas";
 import { TransicionRuta } from "@/components/comunes/transicion-ruta";
 import { MAS_VENDIDOS, indiceCompacto } from "@/data/productos";
+import { organizacion, sitioWeb } from "@/lib/jsonld";
 import { OG_POR_DEFECTO } from "@/lib/seo";
 import { SITIO_URL } from "@/lib/sitio";
 import "./globals.css";
@@ -86,6 +88,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="bg-bg text-fg flex min-h-full flex-col">
+        {/* Identidad del sitio: se declara una sola vez, aquí. */}
+        <DatosEstructurados datos={organizacion()} />
+        <DatosEstructurados datos={sitioWeb()} />
+
         <a
           href="#contenido"
           className="focus:bg-gold focus:text-bg sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-100 focus:rounded-full focus:px-4 focus:py-2 focus:text-sm focus:font-medium"

@@ -13,7 +13,11 @@ export const metadata: Metadata = {
 export default function FAQPage() {
   return (
     <>
-      <FAQJsonLd items={[...FAQ_HOME, ...FAQ_MAYOREO]} />
+      {/* Solo FAQ_HOME: las preguntas de mayoreo se marcan en /mayoreo, que es
+          su página. Emitirlas en las dos hacía que la misma pregunta viviera en
+          dos FAQPage y Google atribuye el resultado enriquecido a una sola. El
+          acordeón visual de abajo sí las muestra todas. */}
+      <FAQJsonLd items={FAQ_HOME} />
       <PaginaInfo
         eyebrow="Ayuda"
         titulo="Preguntas frecuentes"

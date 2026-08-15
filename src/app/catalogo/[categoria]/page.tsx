@@ -12,9 +12,11 @@ import {
 import { VistaCatalogo } from "@/components/catalogo/vista-catalogo";
 import { TarjetaSet } from "@/components/sets/tarjeta-set";
 import { Contenedor } from "@/components/comunes/layout";
+import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { PRODUCTOS, precioDesde } from "@/data/productos";
 import { SETS } from "@/data/sets";
 import { CATEGORIAS, getCategoria } from "@/data/taxonomia";
+import { listaProductos, migasDePan } from "@/lib/jsonld";
 import { descripcionCategoria, ogDe, tituloCategoria } from "@/lib/seo";
 
 export function generateStaticParams() {
@@ -107,13 +109,26 @@ export default async function CategoriaPage({
   const cat = getCategoria(categoria);
   if (!cat) notFound();
 
+  const productos = PRODUCTOS.filter(cat.filtro);
+
   return (
-    <VistaCatalogo
-      base={PRODUCTOS.filter(cat.filtro)}
-      eyebrow={cat.eyebrow}
-      titulo={cat.titulo}
-      descripcion={cat.descripcion}
-      migas={[{ label: "Catálogo", href: "/catalogo" }, { label: cat.nombre }]}
-    />
+    <>
+      <DatosEstructurados
+        datos={migasDePan([
+          { nombre: "Inicio", ruta: "/" },
+          { nombre: "Catálogo", ruta: "/catalogo" },
+          { nombre: cat.nombre, ruta: `/catalogo/${cat.slug}` },
+        ])}
+      />
+      <DatosEstructurados datos={listaProductos(productos, cat.titulo)} />
+
+      <VistaCatalogo
+        base={productos}
+        eyebrow={cat.eyebrow}
+        titulo={cat.titulo}
+        descripcion={cat.descripcion}
+        migas={[{ label: "Catálogo", href: "/catalogo" }, { label: cat.nombre }]}
+      />
+    </>
   );
 }

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Contenedor, Seccion, TituloSeccion } from "@/components/comunes/layout";
 import { TarjetaLote } from "@/components/lotes/tarjeta-lote";
+import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { LOTES } from "@/data/lotes";
+import { listaLotes, migasDePan } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
   // "Paca" es la palabra que usa el revendedor mexicano; "lote" la que usa el
@@ -20,6 +22,16 @@ export default function LotesPage() {
 
   return (
     <>
+      <DatosEstructurados
+        datos={migasDePan([
+          { nombre: "Inicio", ruta: "/" },
+          { nombre: "Lotes de mayoreo", ruta: "/lotes" },
+        ])}
+      />
+      <DatosEstructurados
+        datos={listaLotes(LOTES, "Lotes de perfumes al mayoreo")}
+      />
+
       <Contenedor className="pt-8 pb-2 lg:pt-12">
         <header className="max-w-2xl">
           <p className="eyebrow mb-2">Para revender</p>

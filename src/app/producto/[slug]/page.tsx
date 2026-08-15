@@ -16,6 +16,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Contenedor, Seccion, TituloSeccion } from "@/components/comunes/layout";
+import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { Estrellas } from "@/components/comunes/estrellas";
 import { BarraIntensidad, ChipFamilia } from "@/components/comunes/intensidad";
 import { CompraProducto } from "@/components/producto/compra-producto";
@@ -33,7 +34,8 @@ import {
   relacionados,
 } from "@/data/productos";
 import { resenasDe } from "@/data/resenas";
-import { numero, precio as fmt } from "@/lib/format";
+import { numero } from "@/lib/format";
+import { migasDePan, producto as productoJsonLd } from "@/lib/jsonld";
 import { descripcionProducto, tituloProducto } from "@/lib/seo";
 
 const DURACION: Record<number, string> = {
@@ -98,39 +100,20 @@ export default async function ProductoPage({
   const resenas = resenasDe(producto.id);
   const combina = combinaCon(producto, 4);
   const similares = relacionados(producto, 10);
-  const desde = precioDesde(producto);
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: producto.nombre,
-    image: producto.imagenes,
-    description: producto.descripcionCorta,
-    sku: producto.presentaciones[0]?.sku,
-    brand: { "@type": "Brand", name: nombreMarca },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: producto.rating,
-      reviewCount: producto.totalReseñas,
-      bestRating: 5,
-    },
-    offers: {
-      "@type": "AggregateOffer",
-      priceCurrency: "MXN",
-      lowPrice: desde,
-      highPrice: Math.max(...producto.presentaciones.map((p) => p.precio)),
-      offerCount: producto.presentaciones.length,
-      availability: producto.presentaciones.some((p) => p.stock > 0)
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
-    },
-  };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      {/* El JSON-LD de producto no lleva precio, disponibilidad ni
+          calificación: esos tres datos son sintéticos en este catálogo y
+          marcarlos como reales es lo que Google castiga. Ver src/lib/jsonld.ts. */}
+      <DatosEstructurados datos={productoJsonLd(producto, nombreMarca)} />
+      <DatosEstructurados
+        datos={migasDePan([
+          { nombre: "Inicio", ruta: "/" },
+          { nombre: "Catálogo", ruta: "/catalogo" },
+          { nombre: nombreMarca, ruta: `/marca/${producto.marca}` },
+          { nombre: producto.nombre, ruta: `/producto/${producto.slug}` },
+        ])}
       />
 
       <Contenedor className="py-5 lg:py-8">

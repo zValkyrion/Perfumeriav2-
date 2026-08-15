@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { VistaCatalogo } from "@/components/catalogo/vista-catalogo";
+import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
+import { listaProductos, migasDePan } from "@/lib/jsonld";
 import { MARCAS, getMarca } from "@/data/marcas";
 import { porMarca } from "@/data/productos";
 import {
@@ -43,13 +45,28 @@ export default async function MarcaPage({
   const marca = getMarca(slug);
   if (!marca) notFound();
 
+  const productos = porMarca(slug);
+
   return (
-    <VistaCatalogo
-      base={porMarca(slug)}
-      eyebrow={`${marca.pais} · desde ${marca.fundada}`}
-      titulo={marca.nombre}
-      descripcion={marca.descripcion}
-      migas={[{ label: "Marcas", href: "/catalogo" }, { label: marca.nombre }]}
-    />
+    <>
+      <DatosEstructurados
+        datos={migasDePan([
+          { nombre: "Inicio", ruta: "/" },
+          { nombre: "Catálogo", ruta: "/catalogo" },
+          { nombre: marca.nombre, ruta: `/marca/${marca.slug}` },
+        ])}
+      />
+      <DatosEstructurados
+        datos={listaProductos(productos, `Perfumes de ${marca.nombre}`)}
+      />
+
+      <VistaCatalogo
+        base={productos}
+        eyebrow={`${marca.pais} · desde ${marca.fundada}`}
+        titulo={marca.nombre}
+        descripcion={marca.descripcion}
+        migas={[{ label: "Marcas", href: "/catalogo" }, { label: marca.nombre }]}
+      />
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AcordeonFAQ, FAQJsonLd } from "@/components/comunes/acordeon-faq";
+import { AcordeonFAQ } from "@/components/comunes/acordeon-faq";
 import {
   Contenedor,
   Seccion,
@@ -61,7 +61,8 @@ export default function Home() {
 
   return (
     <>
-      <FAQJsonLd items={FAQ_HOME} />
+      {/* El FAQPage de estas preguntas vive en /faq, que es su página. La home
+          muestra el acordeón pero no vuelve a marcarlo. */}
 
       {/* 1 · Portada con la promesa y el precio de entrada */}
       <Hero precioDesde={desde} />
