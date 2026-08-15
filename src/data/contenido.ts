@@ -10,7 +10,9 @@ export const MARCA = {
   instagram: "https://instagram.com",
   facebook: "https://facebook.com",
   tiktok: "https://tiktok.com",
-  clientes: 9000,
+  // Cifra deliberadamente modesta: da más confianza que un número redondo
+  // enorme, que es lo que hace sospechar al cliente.
+  clientes: 1500,
   ratingGlobal: 4.9,
 } as const;
 

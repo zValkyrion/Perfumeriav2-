@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio, PrecioAnterior, Descuento } from "@/components/comunes/precio";
 import { RatingCompacto } from "@/components/comunes/estrellas";
+import { Sticker } from "@/components/comunes/sticker";
 import { MARCAS_POR_SLUG } from "@/data/marcas";
 import { presentacionPrincipal } from "@/data/productos";
 import { precio as fmt } from "@/lib/format";
@@ -91,26 +92,47 @@ export function TarjetaProducto({
           className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent opacity-0 transition-opacity duration-300 lg:group-hover:opacity-100"
         />
 
+        {/* Los distintivos van como pegatinas, alternando el giro para que no
+            parezcan alineadas con regla. El 3x2 va en círculo por ser cifra. */}
         {producto.badges.length > 0 ? (
-          <ul className="absolute top-2.5 left-2.5 z-20 flex flex-col items-start gap-1.5">
+          <ul className="absolute top-2.5 left-2.5 z-20 flex flex-col items-start gap-2">
             {producto.badges.slice(0, 2).map((b, i) => (
               <li
                 key={b}
-                // Entrada escalonada: los distintivos aterrizan uno tras otro
                 style={{ animationDelay: `${120 + i * 90}ms` }}
-                className={cn(
-                  "animate-escala rounded-full px-2 py-1 text-[10px] font-medium tracking-wide uppercase backdrop-blur-sm",
-                  b === "3x2"
-                    ? "bg-gold-gradient text-bg"
-                    : b === "Últimas piezas"
-                      ? "bg-danger/85 text-white"
-                      : "bg-bg/80 text-fg-muted border-border-strong border",
-                )}
+                className="animate-escala"
               >
-                {b}
+                <Sticker
+                  tono={
+                    b === "3x2"
+                      ? "oferta"
+                      : b === "Últimas piezas"
+                        ? "negro"
+                        : b === "Más vendido"
+                          ? "oro"
+                          : "verde"
+                  }
+                  redondo={b === "3x2"}
+                  giro={i % 2 === 0 ? -9 : 7}
+                >
+                  {b}
+                </Sticker>
               </li>
             ))}
           </ul>
+        ) : null}
+
+        {/* Porcentaje de descuento: la cifra que decide la compra, pegada
+            en la esquina opuesta para que no compita con los distintivos. */}
+        {descuento > 0 ? (
+          <span
+            style={{ animationDelay: "220ms" }}
+            className="animate-escala absolute right-2.5 bottom-2.5 z-20 lg:group-hover:opacity-0 lg:transition-opacity"
+          >
+            <Sticker tono="oferta" redondo giro={9}>
+              −{Math.round(descuento * 100)}%
+            </Sticker>
+          </span>
         ) : null}
 
         <button

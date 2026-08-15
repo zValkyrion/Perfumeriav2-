@@ -240,6 +240,7 @@ export function distribucion(resenas: Reseña[]): Record<number, number> {
 }
 
 /** Las mejores reseñas del sitio, para la prueba social de la home (§8.10). */
+/** Las mejores reseñas del sitio: alimentan la prueba social y los videos. */
 export const RESEÑAS_DESTACADAS = RESEÑAS.filter(
-  (r) => r.rating === 5 && r.verificada,
-).slice(0, 6);
+  (r) => r.rating >= 4.5 && r.verificada,
+).slice(0, 8);

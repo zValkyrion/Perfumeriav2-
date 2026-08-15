@@ -51,10 +51,16 @@ export function Header({ indice }: { indice: EntradaIndice[] }) {
             <Logo />
           </div>
 
-          {/* Escritorio: logo · navegación */}
-          <div className="hidden items-center gap-8 lg:flex">
+          {/* Escritorio: el logo va solo; la navegación baja a su propia fila */}
+          <div className="hidden lg:block">
             <Logo />
-            <MegaMenu />
+          </div>
+
+          {/* Buscador ancho en el centro: en un mayorista es la vía principal
+              para llegar al producto, así que ocupa sitio propio y no se
+              esconde detrás de una lupa. */}
+          <div className="mx-4 hidden max-w-xl flex-1 lg:block">
+            <Buscador indice={indice} variante="barra" />
           </div>
 
           <div className="flex items-center gap-0.5">
@@ -62,7 +68,9 @@ export function Header({ indice }: { indice: EntradaIndice[] }) {
               <ToggleMayoreo compacto />
             </div>
 
-            <Buscador indice={indice} />
+            <div className="lg:hidden">
+              <Buscador indice={indice} />
+            </div>
 
             <Link
               href="/favoritos"
@@ -94,6 +102,11 @@ export function Header({ indice }: { indice: EntradaIndice[] }) {
 
             <BotonCarrito />
           </div>
+        </div>
+
+        {/* Segunda fila: navegación a ancho completo, solo en escritorio */}
+        <div className="border-border-soft hidden border-t lg:block">
+          <MegaMenu />
         </div>
       </div>
     </header>

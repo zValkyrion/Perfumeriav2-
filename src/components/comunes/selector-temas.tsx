@@ -25,9 +25,17 @@ export interface Tema {
 
 export const TEMAS: Tema[] = [
   {
+    id: "mayoreo",
+    nombre: "Mayoreo (actual)",
+    nota: "Claro, rojo de oferta y sans. El que menos caro se ve.",
+    fondo: "#F3F4F6",
+    acento: "#E02B20",
+    texto: "#12151A",
+  },
+  {
     id: "oro",
     nombre: "Oro sobre negro",
-    nota: "El original. Máximo contraste y lujo clásico.",
+    nota: "El original. Lujo clásico: se lee como caro.",
     fondo: "#0A0A0B",
     acento: "#C9A227",
     texto: "#F5F5F4",
@@ -93,8 +101,10 @@ function suscribir(alCambiar: () => void) {
   };
 }
 
+// Sin atributo significa tema "oro": es el único que no define bloque propio,
+// porque sus valores son los que ya trae `@theme` por defecto.
 const leerCliente = () => document.documentElement.dataset.tema ?? "oro";
-const leerServidor = () => "oro";
+const leerServidor = () => "mayoreo";
 
 function aplicarTema(id: string) {
   const raiz = document.documentElement;

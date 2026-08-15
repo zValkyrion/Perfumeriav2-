@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { BarraAnuncios } from "@/components/layout/barra-anuncios";
+import { BarraContador } from "@/components/layout/barra-contador";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
@@ -15,7 +15,8 @@ import "./globals.css";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  // 700 y 800 los usa el tema de mayoreo, que pone los titulares en sans.
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -61,6 +62,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es-MX"
+      // Tema por defecto: mayoreo (claro, acento rojo, sans). El selector de
+      // pruebas puede cambiarlo y el script de abajo restaura lo guardado.
+      data-tema="mayoreo"
       className={`dark ${inter.variable} ${cormorant.variable} h-full antialiased`}
       suppressHydrationWarning
     >
@@ -69,7 +73,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             del primer pintado para que no se vea el cambio de color. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('aura-tema');if(t&&t!=='oro'){document.documentElement.dataset.tema=t}}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('aura-tema');if(!t)return;if(t==='oro'){delete document.documentElement.dataset.tema}else{document.documentElement.dataset.tema=t}}catch(e){}})()`,
           }}
         />
       </head>
@@ -81,7 +85,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Saltar al contenido
         </a>
 
-        <BarraAnuncios />
+        {/* Arriba del todo va la urgencia con plazo real; la tira de promesas
+            se movió a la home, justo debajo del banner. */}
+        <BarraContador />
         <Header indice={indice} />
 
         <main id="contenido" className="flex-1 pb-16 md:pb-0">

@@ -142,6 +142,17 @@ export const CATEGORIAS: readonly Categoria[] = [
     filtro: (p) => p.genero === "Unisex",
   },
   {
+    slug: "disenador",
+    nombre: "Diseñador",
+    titulo: "Perfumes de diseñador",
+    eyebrow: "Casas europeas",
+    descripcion:
+      "Las fragancias de las grandes casas europeas, en calidad 1:1. Misma pirámide olfativa y mismo frasco, sin pagar la etiqueta.",
+    enHome: false,
+    filtro: (p) =>
+      !MARCAS_ARABES.includes(p.marca) && p.concentracion !== "Body Mist",
+  },
+  {
     slug: "arabes",
     nombre: "Árabes",
     titulo: "Perfumes árabes",

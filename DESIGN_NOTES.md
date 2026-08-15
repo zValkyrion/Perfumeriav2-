@@ -289,6 +289,40 @@ titular del hero 19.3:1. Todos por encima del 4.5:1 del §15.
 > `getComputedStyle` devuelve el color de partida — parece un fallo del tema y
 > no lo es. Para medir, anular `transition` antes de leer.
 
+### Reestructuración con arquitectura de mayorista
+
+La home se reordenó siguiendo la arquitectura de información de un mayorista de
+referencia del sector. Se replicaron **patrones de UX y orden de secciones**
+—que son convenciones del sector, no propiedad de nadie— y **no** su identidad
+visual, sus textos ni sus imágenes.
+
+El cambio de fondo: una tienda de menudeo ordena marca → categorías → producto;
+un mayorista ordena **modo de compra → lote → producto suelto**. Quien llega
+busca margen, no inspiración.
+
+| # | Sección | Origen |
+| --- | --- | --- |
+| 1 | Portada con precio de entrada | Adaptado |
+| 2 | Tira de promesas | Ya existía |
+| 3 | **Tipos de compra** (3x2, Rebajas, Lotes, Surtido, Pack de 6, Hombre, Mujer) | Nuevo |
+| 4 | **Lote grande con la utilidad como titular** | Nuevo |
+| 5 | Prueba social, adelantada | Reordenado |
+| 6 | Mayoreo surtido con la escalera de descuento | Reordenado |
+| 7 | Promoción 3x2 | Ya existía |
+| 8 | **Selector de presentación** (equivale al selector de tallas) | Nuevo |
+| 9 | Lotes destacados | Reordenado |
+| 10 | Novedades | Ya existía |
+| 11 | Frasco 3D | Ya existía |
+| 12 | **Banner de captación de revendedores** | Nuevo |
+| 13-16 | Envío, valores, FAQ, boletín | Reordenado |
+
+La adaptación más interesante es el **selector de presentación**: en calzado el
+atajo es la talla; en perfumería son los mililitros, porque separan a quien se
+da un gusto (30–50 ml) de quien compra para revender (100–200 ml).
+
+Todas las animaciones se conservan: los bloques nuevos usan el mismo sistema
+(entrada escalonada, revelado por máscara, cortina, contador en vista, tilt).
+
 ### Defecto corregido en esta fase
 
 `.snap-row` incluía `display: flex`, que ganaba sobre el `lg:grid` de las

@@ -253,6 +253,56 @@
    ganarle siempre al `:root` que genera Tailwind desde @theme.
    ============================================================ */
 
+/**
+ * Mayoreo — el tema por defecto.
+ *
+ * Deliberadamente NO premium: la tienda vende 1:1 barato a revendedores, y un
+ * look de lujo oscuro le dice al cliente "esto cuesta caro", que es lo contrario
+ * del mensaje. Cuatro palancas bajan la percepción de precio:
+ *   1. Fondo claro de tienda, no negro de boutique.
+ *   2. Acento rojo de oferta en lugar de dorado.
+ *   3. Sans en los titulares: la serif es lo que más "encarece" una página.
+ *   4. Degradados planos; el degradado metálico es un tic de lujo.
+ */
+:root[data-tema="mayoreo"] {
+  --color-bg: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #e9ebef;
+  --color-border-strong: #cfd4db;
+  --color-border-soft: #e1e5ea;
+
+  --color-gold: #e02b20;
+  /* Sobre fondo claro este token es color de TEXTO: va más oscuro. */
+  --color-gold-light: #c01a11;
+  --color-gold-deep: #8f130c;
+  --color-gold-muted: rgb(224 43 32 / 0.1);
+
+  --color-fg: #12151a;
+  --color-fg-muted: #49515c;
+  --color-fg-subtle: #626b78;
+
+  --color-success: #12855a;
+
+  /* Todo en sans: es el cambio que más abarata la página de un golpe. */
+  --font-display: var(--font-inter);
+
+  /* Plano y saturado, sin brillo metálico. */
+  --grad-oro: linear-gradient(180deg, #ef372b 0%, #d21d13 100%);
+}
+
+/* El grano es textura de marca cara: fuera en el tema de mayoreo. */
+:root[data-tema="mayoreo"] .grain::after {
+  display: none;
+}
+
+/* Los titulares audaces pierden el aire de editorial y se aprietan. */
+:root[data-tema="mayoreo"] .titular-audaz,
+:root[data-tema="mayoreo"] .titular-medio,
+:root[data-tema="mayoreo"] .cifra-audaz {
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
 /* Champán — más cálido y cremoso que el oro puro */
 :root[data-tema="champan"] {
   --color-bg: #100c07;

@@ -6,80 +6,114 @@ import {
   TituloSeccion,
 } from "@/components/comunes/layout";
 import { Tilt } from "@/components/comunes/efectos";
+import { BarraAnuncios } from "@/components/layout/barra-anuncios";
 import { Banner3x2 } from "@/components/home/banner-3x2";
+import { BannerPaquete } from "@/components/home/banner-paquete";
+import { BannerEmprende } from "@/components/home/banner-emprende";
 import { BloqueFrasco } from "@/components/home/bloque-frasco";
-import { BloqueMayoreo } from "@/components/home/bloque-mayoreo";
-import { Categorias } from "@/components/home/categorias";
-import { Familias } from "@/components/home/familias";
+import { DestacadoLote } from "@/components/home/destacado-lote";
 import { FranjaNewsletter } from "@/components/home/franja-newsletter";
 import { Hero } from "@/components/home/hero";
-import { MarcasCarrusel } from "@/components/home/marcas-carrusel";
 import { PasosEnvio } from "@/components/home/pasos-envio";
 import { PruebaSocial } from "@/components/home/prueba-social";
+import { SelectorPresentaciones } from "@/components/home/selector-presentaciones";
+import { TiposCompra } from "@/components/home/tipos-compra";
 import { TiraGarantias } from "@/components/home/tira-garantias";
+import { ValoresClave } from "@/components/home/valores-clave";
+import { VideosClientes } from "@/components/home/videos-clientes";
+import { RESEÑAS_DESTACADAS } from "@/data/resenas";
+import { videosDesdeResenas } from "@/data/videos";
 import { TarjetaLote } from "@/components/lotes/tarjeta-lote";
 import { CarruselProductos } from "@/components/producto/carrusel-productos";
 import { GridProductos } from "@/components/producto/grid-productos";
 import { FAQ_HOME } from "@/data/contenido";
 import { LOTES_DESTACADOS } from "@/data/lotes";
-import { SETS } from "@/data/sets";
 import {
   MAS_VENDIDOS,
   NOVEDADES,
   PRODUCTOS,
   precioDesde,
 } from "@/data/productos";
-import { CATEGORIAS, FAMILIAS } from "@/data/taxonomia";
 
+/**
+ * Home con estructura de mayorista.
+ *
+ * El orden no sigue el de una tienda de menudeo (marca → categorías → producto)
+ * sino el de un mayorista: primero el **modo de compra** (3x2, lotes, surtido),
+ * enseguida el lote grande con su utilidad, y solo después el producto suelto.
+ * Quien llega aquí busca margen, no inspiración.
+ */
 export default function Home() {
   const desde = Math.min(...PRODUCTOS.map(precioDesde));
 
-  const conteosCategoria: Record<string, number> = {
-    ...Object.fromEntries(
-      CATEGORIAS.map((c) => [c.slug, PRODUCTOS.filter(c.filtro).length]),
-    ),
-    sets: SETS.length,
-  };
-
-  const conteosFamilia = Object.fromEntries(
-    FAMILIAS.map((f) => [
-      f.nombre,
-      PRODUCTOS.filter((p) => p.familia === f.nombre).length,
-    ]),
+  // Los pósters de los videos salen del arte de producto ya generado.
+  const videos = videosDesdeResenas(
+    RESEÑAS_DESTACADAS,
+    MAS_VENDIDOS.slice(0, 5).map((p) => p.imagenes[1]!),
   );
 
   return (
     <>
       <FAQJsonLd items={FAQ_HOME} />
 
-      {/* 1 · Hero */}
+      {/* 1 · Portada con la promesa y el precio de entrada */}
       <Hero precioDesde={desde} />
 
-      {/* 2 · Garantías */}
+      {/* 2 · Tira de promesas en movimiento, justo bajo el banner */}
+      <BarraAnuncios />
+
+      {/* 3 · Promesas detalladas */}
       <TiraGarantias />
 
-      {/* 3 · Compra por categoría */}
-      <Seccion denso revelar>
+      {/* 3 · Tipos de compra: la navegación real de un mayorista */}
+      <Seccion denso>
         <Contenedor>
           <TituloSeccion
-            eyebrow="Encuentra el tuyo"
-            titulo="Compra por categoría"
+            titulo="TIPOS DE MAYOREO"
             enlace="/catalogo"
             enlaceTexto="Ver todo"
           />
-          <Categorias conteos={conteosCategoria} />
+          <TiposCompra />
         </Contenedor>
       </Seccion>
 
-      {/* 4 · Más vendidos */}
+      {/* 4 · Paquete estrella */}
+      <Seccion denso>
+        <BannerPaquete />
+      </Seccion>
+
+      {/* 4b · El lote grande, con la utilidad como titular */}
+      <Seccion denso className="border-border-soft border-t">
+        <DestacadoLote />
+      </Seccion>
+
+      {/* 5 · Videos de clientes: la prueba social que más convierte */}
+      <Seccion denso className="bg-surface/40 border-border-soft border-y">
+        <Contenedor>
+          <TituloSeccion
+            eyebrow="Lo cuentan ellos"
+            titulo="Clientes que ya lo probaron"
+            descripcion="Revendedoras y clientes grabando lo que recibieron, sin guion."
+          />
+        </Contenedor>
+        <VideosClientes videos={videos} />
+      </Seccion>
+
+      {/* 6 · Prueba social escrita */}
+      <Seccion denso revelar>
+        <PruebaSocial />
+      </Seccion>
+
+      {/* 6 · Surtido: producto suelto con precio por pieza */}
       <Seccion denso id="mas-vendidos">
         <Contenedor>
           <TituloSeccion
             revelado
-            eyebrow="Los que no fallan"
-            titulo="Más vendidos"
-            descripcion="Los diez perfumes que más salen de nuestra bodega, ordenados por número de reseñas reales."
-            enlace="/catalogo?orden=vendidos"
+            eyebrow="Los que más rotan"
+            titulo="MAYOREO SURTIDO"
+            descripcion="Desde 3 perfumes obtén precio de mayoreo + Envío gratis 🚚✨"
+            enlace="/catalogo"
+            enlaceTexto="Ver perfumes"
           />
           <CarruselProductos
             productos={MAS_VENDIDOS.slice(0, 10)}
@@ -88,32 +122,43 @@ export default function Home() {
         </Contenedor>
       </Seccion>
 
-      {/* 5 · Banner 3x2 */}
+      {/* 7 · Promoción 3x2 */}
       <Banner3x2 />
 
-      {/* 5b · El frasco en 3D, la única pieza manipulable de la home */}
-      <Seccion>
-        <BloqueFrasco />
-      </Seccion>
-
-      {/* 6 · Mayoreo */}
-      <Seccion revelar>
-        <BloqueMayoreo />
-      </Seccion>
-
-      {/* 7 · Familias olfativas */}
+      {/* 8 · Atajo por presentación (el "selector de tallas" del perfume) */}
       <Seccion denso revelar>
         <Contenedor>
           <TituloSeccion
-            eyebrow="Por carácter"
-            titulo="Explora por familia olfativa"
-            descripcion="Si ya sabes qué te gusta oler, este es el camino corto."
+            eyebrow="Por tamaño"
+            titulo="Elige tu presentación"
+            descripcion="Los frascos grandes siempre salen mejor por mililitro; los pequeños se venden más rápido."
+            className="mb-6"
           />
-          <Familias conteos={conteosFamilia} />
+        </Contenedor>
+        <SelectorPresentaciones />
+      </Seccion>
+
+      {/* 9 · Lotes destacados */}
+      <Seccion denso revelar>
+        <Contenedor>
+          <TituloSeccion
+            revelado
+            eyebrow="Ya armados"
+            titulo="Lotes de mayoreo"
+            descripcion="Surtidos balanceados por rotación. La utilidad supone que vendes al precio de menudeo publicado aquí."
+            enlace="/lotes"
+          />
+          <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
+            {LOTES_DESTACADOS.map((lote) => (
+              <Tilt key={lote.slug} className="h-full">
+                <TarjetaLote lote={lote} destacada={lote.masVendido} />
+              </Tilt>
+            ))}
+          </div>
         </Contenedor>
       </Seccion>
 
-      {/* 8 · Novedades */}
+      {/* 10 · Novedades */}
       <Seccion denso>
         <Contenedor>
           <TituloSeccion
@@ -125,47 +170,30 @@ export default function Home() {
         </Contenedor>
       </Seccion>
 
-      {/* 9 · Lotes destacados */}
-      <Seccion revelar>
-        <Contenedor>
-          <TituloSeccion
-            revelado
-            eyebrow="Para revender"
-            titulo="Lotes de mayoreo"
-            descripcion="Precio de distribuidor, envío gratis y material de venta incluido. La utilidad estimada asume que vendes al precio de menudeo publicado aquí."
-            enlace="/lotes"
-          />
-          {/* Las tarjetas de lote se inclinan siguiendo al puntero: son la
-              pieza de mayor ticket de la home y aguantan bien el gesto. */}
-          <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
-            {LOTES_DESTACADOS.map((lote) => (
-              <Tilt key={lote.slug} className="h-full">
-                <TarjetaLote lote={lote} destacada={lote.masVendido} />
-              </Tilt>
-            ))}
-          </div>
-        </Contenedor>
+      {/* 11 · El frasco en 3D: la prueba de calidad 1:1 */}
+      <Seccion>
+        <BloqueFrasco />
       </Seccion>
 
-      {/* 10 · Prueba social */}
-      <Seccion revelar className="bg-surface/40 border-border-soft border-y">
-        <PruebaSocial />
+      {/* 12 · Captación de revendedores */}
+      <BannerEmprende />
+
+      {/* 12b · Barra de confianza, justo después de proponer el negocio */}
+      <Seccion denso className="bg-surface/50 border-border-soft border-b">
+        <ValoresClave />
       </Seccion>
 
-      {/* 11 · Así recibes tu pedido */}
+      {/* 13 · Cómo recibes tu pedido */}
       <Seccion revelar>
         <PasosEnvio />
       </Seccion>
 
-      {/* 12 · Marcas */}
-      <Seccion denso className="border-border-soft border-t">
-        <Contenedor>
-          <p className="eyebrow mb-6 text-center">Nuestras doce casas</p>
-        </Contenedor>
-        <MarcasCarrusel />
+      {/* 14 · Valores */}
+      <Seccion denso revelar className="border-border-soft border-t">
+        <ValoresClave />
       </Seccion>
 
-      {/* 13 · Preguntas frecuentes */}
+      {/* 15 · Preguntas frecuentes */}
       <Seccion revelar className="border-border-soft border-t">
         <Contenedor>
           <div className="grid gap-8 lg:grid-cols-[380px_1fr] lg:gap-16">
@@ -192,7 +220,7 @@ export default function Home() {
         </Contenedor>
       </Seccion>
 
-      {/* 14 · Newsletter */}
+      {/* 16 · Newsletter */}
       <FranjaNewsletter />
     </>
   );

@@ -10,6 +10,7 @@ import { Precio } from "@/components/comunes/precio";
 import { normalizar, puntuar } from "@/lib/coincidencia";
 import type { EntradaIndice } from "@/data/productos";
 import { MARCAS } from "@/data/marcas";
+import { PlaceholderAnimado } from "./placeholder-animado";
 
 const NOMBRE_MARCA = new Map(MARCAS.map((m) => [m.slug, m.nombre]));
 
@@ -26,7 +27,14 @@ const POPULARES = [
  * Buscador del header (§7.2). Trabaja sobre un índice compacto que le pasa el
  * servidor, así que no arrastra el catálogo completo al bundle del cliente.
  */
-export function Buscador({ indice }: { indice: EntradaIndice[] }) {
+export function Buscador({
+  indice,
+  variante = "icono",
+}: {
+  indice: EntradaIndice[];
+  /** `barra` pinta un campo ancho visible; `icono`, solo la lupa. */
+  variante?: "icono" | "barra";
+}) {
   const [abierto, setAbierto] = useState(false);
   const [q, setQ] = useState("");
   const router = useRouter();
@@ -54,14 +62,35 @@ export function Buscador({ indice }: { indice: EntradaIndice[] }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setAbierto(true)}
-        aria-label="Buscar perfumes"
-        className="text-fg-muted hover:text-fg grid size-11 place-items-center rounded-full transition-colors"
-      >
-        <Search size={20} aria-hidden />
-      </button>
+      {variante === "barra" ? (
+        // Campo visible que abre el panel real: mantiene una sola implementación
+        // de búsqueda en vez de duplicar la lógica en el header.
+        <button
+          type="button"
+          onClick={() => setAbierto(true)}
+          aria-label="Buscar perfumes a mayoreo"
+          className="border-border-strong bg-surface-2 hover:border-gold flex h-11 w-full items-center gap-2.5 rounded-md border px-3.5 text-left transition-colors"
+        >
+          <Search size={18} aria-hidden className="text-fg-subtle shrink-0" />
+          <PlaceholderAnimado
+            frases={[
+              "Buscar Perfumes a Mayoreo",
+              "Oud, vainilla, azafrán…",
+              "Paquetes de 10, 20 y 30",
+            ]}
+            className="text-fg-subtle truncate text-sm"
+          />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAbierto(true)}
+          aria-label="Buscar perfumes a mayoreo"
+          className="text-fg-muted hover:text-fg grid size-11 place-items-center rounded-full transition-colors"
+        >
+          <Search size={20} aria-hidden />
+        </button>
+      )}
 
       <Sheet open={abierto} onOpenChange={setAbierto}>
         <SheetContent
@@ -82,17 +111,30 @@ export function Buscador({ indice }: { indice: EntradaIndice[] }) {
               className="border-border-strong focus-within:border-gold flex items-center gap-3 border-b py-3 transition-colors"
             >
               <Search size={20} aria-hidden className="text-gold shrink-0" />
-              <input
-                autoFocus
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                type="search"
-                inputMode="search"
-                enterKeyHint="search"
-                placeholder="Busca por nombre, nota o marca…"
-                aria-label="Buscar perfumes"
-                className="placeholder:text-fg-subtle h-9 w-full bg-transparent text-base outline-none"
-              />
+              <span className="relative flex-1">
+                <input
+                  autoFocus
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  type="search"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  aria-label="Buscar perfumes a mayoreo"
+                  className="h-9 w-full bg-transparent text-base outline-none"
+                />
+                {/* El texto guía se teclea solo. Va detrás del campo y no como
+                    `placeholder` porque un atributo no se puede animar. */}
+                {!q ? (
+                  <PlaceholderAnimado
+                    frases={[
+                      "Buscar Perfumes a Mayoreo",
+                      "Oud, vainilla, azafrán…",
+                      "Paquetes de 10, 20 y 30",
+                    ]}
+                    className="text-fg-subtle pointer-events-none absolute inset-y-0 left-0 flex items-center text-base"
+                  />
+                ) : null}
+              </span>
               {q ? (
                 <button
                   type="button"

@@ -1,115 +1,45 @@
+"use client";
+
 import Link from "next/link";
-import { ChevronDown, ShieldCheck, Star, Truck } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Imagen } from "@/components/comunes/imagen";
-import { Contenedor } from "@/components/comunes/layout";
-import { Precio } from "@/components/comunes/precio";
-import { MARCA } from "@/data/contenido";
-import { numero } from "@/lib/format";
 
 /**
- * Hero (§8.1).
+ * Hero Panorámico Completo.
  *
- * Cumple la prueba de los 3 segundos del §1.2.1: en el primer pantallazo, sin
- * hacer scroll, se ve qué se vende, desde qué precio, por qué comprar aquí
- * (originales, envío gratis, +9,000 clientes) y una sola acción primaria.
+ * Muestra el banner promocional oficial 3x2 abarcando todo el bloque
+ * inicial de forma limpia y directa, siendo 100% clickeable hacia el catálogo.
  */
-export function Hero({ precioDesde }: { precioDesde: number }) {
+export function Hero({ precioDesde }: { precioDesde?: number } = {}) {
   return (
-    <section className="grain zona-oscura relative isolate flex h-[85dvh] min-h-[560px] items-end overflow-hidden lg:h-[92dvh]">
-      <div className="deriva-hero absolute inset-0 -z-10">
-        <Imagen
-          src="/hero.webp"
-          alt="Frasco de perfume EL REY DE LOS PERFUMES iluminado sobre fondo negro"
-          sizes="100vw"
-          priority
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
+    <section className="relative isolate w-full overflow-hidden border-b border-border-soft bg-black">
+      {/* Halo dorado sutil de fondo */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(201, 162, 39, 0.15), transparent 75%)",
+        }}
+      />
+
+      <div className="relative mx-auto w-full max-w-[1920px]">
+        <Link
+          href="/catalogo"
+          className="group relative block w-full aspect-[21/9] sm:aspect-[2.4/1] md:aspect-[2.7/1] min-h-[220px] sm:min-h-[320px] md:min-h-[420px] lg:min-h-[500px] overflow-hidden bg-black cursor-pointer"
+          title="Aprovechar 3x2 en Perfumes - Ir al Catálogo"
+        >
+          <Imagen
+            src="/hero-promo-3x2.png"
+            alt="3x2 en Toda la Tienda en Perfumes - El Rey de los Perfumes - Llévate 3 artículos y paga solo 2"
+            sizes="100vw"
+            priority
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+          />
+        </Link>
       </div>
-
-      {/* El contenido entra en cascada de arriba abajo: primero la promesa,
-          luego el precio y al final la acción. Cada escalón son 90 ms. */}
-      <Contenedor className="pb-16 lg:pb-24">
-        <div className="max-w-xl">
-          <p className="eyebrow animate-subir mb-4">Nueva colección</p>
-
-          <h1
-            style={{ animationDelay: "90ms" }}
-            className="titular-audaz animate-subir"
-          >
-            El lujo tiene un aroma.
-          </h1>
-
-          <p
-            style={{ animationDelay: "180ms" }}
-            className="text-fg-muted animate-subir mt-4 max-w-md text-[15px] leading-relaxed lg:text-lg"
-          >
-            Calidad 1:1: la misma fragancia y el mismo frasco, a una fracción
-            del precio. Menudeo y mayoreo desde 3 piezas.
-          </p>
-
-          {/* Señal de precio + prueba social, antes del primer scroll (§1.2.2) */}
-          <div
-            style={{ animationDelay: "270ms" }}
-            className="animate-subir mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm"
-          >
-            <span className="text-fg">
-              Desde{" "}
-              <Precio
-                valor={precioDesde}
-                moneda
-                className="text-gold-light font-medium"
-              />
-            </span>
-            <span className="text-fg-muted inline-flex items-center gap-1.5">
-              <Star size={14} className="fill-gold text-gold" aria-hidden />
-              {MARCA.ratingGlobal} · +{numero(MARCA.clientes)} clientes
-            </span>
-          </div>
-
-          <div
-            style={{ animationDelay: "360ms" }}
-            className="animate-subir mt-7 flex flex-col gap-3 sm:flex-row"
-          >
-            <Button asChild variant="gold" size="touch-lg">
-              <Link href="/catalogo">Comprar ahora</Link>
-            </Button>
-            <Button asChild variant="goldOutline" size="touch-lg">
-              <Link href="/mayoreo">Precios de mayoreo</Link>
-            </Button>
-          </div>
-
-          <ul
-            style={{ animationDelay: "450ms" }}
-            className="text-fg-muted animate-subir mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs"
-          >
-            <li className="inline-flex items-center gap-1.5">
-              <ShieldCheck size={14} className="text-gold" aria-hidden />
-              Calidad 1:1
-            </li>
-            <li className="inline-flex items-center gap-1.5">
-              <Truck size={14} className="text-gold" aria-hidden />
-              Envío gratis desde 3 piezas
-            </li>
-            <li className="inline-flex items-center gap-1.5">
-              <span aria-hidden className="text-gold">
-                ✦
-              </span>
-              6 meses sin intereses
-            </li>
-          </ul>
-        </div>
-      </Contenedor>
-
-      <a
-        href="#mas-vendidos"
-        aria-label="Ver los más vendidos"
-        className="text-fg-subtle hover:text-gold-light absolute bottom-5 left-1/2 hidden -translate-x-1/2 lg:block"
-      >
-        <ChevronDown size={26} className="animate-bounce motion-reduce:animate-none" aria-hidden />
-      </a>
     </section>
   );
 }
+
+
+

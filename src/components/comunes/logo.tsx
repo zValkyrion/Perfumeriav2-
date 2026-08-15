@@ -11,15 +11,18 @@ export function Logo({
   className?: string;
   href?: string | null;
 }) {
+  // Wordmark corto y muy pesado: es texto real, así que escala perfecto, pesa
+  // cero y lo lee un lector de pantalla. El nombre largo queda para el título
+  // de la página y el pie.
   const marca = (
     <span
       className={cn(
-        "font-display inline-flex items-baseline text-lg font-medium tracking-[0.1em] sm:text-xl md:text-2xl leading-none",
+        "font-sans inline-flex items-baseline text-2xl leading-none font-extrabold tracking-[-0.03em] sm:text-[28px]",
         className,
       )}
     >
-      EL REY DE LOS PERFUMES
-      <span aria-hidden className="text-gold ml-[2px] text-[1.2em] leading-none">
+      ElRey
+      <span aria-hidden className="text-gold ml-[2px] text-[1.1em] leading-none">
         .
       </span>
     </span>
