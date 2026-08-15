@@ -4,7 +4,7 @@ import { VistaCheckout } from "@/components/checkout/vista-checkout";
 export const metadata: Metadata = {
   title: "Finalizar compra",
   description: "Completa tu pedido en tres pasos.",
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: true },
 };
 
 export default function CheckoutPage() {

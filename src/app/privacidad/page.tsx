@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Aviso de privacidad",
   description:
     "Qué datos pedimos, para qué los usamos y cómo ejercer tus derechos ARCO.",
+  alternates: { canonical: "/privacidad" },
 };
 
 export default function PrivacidadPage() {

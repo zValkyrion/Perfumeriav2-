@@ -34,6 +34,7 @@ export async function generateMetadata({
   return {
     title: lote.nombre,
     description: `${lote.piezas} perfumes por ${fmt(lote.precio)} MXN — te sale a ${fmt(lote.precioIndividualEquivalente)} la pieza. ${lote.descripcion.slice(0, 90)}`,
+    alternates: { canonical: `/lotes/${lote.slug}` },
   };
 }
 

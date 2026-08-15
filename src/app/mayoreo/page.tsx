@@ -26,6 +26,7 @@ export const metadata: Metadata = {
   title: "Mayoreo — convierte el perfume en tu negocio",
   description:
     "Precio de mayoreo desde 3 piezas, hasta 40% de descuento con 12 o más. Sin mínimo, sin papeleo y con envío gratis. Calcula tu ganancia.",
+  alternates: { canonical: "/mayoreo" },
 };
 
 export default function MayoreoPage() {

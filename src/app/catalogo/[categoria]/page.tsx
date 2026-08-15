@@ -30,6 +30,7 @@ export async function generateMetadata({
       title: "Sets y estuches de regalo",
       description:
         "Estuches listos para regalar: dúos, tríos y el set descubrimiento de 5 miniaturas. Con caja, listón y tarjeta incluidos.",
+      alternates: { canonical: "/catalogo/sets" },
     };
   }
 
@@ -39,6 +40,7 @@ export async function generateMetadata({
   return {
     title: cat.titulo,
     description: cat.descripcion,
+    alternates: { canonical: `/catalogo/${cat.slug}` },
   };
 }
 

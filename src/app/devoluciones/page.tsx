@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Cambios y devoluciones",
   description:
     "30 días para devolver y nosotros pagamos la guía. Si no cumple el 1:1 que prometemos, te devolvemos el 100% de tu dinero.",
+  alternates: { canonical: "/devoluciones" },
 };
 
 export default function DevolucionesPage() {

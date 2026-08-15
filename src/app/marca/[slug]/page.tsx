@@ -18,6 +18,7 @@ export async function generateMetadata({
   return {
     title: `${marca.nombre} — ${marca.firma}`,
     description: marca.descripcion.slice(0, 155),
+    alternates: { canonical: `/marca/${marca.slug}` },
   };
 }
 

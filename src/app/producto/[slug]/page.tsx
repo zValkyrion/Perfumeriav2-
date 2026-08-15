@@ -68,6 +68,7 @@ export async function generateMetadata({
   return {
     title: `${producto.nombre} — ${marca}`,
     description: `${producto.descripcionCorta}. ${producto.concentracion} desde ${fmt(desde)} MXN. Envío gratis desde 3 piezas y precio de mayoreo por volumen.`,
+    alternates: { canonical: `/producto/${producto.slug}` },
     openGraph: {
       title: `${producto.nombre} — ${marca}`,
       description: producto.descripcionCorta,

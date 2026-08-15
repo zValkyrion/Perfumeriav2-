@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Lotes de mayoreo",
   description:
     "Ocho lotes armados de 6 a 50 piezas, con precio de distribuidor, envío gratis y material de venta. Surtidos mixtos y temáticos.",
+  alternates: { canonical: "/lotes" },
 };
 
 export default function LotesPage() {

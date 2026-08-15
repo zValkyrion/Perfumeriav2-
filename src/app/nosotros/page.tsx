@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Nosotros",
   description:
     "Quiénes somos: un distribuidor mexicano de perfumería fina que vende al menudeo y al mayoreo desde 3 piezas.",
+  alternates: { canonical: "/nosotros" },
 };
 
 export default function NosotrosPage() {

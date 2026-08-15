@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Preguntas frecuentes",
   description:
     "Envíos, originalidad, mayoreo, pagos, meses sin intereses, devoluciones y facturación. Todo lo que preguntan antes de comprar.",
+  alternates: { canonical: "/faq" },
 };
 
 export default function FAQPage() {

@@ -9,6 +9,11 @@ export const metadata: Metadata = {
   title: "Paquetes para revender",
   description:
     "Paquetes armados de perfumes 1:1 con precio de distribuidor, envío gratis y material de venta incluido.",
+  // Esta página lista los mismos ocho lotes que /lotes, solo que sin separar
+  // mixtos de temáticos: para un buscador es contenido duplicado. Sigue
+  // existiendo porque la home y el banner del paquete estrella apuntan aquí,
+  // pero la autoridad se acumula en /lotes, que es la landing de mayoreo.
+  alternates: { canonical: "/lotes" },
 };
 
 /**
