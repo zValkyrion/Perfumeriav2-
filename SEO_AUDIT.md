@@ -171,3 +171,239 @@ inventado es peor que no tenerlo:
 
 Te los pregunto al llegar a la Fase 3. Si no hay dirección física ni teléfono
 reales, se emite `Organization` sin `LocalBusiness` y se documenta la omisión.
+
+---
+
+## Fases 1 a 5 — Lo implementado
+
+Cinco commits en `seo/fase-0-auditoria`, uno por fase. `npm run build` genera
+`out/` sin errores y `npm run lint` no reporta errores (quedan 2 avisos previos
+al trabajo, en `banner-paquete.tsx` y `hero.tsx`).
+
+### Tabla antes / después
+
+| Ruta | Title antes | Title después | Canonical | JSON-LD antes | JSON-LD después |
+| --- | --- | --- | --- | --- | --- |
+| `/` | Perfumería fina al mayoreo y menudeo (61) | Perfumes al mayoreo y menudeo (54) | ❌ → ✅ | FAQPage | Organization + WebSite |
+| `/catalogo` | Catálogo completo | Catálogo completo de perfumes | ❌ → ✅ | — | Breadcrumb + ItemList |
+| `/catalogo/[categoria]` ×8 | `cat.titulo` | + precio de entrada | ❌ → ✅ | — | Breadcrumb + ItemList |
+| `/catalogo/[familia]` ×9 | **no existían** | Perfumes amaderados desde $X | — → ✅ | — | Breadcrumb + ItemList |
+| `/catalogo/sets` | Sets y estuches de regalo | igual | ❌ → ✅ | — | — |
+| `/producto/[slug]` ×52 | Nombre — Marca | Nombre + ml + casa | ❌ → ✅ | Product **con datos falsos** | Product limpio + Breadcrumb |
+| `/marca/[slug]` ×12 | Marca — firma | Perfumes `<marca>` en México | ❌ → ✅ | — | Breadcrumb + ItemList |
+| `/lotes` | Lotes de mayoreo | Pacas de perfumes al mayoreo | ❌ → ✅ | — | Breadcrumb + ItemList |
+| `/lotes/[slug]` ×8 | `lote.nombre` | Lote de N perfumes al mayoreo | ❌ → ✅ | — | Breadcrumb |
+| `/paquetes` | Paquetes para revender | igual | ❌ → **→ /lotes** | — | — |
+| `/promociones` | ❌ heredaba la home | Promociones y rebajas | ❌ → ✅ | — | — |
+| `/mayoreo` | Mayoreo — convierte el perfume… | Perfumes al mayoreo en México | ❌ → ✅ | FAQPage | FAQPage (única) |
+| `/faq` | Preguntas frecuentes | igual | ❌ → ✅ | FAQPage ×2 juegos | FAQPage (solo FAQ_HOME) |
+| institucionales y legales ×7 | sin cambio | sin cambio | ❌ → ✅ | — | — |
+| `/buscar` | ❌ heredaba la home, indexable | Buscar perfumes, **noindex** | n/a | — | — |
+| transaccionales ×5 | `follow: false` | `follow: true` + `Disallow` | n/a | — | — |
+
+Las descriptions se reescribieron en todas las rutas comerciales con la fórmula
+qué es + diferenciador + señal de México, derivando conteos y precios del
+catálogo en lugar de escribirlos a mano.
+
+Resultado medido sobre `out/`: **107 páginas, 0 con title >60 o description >155**
+(antes 27 fuera de rango), **102 URLs en el sitemap**, **1 canonical por página**.
+
+### Lista de cambios
+
+**Fase 0 — origen canónico** · commit `3733731`
+
+- [src/lib/sitio.ts](src/lib/sitio.ts) — `SITIO_URL` y `urlAbsoluta()`. Único
+  lugar con la URL pública; migrar al dominio propio es cambiar una línea.
+- [layout.tsx](src/app/layout.tsx) — `metadataBase` al origen real.
+
+**Fase 1 — indexación** · commit `f988e85`
+
+- [src/app/sitemap.ts](src/app/sitemap.ts) y [src/app/robots.ts](src/app/robots.ts)
+  — ambos con `dynamic = "force-static"`, que `output: "export"` exige y que no
+  aparece en la doc de `sitemap.xml` sino en la guía de exportación estática.
+- Canonical en cada ruta indexable; `/paquetes` canonicaliza a `/lotes`.
+- [buscar/layout.tsx](src/app/buscar/layout.tsx) y
+  [promociones/layout.tsx](src/app/promociones/layout.tsx) — metadata para dos
+  rutas de cliente que no podían exportarla.
+
+**Fase 2 — metadata** · commit `4223154`
+
+- [src/lib/seo.ts](src/lib/seo.ts) — plantillas que se ajustan al largo
+  disponible. La `template` del layout consume 25 de los 60 caracteres del
+  título, así que cada plantilla ofrece variante completa y corta, y las
+  descriptions rellenan por oración completa hasta 155.
+- [scripts/generar-og.ts](scripts/generar-og.ts) — `public/og/portada.jpg` y
+  `logo.png` con sharp. `opengraph-image.tsx` queda descartado: `ImageResponse`
+  compone en tiempo de petición y aquí no hay servidor.
+
+**Fase 3 — datos estructurados** · commit `558909d`
+
+- [src/lib/jsonld.ts](src/lib/jsonld.ts) — helpers centralizados; documenta qué
+  campos faltan y bajo qué condición se pueden agregar.
+- Retirados `aggregateRating` y `AggregateOffer` de la ficha de producto.
+- Organization, WebSite, BreadcrumbList e ItemList; FAQPage desduplicado.
+
+**Fase 4 — familias y enlazado** · commit `40bbc8c`
+
+- [taxonomia.ts](src/data/taxonomia.ts) — `titulo` y `guia` de dos párrafos por
+  familia, orientados al clima de México.
+- [catalogo/[categoria]/page.tsx](src/app/catalogo/[categoria]/page.tsx) — las 9
+  familias pasan a ser páginas indexables.
+- Enlaces repuntados en home, menú y ficha: no queda ningún `?familia=` en el
+  HTML generado. Anclas descriptivas, nunca "ver más".
+
+**Fase 5 — rendimiento y accesibilidad** · commit `fae331b`
+
+- [vista-catalogo.tsx](src/components/catalogo/vista-catalogo.tsx) — el
+  encabezado sale del Suspense. **Era el defecto on-page más grave**: 22 rutas
+  se servían con "Cargando..." en lugar de su h1 y su contenido.
+- [scripts/optimizar-banners.ts](scripts/optimizar-banners.ts) — el banner del
+  hero, que es el elemento LCP de la home, pasa de **903 kB a 72 kB (-92%)**.
+- `h1` sr-only en la home, que no tenía ninguno porque el hero es una imagen.
+
+### Verificado
+
+| Comprobación | Resultado |
+| --- | --- |
+| `npm run build` a `out/` | sin errores en las 5 fases |
+| Páginas con exactamente un `h1` | 103 de 107 (las 4 sin `h1` son `noindex`) |
+| Saltos de nivel de encabezado | 8 rutas con `h1` a `h3`, todas por el mismo componente |
+| `alt` de imágenes | los vacíos son decorativos o duplicados con `aria-label` en el padre: correcto |
+| CLS | las imágenes usan `fill` dentro de contenedores con proporción fija |
+| Script de temas en `<head>` | inline, ~200 bytes, sin red: no bloquea de forma medible |
+
+Pendiente menor: los 8 saltos `h1` a `h3` vienen de un mismo componente de
+página informativa. No es penalización, sí es ruido para lectores de pantalla.
+
+---
+
+## Lo que NO se puede resolver desde el repositorio
+
+Ordenado por impacto. Los tres primeros pesan más que todo el trabajo técnico
+hecho arriba.
+
+### 1. El catálogo es ficticio, y eso bloquea todo lo demás
+
+No es solo que los precios sean sintéticos: **las 12 casas son inventadas**
+([marcas.ts:3](src/data/marcas.ts:3) lo dice explícitamente). Consecuencias:
+
+- Las 12 páginas de marca apuntan a consultas con **cero volumen de búsqueda**.
+  Nadie busca "perfumes Orfèvre": esa casa no existe. La plantilla es correcta y
+  funcionará el día que haya marcas reales, pero hoy esas páginas no traen
+  tráfico.
+- Sin inventario real no se puede emitir `offers`, `availability` ni
+  `aggregateRating`, ni entrar a Merchant Center. Queda fuera todo el resultado
+  enriquecido de comercio, que es el que mueve el CTR.
+- Lo que sí puede rankear hoy: las 9 familias, las 8 categorías, `/mayoreo` y
+  los 8 lotes. Ahí la consulta es genérica y no depende del nombre de la casa.
+
+**Acción:** sustituir `src/data/semillas.ts` y `marcas.ts` por inventario real.
+
+### 2. Dominio propio
+
+`zvalkyrion.github.io/Perfumeriav2-` no compite en México contra tiendas con
+dominio propio: la URL es la primera señal de confianza en el resultado. El repo
+ya está listo — una línea en [sitio.ts](src/lib/sitio.ts), un `public/CNAME` y
+quitar el `basePath` del workflow.
+
+### 3. Search Console y Business Profile
+
+Sin Search Console no hay envío de sitemap, ni informe de cobertura, ni consultas
+reales, ni aviso de acciones manuales. Sin Business Profile no hay panel local ni
+Maps, donde se decide buena parte de la búsqueda comercial en México.
+
+### 4. Reseñas reales
+
+Las de `resenas.ts` son sintéticas. Hasta que haya reseñas verificables y
+visibles no se puede emitir `aggregateRating` sin arriesgar acción manual. Es el
+campo que más sube el CTR en resultados de producto.
+
+### 5. Datos de contacto
+
+[contenido.ts:3](src/data/contenido.ts:3) tiene WhatsApp `477 123 4567`, redes
+sin usuario y ningún domicilio. Con datos reales, el `Organization` pasa a
+`LocalBusiness` con `telephone`, `address` y `sameAs`.
+
+### 6. Backlinks
+
+Cero enlaces entrantes. Ninguna palanca on-page compensa eso en un mercado
+competido.
+
+### 7. Velocidad del hosting
+
+GitHub Pages no permite cabeceras de caché propias ni CDN configurable. `out/`
+pesa **81 MB**, de los cuales **14 MB son arte de producto**. Con
+`images.unoptimized` no hay redimensionado por dispositivo: el móvil descarga la
+misma imagen que el escritorio.
+
+---
+
+## Plan de 90 días
+
+### Días 1 a 15 — cimientos que dependen de ti
+
+| Acción | Impacto / esfuerzo |
+| --- | --- |
+| Comprar el dominio `.mx` y apuntarlo | **alto / bajo** |
+| Alta en Search Console y envío del sitemap | **alto / bajo** |
+| Google Business Profile con dirección, teléfono y horario reales | **alto / bajo** |
+| Darme los datos de contacto reales para cerrar el `LocalBusiness` | alto / bajo |
+| Bing Webmaster Tools (importa desde Search Console en un clic) | medio / muy bajo |
+
+### Días 16 a 45 — inventario real
+
+| Acción | Impacto / esfuerzo |
+| --- | --- |
+| Sustituir el catálogo sintético por inventario real | **muy alto / alto** |
+| Reactivar `offers` y `availability` en el JSON-LD | alto / bajo (ya documentado) |
+| Pedir reseñas a clientes que ya compraron y publicarlas verificadas | alto / medio |
+| Merchant Center con el feed de productos reales | alto / medio |
+
+### Días 46 a 90 — contenido y autoridad
+
+| Acción | Impacto / esfuerzo |
+| --- | --- |
+| Páginas guía de alta intención (propuesta abajo) | alto / medio |
+| Fichas de producto con texto propio, no copiado del proveedor | alto / alto |
+| Directorios locales mexicanos y cámaras de comercio | medio / bajo |
+| Alianzas con revendedores: que enlacen desde sus perfiles | medio / medio |
+| Contenido en video reutilizando el material de la tienda | medio / alto |
+
+---
+
+## Propuesta pendiente de tu visto bueno: páginas guía
+
+No las implementé porque pediste aprobarlas primero. Las cuatro atacan consultas
+informativas con intención de compra cercana, que es donde un catálogo sin marca
+conocida sí puede competir.
+
+**1. `/guias/perfumes-que-duran-todo-el-dia`**
+Intención: "perfumes que duran mucho", "perfume de larga duración".
+Esquema: por qué duran unos y otros no (concentración y notas de fondo) · cómo
+leer la concentración · los del catálogo con `duracion` 4 o 5, enlazados ·
+errores de aplicación que acortan la duración.
+Ventaja: los campos `duracion` y `estela` ya existen y la lista se arma sola.
+
+**2. `/guias/perfumes-al-mayoreo-para-revender`**
+Intención B2B: "cómo revender perfumes", "negocio de perfumes".
+Esquema: cuánto se necesita para empezar · margen real con la escalera de
+precios · qué familias rotan más · cómo elegir el primer lote · enlaces a
+`/mayoreo` y a los 8 lotes.
+**Es la de mayor valor comercial**: menos competencia y cliente recurrente.
+
+**3. `/guias/como-saber-si-un-perfume-es-original`**
+Intención: "cómo saber si un perfume es original".
+Esquema: qué revisar en lote, códigos y sellos · qué NO prueba nada · en qué se
+distingue un original de un inspirado · qué vendemos exactamente.
+**Ojo:** esta página obliga a ser explícitos sobre el 1:1 y los "inspirados"
+frente al "100% originales" que declara el layout. Bien hecha genera confianza;
+mal hecha la destruye. Conviene alinear ese mensaje antes de publicarla.
+
+**4. `/guias/perfumes-para-clima-calido`**
+Intención: "perfumes para el calor", "perfume para clima húmedo".
+Esquema: qué le hace el calor a cada familia · cítricos y acuáticos como apuesta
+segura · qué evitar a mediodía · cómo aplicar para que rinda · enlaces a
+`/catalogo/citrico` y `/catalogo/acuatico`.
+
+Si les das luz verde, van en `/guias/[slug]` con `Article` en JSON-LD, entran al
+sitemap y se enlazan desde las familias correspondientes.
