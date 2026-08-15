@@ -267,13 +267,15 @@ Resultado medido sobre `out/`: **107 páginas, 0 con title >60 o description >15
 | --- | --- |
 | `npm run build` a `out/` | sin errores en las 5 fases |
 | Páginas con exactamente un `h1` | 103 de 107 (las 4 sin `h1` son `noindex`) |
-| Saltos de nivel de encabezado | 8 rutas con `h1` a `h3`, todas por el mismo componente |
+| Saltos de nivel de encabezado | 8 rutas con `h1` a `h3`, por tres causas distintas (detalle en `SEO_PENDIENTES.md`) |
 | `alt` de imágenes | los vacíos son decorativos o duplicados con `aria-label` en el padre: correcto |
 | CLS | las imágenes usan `fill` dentro de contenedores con proporción fija |
 | Script de temas en `<head>` | inline, ~200 bytes, sin red: no bloquea de forma medible |
 
-Pendiente menor: los 8 saltos `h1` a `h3` vienen de un mismo componente de
-página informativa. No es penalización, sí es ruido para lectores de pantalla.
+Pendiente menor: los 8 saltos `h1` a `h3` vienen del acordeón móvil del footer,
+de `TarjetaLote` y del orden de encabezados de `/mayoreo`. No es penalización, sí
+es ruido para lectores de pantalla. Desglosado en
+[SEO_PENDIENTES.md](SEO_PENDIENTES.md).
 
 ---
 
