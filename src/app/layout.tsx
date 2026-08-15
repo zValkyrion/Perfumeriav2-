@@ -10,6 +10,7 @@ import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
 import { SelectorTemas } from "@/components/comunes/selector-temas";
 import { TransicionRuta } from "@/components/comunes/transicion-ruta";
 import { MAS_VENDIDOS, indiceCompacto } from "@/data/productos";
+import { SITIO_URL } from "@/lib/sitio";
 import "./globals.css";
 
 const inter = Inter({
@@ -30,7 +31,10 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://elreydelosperfumes.mx"),
+  // El canonical NO va aquí: en el layout lo heredaría toda ruta que no lo
+  // sobrescriba y el sitio entero se autodeclararía como la home. Cada página
+  // pone el suyo.
+  metadataBase: new URL(SITIO_URL),
   title: {
     default: "EL REY DE LOS PERFUMES — Perfumería fina al mayoreo y menudeo",
     template: "%s | EL REY DE LOS PERFUMES",

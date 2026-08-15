@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AcordeonFAQ, FAQJsonLd } from "@/components/comunes/acordeon-faq";
 import {
@@ -34,6 +35,12 @@ import {
   PRODUCTOS,
   precioDesde,
 } from "@/data/productos";
+
+// Title y description los pone el layout: la home es la única página donde el
+// texto por defecto es el correcto. Aquí solo falta el canonical.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 /**
  * Home con estructura de mayorista.
