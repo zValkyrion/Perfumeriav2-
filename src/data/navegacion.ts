@@ -1,7 +1,3 @@
-import { MARCAS } from "./marcas";
-import { CATEGORIAS, FAMILIAS } from "./taxonomia";
-import { LOTES } from "./lotes";
-
 export interface EnlaceNav {
   label: string;
   href: string;
@@ -23,106 +19,36 @@ export interface SeccionNav {
   promo?: { titulo: string; texto: string; href: string; cta: string };
 }
 
-const PERFUMES: GrupoNav[] = [
-  {
-    titulo: "Por público",
-    enlaces: CATEGORIAS.filter((c) =>
-      ["hombre", "mujer", "unisex"].includes(c.slug),
-    ).map((c) => ({ label: c.nombre, href: `/catalogo/${c.slug}` })),
-  },
-  {
-    titulo: "Por tipo",
-    enlaces: CATEGORIAS.filter((c) =>
-      ["arabes", "nicho", "inspirados", "body-mist"].includes(c.slug),
-    ).map((c) => ({ label: c.nombre, href: `/catalogo/${c.slug}` })),
-  },
-  {
-    titulo: "Por familia",
-    // Cada familia tiene página propia desde la Fase 4 de SEO; antes esto
-    // apuntaba a `/catalogo?familia=X`, que no es una URL indexable.
-    enlaces: [
-      ...FAMILIAS.filter((f) =>
-        ["amaderado", "oriental", "floral", "citrico", "gourmand"].includes(
-          f.slug,
-        ),
-      ).map((f) => ({ label: f.nombre, href: `/catalogo/${f.slug}` })),
-      { label: "Ver todo el catálogo", href: "/catalogo" },
-    ],
-  },
-];
-
+/**
+ * Barra de navegación principal.
+ *
+ * Son exactamente los seis destinos de los círculos de "tipos de compra" de la
+ * home, con las mismas etiquetas y las mismas URLs. Antes esto era un
+ * mega-menú de siete secciones con desplegables: para un mayorista era ruido,
+ * porque quien llega ya sabe si viene por surtido, por paquete o por categoría.
+ * Un solo juego de enlaces en toda la tienda también significa que el cliente
+ * aprende la navegación una vez.
+ */
 export const NAVEGACION: readonly SeccionNav[] = [
-  {
-    label: "3x2 en toda la tienda",
-    href: "/promociones",
-    destacado: true,
-  },
-  { label: "Rebajas", href: "/promociones?vista=rebajas" },
-  {
-    label: "Perfumes",
-    href: "/catalogo",
-    grupos: PERFUMES,
-    promo: {
-      titulo: "¿No sabes cuál elegir?",
-      texto:
-        "El Set Descubrimiento trae cinco de nuestros más vendidos en 10 ml. Pruebas todos y luego decides el frasco grande.",
-      href: "/catalogo/sets",
-      cta: "Ver el set",
-    },
-  },
-  {
-    label: "Marcas",
-    href: "/catalogo",
-    grupos: [
-      {
-        titulo: "Nuestras casas",
-        enlaces: MARCAS.slice(0, 6).map((m) => ({
-          label: m.nombre,
-          href: `/marca/${m.slug}`,
-          nota: m.pais,
-        })),
-      },
-      {
-        titulo: " ",
-        enlaces: MARCAS.slice(6).map((m) => ({
-          label: m.nombre,
-          href: `/marca/${m.slug}`,
-          nota: m.pais,
-        })),
-      },
-    ],
-  },
-  {
-    label: "Lotes",
-    href: "/lotes",
-    grupos: [
-      {
-        titulo: "Por volumen",
-        enlaces: LOTES.filter((l) => l.tema === "Mixto").map((l) => ({
-          label: `${l.piezas} piezas`,
-          href: `/lotes/${l.slug}`,
-          nota: l.masVendido ? "Más vendido" : undefined,
-        })),
-      },
-      {
-        titulo: "Surtido temático",
-        enlaces: LOTES.filter((l) => l.tema !== "Mixto").map((l) => ({
-          label: l.tema,
-          href: `/lotes/${l.slug}`,
-        })),
-      },
-    ],
-    promo: {
-      titulo: "Calcula tu ganancia",
-      texto:
-        "Mueve el número de piezas y te decimos cuánto inviertes, a cómo te queda cada frasco y cuánto ganas al revender.",
-      href: "/mayoreo#calculadora",
-      cta: "Abrir calculadora",
-    },
-  },
-  { label: "Sets y regalos", href: "/catalogo/sets" },
-  { label: "Mayoreo", href: "/mayoreo" },
+  { label: "Mayoreo surtido", href: "/catalogo", destacado: true },
+  { label: "Paquetes", href: "/lotes" },
+  { label: "Diseñador", href: "/catalogo/disenador" },
+  { label: "Árabes", href: "/catalogo/arabes" },
+  { label: "Hombre", href: "/catalogo/hombre" },
+  { label: "Mujer", href: "/catalogo/mujer" },
 ] as const;
+
+/**
+ * Categorías del catálogo, para la columna de filtros.
+ *
+ * Se derivan de la navegación en vez de escribirse aparte: son la misma lista
+ * que ve el cliente arriba y en los círculos de la home, y mantener dos copias
+ * termina siempre con una desactualizada. Se cae "Paquetes", que no es una
+ * categoría de producto sino un formato de venta.
+ */
+export const CATEGORIAS_CATALOGO: readonly EnlaceNav[] = NAVEGACION.filter(
+  (s) => s.href !== "/lotes",
+).map((s) => ({ label: s.label, href: s.href }));
 
 /** Enlaces del footer, por columna (§7.7). */
 export const FOOTER_TIENDA: EnlaceNav[] = [

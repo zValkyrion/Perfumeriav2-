@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingBag } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { useTienda } from "@/store/tienda";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +34,14 @@ export function BotonCarrito({ className }: { className?: string }) {
     >
       {/* Cambiar la `key` remonta el icono y reinicia la animación CSS: el
           latido del §6.7 sin estado ni temporizadores que limpiar. */}
-      <ShoppingBag key={visible} size={20} aria-hidden className="animate-latido" />
+      {/* Carrito, no bolsa: el carrito se lee como "compra por volumen", que es
+          lo que hace aquí el cliente. */}
+      <ShoppingCart
+        key={visible}
+        size={20}
+        aria-hidden
+        className="animate-latido"
+      />
       {visible > 0 ? (
         <span
           data-precio

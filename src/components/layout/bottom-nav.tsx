@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, Home, LayoutGrid, Search, ShoppingBag } from "lucide-react";
+import { Heart, Home, LayoutGrid, Search, ShoppingCart } from "lucide-react";
 import { useTienda } from "@/store/tienda";
 import { cn } from "@/lib/utils";
 
@@ -80,7 +80,7 @@ export function BottomNav() {
 
         <button type="button" onClick={abrirDrawer} className={clase(false)}>
           <span className="relative">
-            <ShoppingBag size={20} aria-hidden />
+            <ShoppingCart size={20} aria-hidden />
             {hidratado && piezas > 0 ? (
               <span
                 data-precio

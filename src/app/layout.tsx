@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { BarraContador } from "@/components/layout/barra-contador";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
@@ -99,9 +98,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Saltar al contenido
         </a>
 
-        {/* Arriba del todo va la urgencia con plazo real; la tira de promesas
-            se movió a la home, justo debajo del banner. */}
-        <BarraContador />
+        {/* La cabecera es lo primero: la barra de cuenta atrás se retiró y la
+            tira de promesas vive en la home, justo debajo del banner. */}
         <Header indice={indice} />
 
         <main id="contenido" className="flex-1 pb-16 md:pb-0">

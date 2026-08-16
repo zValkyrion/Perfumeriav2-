@@ -3,9 +3,12 @@
 export const MARCA = {
   nombre: "EL REY DE LOS PERFUMES",
   tagline: "La misma fragancia. El mismo frasco. Sin pagar la etiqueta.",
-  whatsapp: "477 123 4567",
+  whatsapp: "55 4047 9322",
   whatsappLink:
-    "https://wa.me/524771234567?text=Hola%2C%20vengo%20de%20la%20tienda%20en%20l%C3%ADnea%20y%20tengo%20una%20duda",
+    "https://wa.me/525540479322?text=Hola%2C%20vengo%20de%20la%20tienda%20en%20l%C3%ADnea%20y%20tengo%20una%20duda",
+  /** Cotización de alto volumen: entra al chat con el asunto ya escrito. */
+  whatsappCotizacion:
+    "https://wa.me/525540479322?text=Hola%2C%20quiero%20cotizar%20m%C3%A1s%20de%2020%20perfumes%20al%20mayoreo",
   correo: "contacto@elreydelosperfumes.mx",
   instagram: "https://instagram.com",
   facebook: "https://facebook.com",
@@ -26,8 +29,8 @@ export const FIN_PROMO_3X2 = "2026-08-31T23:59:59-06:00";
 export const ANUNCIOS = [
   "✨ CALIDAD 1:1 — IDÉNTICO AL ORIGINAL",
   "🚚 ENVÍO GRATIS DESDE 3 PIEZAS",
-  "💳 6 MESES SIN INTERESES",
-  "🔥 3x2 EN TODA LA TIENDA",
+  "💳 3 MESES SIN INTERESES",
+  "⭐️ GARANTÍA DE CALIDAD",
 ] as const;
 
 /**
@@ -79,7 +82,84 @@ export const PASOS_ENVIO = [
   },
 ] as const;
 
+/**
+ * Preguntas frecuentes, agrupadas por tema.
+ *
+ * El orden no es casual: primero envíos —lo que más se pregunta y lo que más
+ * frena una primera compra a distancia—, luego el mayoreo, y al final las tres
+ * que decide quien ya está por comprar. Las respuestas son cortas a propósito:
+ * un párrafo que hay que releer no resuelve una duda, la aplaza.
+ */
 export const FAQ_HOME = [
+  {
+    grupo: "Envíos",
+    p: "¿A qué lugares envían?",
+    r: "Enviamos a todo México por medio de Estafeta, Paquetexpress o FedEx. La paquetería se asigna automáticamente según tu dirección para asegurar la entrega más rápida.",
+  },
+  {
+    grupo: "Envíos",
+    p: "¿Cuánto tardan los envíos?",
+    r: "Los pedidos se envían una vez confirmado el pago. El tiempo estimado de entrega es de 2 a 7 días hábiles a cualquier estado del país. Todos los envíos están garantizados hasta que el paquete llega a tus manos.",
+  },
+  {
+    grupo: "Envíos",
+    p: "¿Puedo rastrear mi pedido?",
+    r: "Sí. Una vez que tu pedido se envía, recibirás un número de guía por WhatsApp o correo para rastrearlo en tiempo real.",
+  },
+  {
+    grupo: "Mayoreo",
+    p: "¿A partir de cuántos perfumes aplica el precio de mayoreo?",
+    r: "El precio de mayoreo empieza desde 3 perfumes. Entre más perfumes agregues al carrito, mayor es el descuento automático. Los paquetes ya incluyen precio de mayoreo fijo.",
+  },
+  {
+    grupo: "Mayoreo",
+    p: "¿Cómo funciona el Mayoreo Surtido?",
+    r: "Puedes elegir los perfumes que quieras y combinar modelos y presentaciones libremente. El sistema calcula tu descuento automáticamente según la cantidad que agregues, y el envío es gratis desde 3 perfumes. Ideal si quieres revender con poca inversión.",
+  },
+  {
+    grupo: "Pagos",
+    p: "¿Qué métodos de pago aceptan?",
+    r: "Aceptamos pagos con tarjeta de débito, crédito y transferencias. También puedes pagar con herramientas de pago seguro como Clip o Ecart Pay.",
+  },
+  {
+    grupo: "Pagos",
+    p: "¿Puedo pagar al recibir?",
+    r: "Sí, está disponible solo en ciertos pedidos, dependiendo del tipo de producto y del monto. Si aplica para tu compra, aparecerá la opción en el checkout.",
+  },
+  {
+    grupo: "Calidad y garantías",
+    p: "¿Qué garantía tienen los perfumes?",
+    r: "Todos nuestros productos cuentan con garantía de calidad exacta 1.1. Si llega un perfume defectuoso, lo reemplazamos sin costo.",
+  },
+  {
+    grupo: "Calidad y garantías",
+    p: "¿Qué pasa si un perfume llega dañado o incompleto?",
+    r: "Tu compra está 100% protegida. Nos envías fotos o video del problema y procesamos el reemplazo inmediatamente.",
+  },
+  {
+    grupo: "Devoluciones",
+    p: "¿Cómo puedo devolver un producto?",
+    r: "Si recibes un producto defectuoso o equivocado, te ayudamos a devolverlo sin costo. Solo contáctanos por WhatsApp con tu número de pedido.",
+  },
+  {
+    grupo: "Las más frecuentes",
+    p: "¿Puedo elegir perfumes diferentes?",
+    r: "Sí. En Mayoreo Surtido y en los paquetes puedes elegir perfumes variados dentro de la disponibilidad del catálogo.",
+  },
+  {
+    grupo: "Las más frecuentes",
+    p: "¿Puedo mezclar perfumes?",
+    r: "Sí, en Mayoreo Surtido puedes combinar todos los modelos, aromas y presentaciones que quieras.",
+  },
+  {
+    grupo: "Las más frecuentes",
+    p: "¿Cuál es la mejor opción para empezar un negocio?",
+    r: "El Paquete Emprendedor de 20 perfumes es la opción más recomendada para iniciar, por su precio por pieza y su facilidad de reventa.",
+  },
+] as const;
+
+/** Preguntas de catálogo y producto, para las fichas y el buscador interno. */
+export const FAQ_CATALOGO = [
   {
     p: "¿Qué significa que sean 1:1?",
     r: "Que replican al detalle la fragancia y el frasco de la casa en la que se inspiran: la misma pirámide olfativa, la misma evolución en la piel y una botella idéntica en forma, peso y acabado. No son el producto de esa casa ni lo vendemos como tal: es una equivalencia 1:1 a una fracción del precio, sin pagar la etiqueta ni la publicidad.",

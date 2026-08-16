@@ -60,6 +60,7 @@ export function VistaCatalogo({
   migas = [],
   params,
   vacioPersonalizado,
+  encabezado,
 }: {
   base: Producto[];
   titulo: string;
@@ -68,6 +69,13 @@ export function VistaCatalogo({
   migas?: Miga[];
   params?: ParamsBusqueda;
   vacioPersonalizado?: React.ReactNode;
+  /**
+   * Sustituye el encabezado por uno propio —el catálogo general presenta ahí
+   * la escalera de mayoreo—. Las migas se siguen pintando: son navegación, no
+   * decoración, y el `titulo` sigue siendo obligatorio porque alimenta el
+   * `aria-label` de la rejilla y los metadatos de la página.
+   */
+  encabezado?: React.ReactNode;
 }) {
   return (
     <Contenedor className="py-6 lg:py-10">
@@ -76,6 +84,7 @@ export function VistaCatalogo({
         eyebrow={eyebrow}
         descripcion={descripcion}
         migas={migas}
+        encabezado={encabezado}
       />
 
       <Suspense fallback={<div className="py-10 text-center">Cargando...</div>}>
@@ -100,11 +109,13 @@ export function EncabezadoCatalogo({
   eyebrow,
   descripcion,
   migas = [],
+  encabezado,
 }: {
   titulo: string;
   eyebrow?: string;
   descripcion?: string;
   migas?: Miga[];
+  encabezado?: React.ReactNode;
 }) {
   return (
     <>
@@ -132,17 +143,21 @@ export function EncabezadoCatalogo({
         </BreadcrumbList>
       </Breadcrumb>
 
-      <header className="mb-6 max-w-2xl lg:mb-8">
-        {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
-        <h1 className="font-display text-[32px] leading-[1.05] tracking-tight text-balance lg:text-[44px]">
-          {titulo}
-        </h1>
-        {descripcion ? (
-          <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
-            {descripcion}
-          </p>
-        ) : null}
-      </header>
+      {encabezado ? (
+        <div className="mb-8 lg:mb-12">{encabezado}</div>
+      ) : (
+        <header className="mb-6 max-w-2xl lg:mb-8">
+          {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
+          <h1 className="font-display text-[32px] leading-[1.05] tracking-tight text-balance lg:text-[44px]">
+            {titulo}
+          </h1>
+          {descripcion ? (
+            <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
+              {descripcion}
+            </p>
+          ) : null}
+        </header>
+      )}
     </>
   );
 }
@@ -173,9 +188,12 @@ export function RejillaCatalogo({
   return (
     <>
       <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
+        {/* La columna acompaña al scroll de la página y ya no se queda fija con
+            su propia barra dentro: ese scroll anidado atrapaba la rueda del
+            ratón al pasar por encima y daba la sensación de que la página se
+            trababa. */}
         <aside className="hidden lg:block">
-          <div className="sticky top-24 max-h-[calc(100dvh-8rem)] overflow-y-auto pr-2 pb-6">
-            <p className="eyebrow mb-2">Filtrar</p>
+          <div className="pr-2 pb-6">
             <Suspense fallback={null}>
               <PanelFiltros />
             </Suspense>

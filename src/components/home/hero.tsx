@@ -6,10 +6,12 @@ import { Imagen } from "@/components/comunes/imagen";
 /**
  * Hero Panorámico Completo.
  *
- * Muestra el banner promocional oficial 3x2 abarcando todo el bloque
- * inicial de forma limpia y directa, siendo 100% clickeable hacia el catálogo.
+ * Muestra el banner de la paca de 50 piezas abarcando todo el bloque inicial y
+ * siendo 100% clickeable hacia los lotes. El arte se genera con
+ * `npm run banner-paca`; si se cambia el precio hay que regenerarlo, porque la
+ * cifra va dibujada dentro de la imagen.
  */
-export function Hero({ precioDesde }: { precioDesde?: number } = {}) {
+export function Hero() {
   return (
     <section className="relative isolate w-full overflow-hidden border-b border-border-soft bg-black">
       {/* Halo dorado sutil de fondo */}
@@ -24,13 +26,13 @@ export function Hero({ precioDesde }: { precioDesde?: number } = {}) {
 
       <div className="relative mx-auto w-full max-w-[1920px]">
         <Link
-          href="/catalogo"
+          href="/lotes"
           className="group relative block w-full aspect-[21/9] sm:aspect-[2.4/1] md:aspect-[2.7/1] min-h-[220px] sm:min-h-[320px] md:min-h-[420px] lg:min-h-[500px] overflow-hidden bg-black cursor-pointer"
-          title="Aprovechar 3x2 en Perfumes - Ir al Catálogo"
+          title="Paca de 50 perfumes por $19,999 MXN - Ver paquetes de mayoreo"
         >
           <Imagen
-            src="/hero-promo-3x2.webp"
-            alt="3x2 en Toda la Tienda en Perfumes - El Rey de los Perfumes - Llévate 3 artículos y paga solo 2"
+            src="/banner-paca-50.webp"
+            alt="Paca de mayoreo: 50 perfumes por $19,999 MXN, envío gratis y entrega inmediata - El Rey de los Perfumes"
             sizes="100vw"
             priority
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.01]"

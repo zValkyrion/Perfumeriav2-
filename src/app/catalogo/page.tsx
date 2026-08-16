@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CabeceraMayoreo } from "@/components/catalogo/cabecera-mayoreo";
 import { VistaCatalogo } from "@/components/catalogo/vista-catalogo";
 import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { Contenedor, Seccion } from "@/components/comunes/layout";
@@ -8,8 +9,8 @@ import { FAMILIAS } from "@/data/taxonomia";
 import { listaProductos, migasDePan } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
-  title: "Catálogo completo de perfumes",
-  description: `Los ${PRODUCTOS.length} perfumes del catálogo: diseñador, árabes, nicho e inspirados. Filtra por familia olfativa, precio, marca y ocasión. Mayoreo desde 3 piezas.`,
+  title: "Mayoreo surtido de perfumes",
+  description: `Los ${PRODUCTOS.length} perfumes del catálogo: diseñador, árabes, nicho e inspirados. Elige los que quieras y el descuento baja solo: 10% desde 3 piezas, 30% desde 10, con envío gratis.`,
   alternates: { canonical: "/catalogo" },
 };
 
@@ -28,10 +29,9 @@ export default function CatalogoPage() {
 
       <VistaCatalogo
         base={[...PRODUCTOS]}
-        eyebrow="Todo el catálogo"
-        titulo="Perfumes"
-        descripcion="Cincuenta y dos fragancias de doce casas. Desde 3 piezas el precio baja 15% y el envío corre por nuestra cuenta."
-        migas={[{ label: "Catálogo" }]}
+        titulo="Mayoreo surtido"
+        migas={[{ label: "Mayoreo surtido" }]}
+        encabezado={<CabeceraMayoreo />}
       />
 
       {/* Enlaza el catálogo con las nueve familias. Las anclas dicen a qué

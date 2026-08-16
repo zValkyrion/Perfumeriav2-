@@ -9,6 +9,7 @@
     "lint": "eslint",
     "imagenes": "tsx scripts/generar-imagenes.ts",
     "banners": "tsx scripts/optimizar-banners.ts",
+    "banner-paca": "tsx scripts/generar-banner-paca.ts",
     "og": "tsx scripts/generar-og.ts"
   },
   "dependencies": {

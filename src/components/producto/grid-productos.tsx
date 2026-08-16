@@ -3,7 +3,14 @@ import type { Producto } from "@/types";
 import { TarjetaProducto } from "./tarjeta-producto";
 import { cn } from "@/lib/utils";
 
-/** Rejilla del catálogo: 2 columnas en móvil para poder comparar (§6.3). */
+/**
+ * Rejilla del catálogo: 2 columnas en móvil para poder comparar (§6.3) y 3 en
+ * escritorio.
+ *
+ * Antes llegaba a cinco por hilera. Con cinco el frasco sale tan pequeño que
+ * no se distingue un modelo de otro, y esta tienda vende por foto: es mejor
+ * hacer scroll que no reconocer el producto.
+ */
 export function GridProductos({
   productos,
   className,
@@ -20,7 +27,7 @@ export function GridProductos({
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 2xl:grid-cols-5",
+        "grid grid-cols-2 gap-3 md:grid-cols-3 lg:gap-6",
         className,
       )}
     >
@@ -58,7 +65,7 @@ export function SkeletonProducto() {
 
 export function GridSkeleton({ cantidad = 10 }: { cantidad?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 2xl:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:gap-6">
       {Array.from({ length: cantidad }, (_, i) => (
         <div key={i} style={{ animationDelay: `${i * 45}ms` }} className="animate-aparecer">
           <SkeletonProducto />

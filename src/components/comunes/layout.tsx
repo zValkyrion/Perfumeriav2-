@@ -51,14 +51,22 @@ export function Seccion({
 /** Encabezado de sección: eyebrow + título serif + enlace opcional. */
 export function TituloSeccion({
   eyebrow,
+  sobretitulo,
   titulo,
   descripcion,
   enlace,
   enlaceTexto = "Ver todos",
   className,
   revelado = false,
+  centrado = false,
 }: {
   eyebrow?: string;
+  /**
+   * Renglón propio por encima del título, para cosas como una fila de
+   * estrellas. Metidas dentro del título se mezclaban con las palabras y el
+   * salto de línea caía en mitad de la fila.
+   */
+  sobretitulo?: string;
   titulo: string;
   descripcion?: string;
   enlace?: string;
@@ -66,19 +74,36 @@ export function TituloSeccion({
   className?: string;
   /** Revela el título palabra por palabra tras una máscara. */
   revelado?: boolean;
+  /**
+   * Centra el encabezado y engrosa el título. Es para las secciones que se
+   * leen como un anuncio —la prueba social, el surtido— y no como el rótulo de
+   * una rejilla: ahí el título alineado a la izquierda con el enlace colgando a
+   * la derecha se pierde en el ancho de la página.
+   */
+  centrado?: boolean;
 }) {
-  const claseTitulo =
-    "font-display text-[26px] leading-[1.1] tracking-tight text-balance lg:text-[40px]";
+  const claseTitulo = cn(
+    "font-display text-[26px] leading-[1.1] tracking-tight text-balance lg:text-[40px]",
+    centrado && "font-extrabold",
+  );
 
   return (
     <div
       className={cn(
-        "mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 lg:mb-10",
+        "mb-7 flex flex-wrap gap-x-6 gap-y-3 lg:mb-10",
+        centrado
+          ? "flex-col items-center justify-center text-center"
+          : "items-end justify-between",
         className,
       )}
     >
       <div className="max-w-2xl">
         {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
+        {sobretitulo ? (
+          <p className="mb-1.5 text-2xl leading-none tracking-[0.1em] lg:text-3xl">
+            {sobretitulo}
+          </p>
+        ) : null}
         {revelado ? (
           <TituloRevelado texto={titulo} className={claseTitulo} />
         ) : (

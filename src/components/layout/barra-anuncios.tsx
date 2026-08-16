@@ -44,23 +44,26 @@ export function BarraAnuncios() {
   const tira = [...ANUNCIOS, ...ANUNCIOS];
 
   return (
-    <div className="border-border-soft bg-bg relative z-50 h-9 border-b">
+    // Alta y con tipografía grande a propósito: es la única franja del sitio
+    // que repite las promesas, así que si no se lee de un vistazo no sirve de
+    // nada. Va al doble del alto que tenía (36px → 52/60px).
+    <div className="border-border-soft bg-bg relative z-50 h-13 border-y sm:h-15">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.13]"
+        className="pointer-events-none absolute inset-0 opacity-20"
         style={{
           backgroundImage:
-            "linear-gradient(90deg, transparent, #C9A227 35%, #E8C766 50%, #C9A227 65%, transparent)",
+            "linear-gradient(90deg, transparent, #C9A227 30%, #E8C766 50%, #C9A227 70%, transparent)",
         }}
       />
 
       <div className="group relative flex h-full items-center overflow-hidden">
         {/* La tira se duplica: al desplazar -50% el bucle es continuo. */}
-        <div className="animate-marquee flex shrink-0 items-center gap-8 pr-8 group-hover:[animation-play-state:paused]">
+        <div className="animate-marquee-rapido flex shrink-0 items-center gap-10 pr-10 group-hover:[animation-play-state:paused]">
           {tira.map((texto, i) => (
             <span
               key={i}
-              className="text-fg flex shrink-0 items-center gap-8 text-[11px] font-medium tracking-[0.14em] whitespace-nowrap uppercase sm:text-xs"
+              className="text-fg flex shrink-0 items-center gap-10 text-[13px] font-bold tracking-[0.1em] whitespace-nowrap uppercase sm:text-[15px]"
             >
               {texto}
               <span aria-hidden className="text-gold">
@@ -71,12 +74,12 @@ export function BarraAnuncios() {
         </div>
         <div
           aria-hidden
-          className="animate-marquee flex shrink-0 items-center gap-8 pr-8 group-hover:[animation-play-state:paused]"
+          className="animate-marquee-rapido flex shrink-0 items-center gap-10 pr-10 group-hover:[animation-play-state:paused]"
         >
           {tira.map((texto, i) => (
             <span
               key={i}
-              className="text-fg flex shrink-0 items-center gap-8 text-[11px] font-medium tracking-[0.14em] whitespace-nowrap uppercase sm:text-xs"
+              className="text-fg flex shrink-0 items-center gap-10 text-[13px] font-bold tracking-[0.1em] whitespace-nowrap uppercase sm:text-[15px]"
             >
               {texto}
               <span className="text-gold">·</span>
@@ -89,9 +92,9 @@ export function BarraAnuncios() {
         type="button"
         onClick={cerrarAnuncios}
         aria-label="Cerrar avisos"
-        className="from-bg via-bg text-fg-subtle hover:text-fg absolute inset-y-0 right-0 grid w-11 place-items-center bg-gradient-to-l to-transparent pl-3"
+        className="from-bg via-bg text-fg-subtle hover:text-fg absolute inset-y-0 right-0 grid w-12 place-items-center bg-gradient-to-l to-transparent pl-4"
       >
-        <X size={14} aria-hidden />
+        <X size={16} aria-hidden />
       </button>
     </div>
   );
