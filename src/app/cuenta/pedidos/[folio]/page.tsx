@@ -30,7 +30,7 @@ export async function generateMetadata({
   const { folio } = await params;
   return {
     title: `Pedido ${folio}`,
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
   };
 }
 

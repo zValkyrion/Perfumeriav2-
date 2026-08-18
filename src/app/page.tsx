@@ -1,5 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { AcordeonFAQ, FAQJsonLd } from "@/components/comunes/acordeon-faq";
+import { AcordeonFAQ } from "@/components/comunes/acordeon-faq";
 import {
   Contenedor,
   Seccion,
@@ -7,33 +8,35 @@ import {
 } from "@/components/comunes/layout";
 import { Tilt } from "@/components/comunes/efectos";
 import { BarraAnuncios } from "@/components/layout/barra-anuncios";
-import { Banner3x2 } from "@/components/home/banner-3x2";
+// EN PAUSA (ver más abajo): Banner3x2, DestacadoLote y SelectorPresentaciones.
+// import { Banner3x2 } from "@/components/home/banner-3x2";
+// import { DestacadoLote } from "@/components/home/destacado-lote";
+// import { SelectorPresentaciones } from "@/components/home/selector-presentaciones";
+// import { BloqueFrasco } from "@/components/home/bloque-frasco";
+// import { FranjaNewsletter } from "@/components/home/franja-newsletter";
+// import { PasosEnvio } from "@/components/home/pasos-envio";
 import { BannerPaquete } from "@/components/home/banner-paquete";
 import { BannerEmprende } from "@/components/home/banner-emprende";
-import { BloqueFrasco } from "@/components/home/bloque-frasco";
-import { DestacadoLote } from "@/components/home/destacado-lote";
-import { FranjaNewsletter } from "@/components/home/franja-newsletter";
 import { Hero } from "@/components/home/hero";
-import { PasosEnvio } from "@/components/home/pasos-envio";
 import { PruebaSocial } from "@/components/home/prueba-social";
-import { SelectorPresentaciones } from "@/components/home/selector-presentaciones";
+import { ResenasVertical } from "@/components/home/resenas-vertical";
 import { TiposCompra } from "@/components/home/tipos-compra";
-import { TiraGarantias } from "@/components/home/tira-garantias";
 import { ValoresClave } from "@/components/home/valores-clave";
 import { VideosClientes } from "@/components/home/videos-clientes";
 import { RESEÑAS_DESTACADAS } from "@/data/resenas";
 import { videosDesdeResenas } from "@/data/videos";
 import { TarjetaLote } from "@/components/lotes/tarjeta-lote";
 import { CarruselProductos } from "@/components/producto/carrusel-productos";
-import { GridProductos } from "@/components/producto/grid-productos";
+// import { GridProductos } from "@/components/producto/grid-productos";
 import { FAQ_HOME } from "@/data/contenido";
 import { LOTES_DESTACADOS } from "@/data/lotes";
-import {
-  MAS_VENDIDOS,
-  NOVEDADES,
-  PRODUCTOS,
-  precioDesde,
-} from "@/data/productos";
+import { MAS_VENDIDOS } from "@/data/productos";
+
+// Title y description los pone el layout: la home es la única página donde el
+// texto por defecto es el correcto. Aquí solo falta el canonical.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 /**
  * Home con estructura de mayorista.
@@ -44,8 +47,6 @@ import {
  * Quien llega aquí busca margen, no inspiración.
  */
 export default function Home() {
-  const desde = Math.min(...PRODUCTOS.map(precioDesde));
-
   // Los pósters de los videos salen del arte de producto ya generado.
   const videos = videosDesdeResenas(
     RESEÑAS_DESTACADAS,
@@ -54,16 +55,24 @@ export default function Home() {
 
   return (
     <>
-      <FAQJsonLd items={FAQ_HOME} />
+      {/* El FAQPage de estas preguntas vive en /faq, que es su página. La home
+          muestra el acordeón pero no vuelve a marcarlo. */}
+
+      {/* El hero es una imagen sin texto, así que la home no tenía h1: ni el
+          rastreador ni un lector de pantalla sabían de qué trata la página.
+          Este encabezado no se ve, pero es el único de nivel 1 del documento. */}
+      <h1 className="sr-only">
+        Perfumes al mayoreo y menudeo en México — EL REY DE LOS PERFUMES
+      </h1>
 
       {/* 1 · Portada con la promesa y el precio de entrada */}
-      <Hero precioDesde={desde} />
+      <Hero />
 
-      {/* 2 · Tira de promesas en movimiento, justo bajo el banner */}
+      {/* 2 · Tira de promesas en movimiento, justo bajo el banner. Debajo ya no
+          va la rejilla de garantías: repetía las mismas cuatro promesas que la
+          tira acababa de pasar y empujaba los tipos de mayoreo fuera de vista.
+          Las promesas completas siguen en `ValoresClave`, más abajo. */}
       <BarraAnuncios />
-
-      {/* 3 · Promesas detalladas */}
-      <TiraGarantias />
 
       {/* 3 · Tipos de compra: la navegación real de un mayorista */}
       <Seccion denso>
@@ -82,18 +91,22 @@ export default function Home() {
         <BannerPaquete />
       </Seccion>
 
-      {/* 4b · El lote grande, con la utilidad como titular */}
+      {/* 4b · El lote grande, con la utilidad como titular.
+          EN PAUSA — el bloque sigue funcionando; solo está fuera de la home.
+          Para recuperarlo, descomenta esto y su import.
       <Seccion denso className="border-border-soft border-t">
         <DestacadoLote />
       </Seccion>
+      */}
 
       {/* 5 · Videos de clientes: la prueba social que más convierte */}
       <Seccion denso className="bg-surface/40 border-border-soft border-y">
         <Contenedor>
           <TituloSeccion
+            centrado
             eyebrow="Lo cuentan ellos"
-            titulo="Clientes que ya lo probaron"
-            descripcion="Revendedoras y clientes grabando lo que recibieron, sin guion."
+            sobretitulo="⭐️⭐️⭐️⭐️⭐️"
+            titulo="Confianza en todo México"
           />
         </Contenedor>
         <VideosClientes videos={videos} />
@@ -108,7 +121,7 @@ export default function Home() {
       <Seccion denso id="mas-vendidos">
         <Contenedor>
           <TituloSeccion
-            revelado
+            centrado
             eyebrow="Los que más rotan"
             titulo="MAYOREO SURTIDO"
             descripcion="Desde 3 perfumes obtén precio de mayoreo + Envío gratis 🚚✨"
@@ -122,10 +135,10 @@ export default function Home() {
         </Contenedor>
       </Seccion>
 
-      {/* 7 · Promoción 3x2 */}
+      {/* 7 y 8 · EN PAUSA — la franja del 3x2 y el atajo por presentación.
+          Los componentes siguen en su sitio; solo no se pintan en la home.
       <Banner3x2 />
 
-      {/* 8 · Atajo por presentación (el "selector de tallas" del perfume) */}
       <Seccion denso revelar>
         <Contenedor>
           <TituloSeccion
@@ -137,18 +150,13 @@ export default function Home() {
         </Contenedor>
         <SelectorPresentaciones />
       </Seccion>
+      */}
 
-      {/* 9 · Lotes destacados */}
+      {/* 9 · Los cinco paquetes */}
       <Seccion denso revelar>
         <Contenedor>
-          <TituloSeccion
-            revelado
-            eyebrow="Ya armados"
-            titulo="Lotes de mayoreo"
-            descripcion="Surtidos balanceados por rotación. La utilidad supone que vendes al precio de menudeo publicado aquí."
-            enlace="/lotes"
-          />
-          <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
+          <TituloSeccion centrado titulo="PAQUETES EMPRENDEDORES" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
             {LOTES_DESTACADOS.map((lote) => (
               <Tilt key={lote.slug} className="h-full">
                 <TarjetaLote lote={lote} destacada={lote.masVendido} />
@@ -158,7 +166,7 @@ export default function Home() {
         </Contenedor>
       </Seccion>
 
-      {/* 10 · Novedades */}
+      {/* 10 · EN PAUSA — Novedades.
       <Seccion denso>
         <Contenedor>
           <TituloSeccion
@@ -169,11 +177,13 @@ export default function Home() {
           <GridProductos productos={NOVEDADES.slice(0, 8)} maxMovil={6} />
         </Contenedor>
       </Seccion>
+      */}
 
-      {/* 11 · El frasco en 3D: la prueba de calidad 1:1 */}
+      {/* 11 · EN PAUSA — el frasco en 3D.
       <Seccion>
         <BloqueFrasco />
       </Seccion>
+      */}
 
       {/* 12 · Captación de revendedores */}
       <BannerEmprende />
@@ -183,9 +193,10 @@ export default function Home() {
         <ValoresClave />
       </Seccion>
 
-      {/* 13 · Cómo recibes tu pedido */}
+      {/* 13 · Reseñas en columna. Antes iban aquí los tres pasos de "así
+          recibes tu pedido"; el testimonio cierra mejor que la logística. */}
       <Seccion revelar>
-        <PasosEnvio />
+        <ResenasVertical />
       </Seccion>
 
       {/* 14 · Valores */}
@@ -196,32 +207,28 @@ export default function Home() {
       {/* 15 · Preguntas frecuentes */}
       <Seccion revelar className="border-border-soft border-t">
         <Contenedor>
-          <div className="grid gap-8 lg:grid-cols-[380px_1fr] lg:gap-16">
-            <div>
-              <TituloSeccion
-                eyebrow="Antes de que preguntes"
-                titulo="Preguntas frecuentes"
-                className="mb-4"
-              />
-              <p className="text-fg-muted text-sm leading-relaxed">
-                ¿No encuentras lo que buscas?{" "}
-                <Link
-                  href="/contacto"
-                  className="text-gold-light hover:text-gold underline underline-offset-4"
-                >
-                  Escríbenos
-                </Link>{" "}
-                y te contesta una persona, normalmente en menos de una hora.
-              </p>
-            </div>
+          <TituloSeccion centrado titulo="PREGUNTAS FRECUENTES" />
 
+          <div className="mx-auto max-w-3xl">
             <AcordeonFAQ items={FAQ_HOME} />
+
+            <p className="text-fg-muted mt-8 text-center text-sm leading-relaxed font-medium">
+              ¿No encuentras lo que buscas?{" "}
+              <Link
+                href="/contacto"
+                className="text-gold-light hover:text-gold font-semibold underline underline-offset-4"
+              >
+                Escríbenos
+              </Link>{" "}
+              y te contesta una persona, normalmente en menos de una hora.
+            </p>
           </div>
         </Contenedor>
       </Seccion>
 
-      {/* 16 · Newsletter */}
+      {/* 16 · EN PAUSA — la franja del newsletter.
       <FranjaNewsletter />
+      */}
     </>
   );
 }

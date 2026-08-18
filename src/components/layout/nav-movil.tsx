@@ -16,7 +16,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Logo } from "@/components/comunes/logo";
-import { ToggleMayoreo } from "./toggle-mayoreo";
 import { NAVEGACION } from "@/data/navegacion";
 import { MARCA } from "@/data/contenido";
 import { cn } from "@/lib/utils";
@@ -51,10 +50,6 @@ export function NavMovil() {
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="border-border-soft border-b px-4 py-4">
-            <ToggleMayoreo />
-          </div>
-
           <Accordion type="multiple" className="px-4">
             {NAVEGACION.map((seccion) =>
               seccion.grupos ? (

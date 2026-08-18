@@ -16,6 +16,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Contenedor, Seccion, TituloSeccion } from "@/components/comunes/layout";
+import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { Estrellas } from "@/components/comunes/estrellas";
 import { BarraIntensidad, ChipFamilia } from "@/components/comunes/intensidad";
 import { CompraProducto } from "@/components/producto/compra-producto";
@@ -33,7 +34,10 @@ import {
   relacionados,
 } from "@/data/productos";
 import { resenasDe } from "@/data/resenas";
-import { numero, precio as fmt } from "@/lib/format";
+import { FAMILIA_POR_NOMBRE } from "@/data/taxonomia";
+import { numero } from "@/lib/format";
+import { migasDePan, producto as productoJsonLd } from "@/lib/jsonld";
+import { descripcionProducto, tituloProducto } from "@/lib/seo";
 
 const DURACION: Record<number, string> = {
   1: "1 a 2 horas",
@@ -66,12 +70,21 @@ export async function generateMetadata({
   const desde = precioDesde(producto);
 
   return {
-    title: `${producto.nombre} — ${marca}`,
-    description: `${producto.descripcionCorta}. ${producto.concentracion} desde ${fmt(desde)} MXN. Envío gratis desde 3 piezas y precio de mayoreo por volumen.`,
+    title: tituloProducto(producto, marca),
+    description: descripcionProducto(producto, desde),
+    alternates: { canonical: `/producto/${producto.slug}` },
     openGraph: {
-      title: `${producto.nombre} — ${marca}`,
+      type: "website",
+      title: tituloProducto(producto, marca),
       description: producto.descripcionCorta,
-      images: [{ url: producto.imagenes[0]!, width: 900, height: 1200 }],
+      images: [
+        {
+          url: producto.imagenes[0]!,
+          width: 900,
+          height: 1200,
+          alt: `${producto.nombre}, ${producto.concentracion.toLowerCase()} de ${marca}`,
+        },
+      ],
     },
   };
 }
@@ -88,39 +101,20 @@ export default async function ProductoPage({
   const resenas = resenasDe(producto.id);
   const combina = combinaCon(producto, 4);
   const similares = relacionados(producto, 10);
-  const desde = precioDesde(producto);
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: producto.nombre,
-    image: producto.imagenes,
-    description: producto.descripcionCorta,
-    sku: producto.presentaciones[0]?.sku,
-    brand: { "@type": "Brand", name: nombreMarca },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: producto.rating,
-      reviewCount: producto.totalReseñas,
-      bestRating: 5,
-    },
-    offers: {
-      "@type": "AggregateOffer",
-      priceCurrency: "MXN",
-      lowPrice: desde,
-      highPrice: Math.max(...producto.presentaciones.map((p) => p.precio)),
-      offerCount: producto.presentaciones.length,
-      availability: producto.presentaciones.some((p) => p.stock > 0)
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
-    },
-  };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      {/* El JSON-LD de producto no lleva precio, disponibilidad ni
+          calificación: esos tres datos son sintéticos en este catálogo y
+          marcarlos como reales es lo que Google castiga. Ver src/lib/jsonld.ts. */}
+      <DatosEstructurados datos={productoJsonLd(producto, nombreMarca)} />
+      <DatosEstructurados
+        datos={migasDePan([
+          { nombre: "Inicio", ruta: "/" },
+          { nombre: "Catálogo", ruta: "/catalogo" },
+          { nombre: nombreMarca, ruta: `/marca/${producto.marca}` },
+          { nombre: producto.nombre, ruta: `/producto/${producto.slug}` },
+        ])}
       />
 
       <Contenedor className="py-5 lg:py-8">
@@ -184,7 +178,14 @@ export default async function ProductoPage({
                   ({numero(producto.totalReseñas)} reseñas)
                 </span>
               </a>
-              <ChipFamilia familia={producto.familia} />
+              {/* El chip de familia lleva a su página: es el enlace que conecta
+                  la ficha con la landing de cola larga de su familia. */}
+              <Link
+                href={`/catalogo/${FAMILIA_POR_NOMBRE.get(producto.familia)?.slug ?? ""}`}
+                aria-label={`Ver todos los perfumes de la familia ${producto.familia.toLowerCase()}`}
+              >
+                <ChipFamilia familia={producto.familia} />
+              </Link>
             </div>
 
             <p className="text-fg-muted mt-4 text-[15px] leading-relaxed">
@@ -363,7 +364,7 @@ export default async function ProductoPage({
           <TituloSeccion
             eyebrow={`Más ${producto.familia.toLowerCase()}`}
             titulo="También te puede interesar"
-            enlace={`/catalogo?familia=${encodeURIComponent(producto.familia)}`}
+            enlace={`/catalogo/${FAMILIA_POR_NOMBRE.get(producto.familia)?.slug ?? ""}`}
           />
           <CarruselProductos productos={similares} />
         </Contenedor>

@@ -1,15 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { BarraContador } from "@/components/layout/barra-contador";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { BotonWhatsApp } from "@/components/layout/whatsapp";
 import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
+import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { SelectorTemas } from "@/components/comunes/selector-temas";
 import { TransicionRuta } from "@/components/comunes/transicion-ruta";
 import { MAS_VENDIDOS, indiceCompacto } from "@/data/productos";
+import { organizacion, sitioWeb } from "@/lib/jsonld";
+import { OG_POR_DEFECTO } from "@/lib/seo";
+import { SITIO_URL } from "@/lib/sitio";
 import "./globals.css";
 
 const inter = Inter({
@@ -30,9 +33,12 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://elreydelosperfumes.mx"),
+  // El canonical NO va aquí: en el layout lo heredaría toda ruta que no lo
+  // sobrescriba y el sitio entero se autodeclararía como la home. Cada página
+  // pone el suyo.
+  metadataBase: new URL(SITIO_URL),
   title: {
-    default: "EL REY DE LOS PERFUMES — Perfumería fina al mayoreo y menudeo",
+    default: "EL REY DE LOS PERFUMES — Perfumes al mayoreo y menudeo",
     template: "%s | EL REY DE LOS PERFUMES",
   },
   description:
@@ -44,6 +50,9 @@ export const metadata: Metadata = {
     title: "EL REY DE LOS PERFUMES — El lujo tiene un aroma.",
     description:
       "Perfumes 100% originales al mejor precio de México. Menudeo y mayoreo desde 3 piezas.",
+    // Imagen por defecto de las tarjetas de enlace. Las páginas con arte
+    // propio —producto, lote, categoría— la sobrescriben con el suyo.
+    images: [OG_POR_DEFECTO],
   },
   robots: { index: true, follow: true },
 };
@@ -78,6 +87,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="bg-bg text-fg flex min-h-full flex-col">
+        {/* Identidad del sitio: se declara una sola vez, aquí. */}
+        <DatosEstructurados datos={organizacion()} />
+        <DatosEstructurados datos={sitioWeb()} />
+
         <a
           href="#contenido"
           className="focus:bg-gold focus:text-bg sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-100 focus:rounded-full focus:px-4 focus:py-2 focus:text-sm focus:font-medium"
@@ -85,9 +98,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Saltar al contenido
         </a>
 
-        {/* Arriba del todo va la urgencia con plazo real; la tira de promesas
-            se movió a la home, justo debajo del banner. */}
-        <BarraContador />
+        {/* La cabecera es lo primero: la barra de cuenta atrás se retiró y la
+            tira de promesas vive en la home, justo debajo del banner. */}
         <Header indice={indice} />
 
         <main id="contenido" className="flex-1 pb-16 md:pb-0">

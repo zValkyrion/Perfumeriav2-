@@ -8,7 +8,8 @@ import {
   User,
   UserRound,
 } from "lucide-react";
-import { Sticker } from "@/components/comunes/sticker";
+import { Imagen } from "@/components/comunes/imagen";
+import { MAS_VENDIDOS } from "@/data/productos";
 import type { LucideIcon } from "lucide-react";
 
 interface Tipo {
@@ -43,8 +44,12 @@ const TIPOS: Tipo[] = [
 ];
 
 export function TiposCompra() {
+  // El círculo destacado enseña producto real, no un sello de promoción: es la
+  // entrada al surtido suelto y lo que se compra ahí son frascos.
+  const portada = MAS_VENDIDOS[0]?.imagenes[0];
+
   return (
-    <div className="foco-grupo snap-row -mx-4 flex gap-4 px-4 pt-2 pb-2 lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-6 lg:overflow-visible lg:px-0">
+    <div className="foco-grupo snap-row -mx-4 flex gap-5 px-4 pt-2 pb-2 lg:mx-0 lg:grid lg:grid-cols-6 lg:gap-7 lg:overflow-visible lg:px-0">
       {TIPOS.map((t, i) => {
         const Icono = t.icono;
         return (
@@ -52,7 +57,7 @@ export function TiposCompra() {
             key={t.titulo}
             href={t.href}
             style={{ animationDelay: `${i * 65}ms` }}
-            className="group/tipo animate-subir flex w-24 shrink-0 flex-col items-center gap-3 text-center sm:w-28 lg:w-full"
+            className="group/tipo animate-subir flex w-30 shrink-0 flex-col items-center gap-3.5 text-center sm:w-36 lg:w-full"
           >
             {/* Disco gris con icono plano y sombra proyectada. El crecimiento
                 al señalar se queda dentro de la caja del enlace: antes el
@@ -72,27 +77,30 @@ export function TiposCompra() {
                 }}
               />
 
-              {t.destacado ? (
-                <Sticker tono="oferta" giro={-10} className="relative z-10 px-4 py-2 text-[15px]">
-                  3x2
-                </Sticker>
+              {t.destacado && portada ? (
+                <Imagen
+                  src={portada}
+                  alt=""
+                  sizes="(max-width: 1024px) 40vw, 200px"
+                  className="relative z-10 h-full w-full scale-[1.06] object-cover transition-transform duration-[380ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/tipo:scale-[1.14]"
+                />
               ) : (
                 <Icono
-                  size={30}
-                  strokeWidth={1.9}
+                  size={54}
+                  strokeWidth={1.6}
                   className="text-fg relative z-10 transition-transform duration-[380ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/tipo:scale-110"
                 />
               )}
             </span>
 
             <span className="leading-tight">
-              <span className="block text-[12px] font-bold tracking-tight uppercase">
+              <span className="block text-[14px] font-extrabold tracking-tight uppercase sm:text-[15px]">
                 {t.titulo}
               </span>
-              <span className="text-fg-muted mt-1 inline-flex items-center gap-1 text-[11px]">
+              <span className="text-fg-muted mt-1 inline-flex items-center gap-1 text-[12px] font-medium">
                 Ver colección
                 <ArrowRight
-                  size={12}
+                  size={13}
                   aria-hidden
                   className="transition-transform duration-200 group-hover/tipo:translate-x-0.5"
                 />

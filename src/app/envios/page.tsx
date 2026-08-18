@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Envíos",
   description:
     "Envío gratis desde 3 piezas a todo México. Entrega en 2 a 5 días con DHL, Estafeta, FedEx o 99 Minutos y guía de rastreo el mismo día.",
+  alternates: { canonical: "/envios" },
 };
 
 export default function EnviosPage() {

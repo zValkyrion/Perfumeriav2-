@@ -60,6 +60,7 @@ export function VistaCatalogo({
   migas = [],
   params,
   vacioPersonalizado,
+  encabezado,
 }: {
   base: Producto[];
   titulo: string;
@@ -68,50 +69,56 @@ export function VistaCatalogo({
   migas?: Miga[];
   params?: ParamsBusqueda;
   vacioPersonalizado?: React.ReactNode;
+  /**
+   * Sustituye el encabezado por uno propio —el catálogo general presenta ahí
+   * la escalera de mayoreo—. Las migas se siguen pintando: son navegación, no
+   * decoración, y el `titulo` sigue siendo obligatorio porque alimenta el
+   * `aria-label` de la rejilla y los metadatos de la página.
+   */
+  encabezado?: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className="py-10 text-center">Cargando...</div>}>
-      <VistaCatalogoContenido
-        base={base}
+    <Contenedor className="py-6 lg:py-10">
+      <EncabezadoCatalogo
         titulo={titulo}
         eyebrow={eyebrow}
         descripcion={descripcion}
         migas={migas}
-        initialParams={params}
-        vacioPersonalizado={vacioPersonalizado}
+        encabezado={encabezado}
       />
-    </Suspense>
+
+      <Suspense fallback={<div className="py-10 text-center">Cargando...</div>}>
+        <RejillaCatalogo
+          base={base}
+          initialParams={params}
+          vacioPersonalizado={vacioPersonalizado}
+        />
+      </Suspense>
+    </Contenedor>
   );
 }
 
-function VistaCatalogoContenido({
-  base,
+/**
+ * Migas y encabezado. Va aparte y **fuera** de cualquier Suspense porque no
+ * depende de `useSearchParams`: cuando estaba dentro, la exportación estática
+ * servía "Cargando..." en lugar del h1 y del texto, y 22 rutas de catálogo,
+ * marca y familia llegaban al rastreador sin encabezado ni contenido.
+ */
+export function EncabezadoCatalogo({
   titulo,
   eyebrow,
   descripcion,
   migas = [],
-  initialParams,
-  vacioPersonalizado,
+  encabezado,
 }: {
-  base: Producto[];
   titulo: string;
   eyebrow?: string;
   descripcion?: string;
   migas?: Miga[];
-  initialParams?: ParamsBusqueda;
-  vacioPersonalizado?: React.ReactNode;
+  encabezado?: React.ReactNode;
 }) {
-  const searchParams = useSearchParams();
-  const params = initialParams ?? (searchParams ? searchParamsToRecord(searchParams) : {});
-
-  const filtros = leerFiltros(params);
-  const filtrados = ordenar(aplicarFiltros(base, filtros), filtros.orden);
-  const visibles = filtrados.slice(0, filtros.mostrar);
-  const chips = chipsActivos(filtros);
-  const activos = contarActivos(filtros);
-
   return (
-    <Contenedor className="py-6 lg:py-10">
+    <>
       <Breadcrumb className="mb-5">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -136,22 +143,57 @@ function VistaCatalogoContenido({
         </BreadcrumbList>
       </Breadcrumb>
 
-      <header className="mb-6 max-w-2xl lg:mb-8">
-        {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
-        <h1 className="font-display text-[32px] leading-[1.05] tracking-tight text-balance lg:text-[44px]">
-          {titulo}
-        </h1>
-        {descripcion ? (
-          <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
-            {descripcion}
-          </p>
-        ) : null}
-      </header>
+      {encabezado ? (
+        <div className="mb-8 lg:mb-12">{encabezado}</div>
+      ) : (
+        <header className="mb-6 max-w-2xl lg:mb-8">
+          {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
+          <h1 className="font-display text-[32px] leading-[1.05] tracking-tight text-balance lg:text-[44px]">
+            {titulo}
+          </h1>
+          {descripcion ? (
+            <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
+              {descripcion}
+            </p>
+          ) : null}
+        </header>
+      )}
+    </>
+  );
+}
 
+/**
+ * Solo la parte que depende de la URL: filtros, orden y rejilla. Se exporta
+ * para que una página con su propia lógica de parámetros —/promociones— pueda
+ * componer encabezado estático y rejilla dinámica por separado.
+ */
+export function RejillaCatalogo({
+  base,
+  initialParams,
+  vacioPersonalizado,
+}: {
+  base: Producto[];
+  initialParams?: ParamsBusqueda;
+  vacioPersonalizado?: React.ReactNode;
+}) {
+  const searchParams = useSearchParams();
+  const params = initialParams ?? (searchParams ? searchParamsToRecord(searchParams) : {});
+
+  const filtros = leerFiltros(params);
+  const filtrados = ordenar(aplicarFiltros(base, filtros), filtros.orden);
+  const visibles = filtrados.slice(0, filtros.mostrar);
+  const chips = chipsActivos(filtros);
+  const activos = contarActivos(filtros);
+
+  return (
+    <>
       <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
+        {/* La columna acompaña al scroll de la página y ya no se queda fija con
+            su propia barra dentro: ese scroll anidado atrapaba la rueda del
+            ratón al pasar por encima y daba la sensación de que la página se
+            trababa. */}
         <aside className="hidden lg:block">
-          <div className="sticky top-24 max-h-[calc(100dvh-8rem)] overflow-y-auto pr-2 pb-6">
-            <p className="eyebrow mb-2">Filtrar</p>
+          <div className="pr-2 pb-6">
             <Suspense fallback={null}>
               <PanelFiltros />
             </Suspense>
@@ -185,7 +227,7 @@ function VistaCatalogoContenido({
           </div>
         </div>
       </div>
-    </Contenedor>
+    </>
   );
 }
 

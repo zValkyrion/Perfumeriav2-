@@ -74,6 +74,9 @@
   --dur-entrada: 520ms; /* revelado de sección al hacer scroll */
 
   --animate-marquee: marquee 38s linear infinite;
+  /* La barra de avisos corre casi al doble: el carrusel de marcas puede
+     pasearse, pero una promesa que tarda 38s en volver no se lee nunca. */
+  --animate-marquee-rapido: marquee 20s linear infinite;
   --animate-shimmer: shimmer 2.2s ease-in-out infinite;
   --animate-latido: latido 0.32s var(--ease-resorte) 1;
   --animate-aparecer: aparecer var(--dur-lenta) var(--ease-out-soft) both;
@@ -417,6 +420,11 @@
     /* Evita el scroll horizontal accidental sin ocultar la causa (§14). */
     overflow-x: clip;
     font-feature-settings: "cv02", "cv03", "cv04";
+    /* Un escalón por encima del 400 de fábrica. La tienda se mira de lejos y
+       con prisa —y el tema por defecto es claro, donde el peso normal de Inter
+       se desvanece—, así que el cuerpo entero va en medio. Todo lo que ya pide
+       500, 600 o 700 explícitamente manda sobre esto. */
+    font-weight: 500;
   }
 
   h1,
@@ -424,6 +432,17 @@
   h3,
   h4 {
     @apply font-display;
+    font-weight: 600;
+  }
+
+  /* Los textos secundarios se quedaban finos al subir el cuerpo: van con ellos
+     para que la jerarquía siga sintiéndose igual, solo más sólida. */
+  strong,
+  b,
+  th,
+  label,
+  button {
+    font-weight: 600;
   }
 
   /* Anillo de foco dorado de 2px (§15) */

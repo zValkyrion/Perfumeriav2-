@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Contacto",
   description:
     "Escríbenos por WhatsApp o correo. Te contesta una persona, normalmente en menos de una hora.",
+  alternates: { canonical: "/contacto" },
 };
 
 export default function ContactoPage() {

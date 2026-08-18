@@ -5,7 +5,7 @@ import { MARCA } from "@/data/contenido";
 export const metadata: Metadata = {
   title: "Términos y condiciones",
   description: "Términos y condiciones de uso de la tienda en línea de EL REY DE LOS PERFUMES.",
-  robots: { index: true, follow: true },
+  alternates: { canonical: "/terminos" },
 };
 
 export default function TerminosPage() {

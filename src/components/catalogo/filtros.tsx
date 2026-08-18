@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import {
@@ -26,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MARCAS } from "@/data/marcas";
+import { CATEGORIAS_CATALOGO } from "@/data/navegacion";
 import {
   CONCENTRACIONES,
   FAMILIAS,
@@ -321,42 +323,83 @@ function FiltroExtras() {
 }
 
 /** Cuerpo de filtros, compartido por la barra lateral y el drawer móvil. */
+/**
+ * Categorías del catálogo, arriba de los filtros.
+ *
+ * Son exactamente las mismas seis de la barra de navegación y de los círculos
+ * de la home: quien llega aquí desde cualquiera de los dos sitios reconoce la
+ * lista y sabe dónde está. "Mayoreo surtido" es el catálogo sin ningún filtro.
+ */
+function CategoriasCatalogo() {
+  const ruta = usePathname();
+
+  return (
+    <nav aria-label="Categorías" className="mb-6">
+      <p className="eyebrow mb-2.5">Categorías</p>
+      <ul className="space-y-0.5">
+        {CATEGORIAS_CATALOGO.map((c) => {
+          const activa = ruta === c.href;
+          return (
+            <li key={c.href}>
+              <Link
+                href={c.href}
+                aria-current={activa ? "page" : undefined}
+                className={cn(
+                  "flex min-h-9 items-center text-[14px] font-semibold transition-colors",
+                  activa ? "text-gold-light" : "text-fg-muted hover:text-fg",
+                )}
+              >
+                {c.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
 export function PanelFiltros() {
   return (
-    <Accordion
-      type="multiple"
-      defaultValue={["genero", "familia", "precio"]}
-      className="w-full"
-    >
-      <GrupoCasillas titulo="Género" clave="genero" opciones={GENEROS} />
-      <GrupoCasillas
-        titulo="Familia olfativa"
-        clave="familia"
-        opciones={FAMILIAS.map((f) => f.nombre)}
-      />
-      <FiltroPrecio />
-      <GrupoCasillas
-        titulo="Marca"
-        clave="marca"
-        opciones={MARCAS.map((m) => m.nombre)}
-        valorDe={(nombre) =>
-          MARCAS.find((m) => m.nombre === nombre)?.slug ?? nombre
-        }
-      />
-      <GrupoCasillas
-        titulo="Concentración"
-        clave="conc"
-        opciones={CONCENTRACIONES}
-      />
-      <GrupoCasillas
-        titulo="Tamaño"
-        clave="ml"
-        opciones={TAMANOS.map((t) => `${t} ml`)}
-        valorDe={(o) => o.replace(" ml", "")}
-      />
-      <GrupoCasillas titulo="Ocasión" clave="ocasion" opciones={OCASIONES} />
-      <FiltroExtras />
-    </Accordion>
+    <>
+      <CategoriasCatalogo />
+
+      <p className="eyebrow mb-2">Filtrar</p>
+      <Accordion
+        type="multiple"
+        defaultValue={["genero", "familia", "precio"]}
+        className="w-full"
+      >
+        <GrupoCasillas titulo="Género" clave="genero" opciones={GENEROS} />
+        <GrupoCasillas
+          titulo="Familia olfativa"
+          clave="familia"
+          opciones={FAMILIAS.map((f) => f.nombre)}
+        />
+        <FiltroPrecio />
+        <GrupoCasillas
+          titulo="Marca"
+          clave="marca"
+          opciones={MARCAS.map((m) => m.nombre)}
+          valorDe={(nombre) =>
+            MARCAS.find((m) => m.nombre === nombre)?.slug ?? nombre
+          }
+        />
+        <GrupoCasillas
+          titulo="Concentración"
+          clave="conc"
+          opciones={CONCENTRACIONES}
+        />
+        <GrupoCasillas
+          titulo="Tamaño"
+          clave="ml"
+          opciones={TAMANOS.map((t) => `${t} ml`)}
+          valorDe={(o) => o.replace(" ml", "")}
+        />
+        <GrupoCasillas titulo="Ocasión" clave="ocasion" opciones={OCASIONES} />
+        <FiltroExtras />
+      </Accordion>
+    </>
   );
 }
 

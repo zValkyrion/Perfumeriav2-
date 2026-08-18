@@ -15,7 +15,11 @@ export function Familias({ conteos }: { conteos: Record<string, number> }) {
       {FAMILIAS.map((f, i) => (
         <Link
           key={f.slug}
-          href={`/catalogo?familia=${encodeURIComponent(f.nombre)}`}
+          href={`/catalogo/${f.slug}`}
+          // El texto accesible dice a qué huele la familia, no solo su nombre:
+          // sirve al lector de pantalla y también le dice al buscador de qué
+          // trata la página del otro lado del enlace.
+          aria-label={`${f.titulo}: ${f.descripcion}`}
           className="group/fam relative flex w-20 shrink-0 flex-col items-center gap-2.5 text-center hover:z-10 lg:w-full"
         >
           {/* Ficha de la familia: sale del flujo para no empujar la fila */}

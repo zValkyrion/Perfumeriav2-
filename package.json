@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "imagenes": "tsx scripts/generar-imagenes.ts"
+    "imagenes": "tsx scripts/generar-imagenes.ts",
+    "banners": "tsx scripts/optimizar-banners.ts",
+    "banner-paca": "tsx scripts/generar-banner-paca.ts",
+    "og": "tsx scripts/generar-og.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

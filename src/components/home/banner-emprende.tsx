@@ -1,10 +1,7 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 import { Contenedor } from "@/components/comunes/layout";
-import { CapaParallax, ContadorEnVista } from "@/components/comunes/efectos";
-import { MARCA } from "@/data/contenido";
-import { UTILIDAD_MAXIMA } from "@/data/lotes";
-import { precioRedondo } from "@/lib/format";
+import { CapaParallax } from "@/components/comunes/efectos";
 
 /**
  * Banner de captación de revendedores.
@@ -31,33 +28,25 @@ export function BannerEmprende() {
 
           <h2 className="titular-audaz">EMPRENDE CON EL REY</h2>
 
+          {/* Una línea y un enlace, nada más. El bloque no tiene que cerrar la
+              venta aquí: solo tiene que mandar a la landing de mayoreo, que es
+              donde está el argumento completo. Los dos botones grandes y el
+              contador competían con esa única salida. */}
           <p className="text-fg-muted mx-auto mt-4 max-w-xl text-[15px] leading-relaxed lg:text-lg">
-            Perfumes directamente importados para revender. Sin mínimo, sin
-            papeleo y sin cuota de inscripción.
+            Perfumes directamente Importados para revender.
           </p>
 
-          <p className="text-fg-muted mt-6 text-sm">
-            Se han sumado{" "}
-            <ContadorEnVista
-              valor={MARCA.clientes}
-              prefijo="+"
-              className="text-gold-light font-medium"
-            />{" "}
-            personas, y ganan hasta{" "}
-            <span className="text-gold-light font-medium">
-              {precioRedondo(UTILIDAD_MAXIMA)}
-            </span>{" "}
-            por lote.
-          </p>
-
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button asChild variant="gold" size="touch-lg">
-              <Link href="/mayoreo">Ver la oportunidad</Link>
-            </Button>
-            <Button asChild variant="goldOutline" size="touch-lg">
-              <Link href="/mayoreo#calculadora">Calcular mi ganancia</Link>
-            </Button>
-          </div>
+          <Link
+            href="/mayoreo"
+            className="text-gold-light hover:text-gold group mt-5 inline-flex items-center gap-1.5 text-sm font-semibold underline underline-offset-4"
+          >
+            Ver oportunidad
+            <ArrowRight
+              size={15}
+              aria-hidden
+              className="transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
         </div>
       </Contenedor>
     </section>

@@ -9,6 +9,11 @@ export const metadata: Metadata = {
   title: "Paquetes para revender",
   description:
     "Paquetes armados de perfumes 1:1 con precio de distribuidor, envío gratis y material de venta incluido.",
+  // Esta página lista los mismos ocho lotes que /lotes, solo que sin separar
+  // mixtos de temáticos: para un buscador es contenido duplicado. Sigue
+  // existiendo porque la home y el banner del paquete estrella apuntan aquí,
+  // pero la autoridad se acumula en /lotes, que es la landing de mayoreo.
+  alternates: { canonical: "/lotes" },
 };
 
 /**
@@ -23,20 +28,20 @@ export default function PaquetesPage() {
   return (
     <>
       <Contenedor className="pt-8 pb-2 lg:pt-12">
-        <header className="max-w-2xl">
-          <p className="eyebrow mb-2">Para revender</p>
-          <h1 className="titular-medio">Paquetes</h1>
-          <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
-            Surtidos ya armados con los perfumes que más rotan. Todos incluyen
-            envío gratis y lista de precios sugeridos, y salen a precio de
-            distribuidor sin tener que elegir modelo por modelo.
+        <header className="mx-auto max-w-3xl text-center">
+          <h1 className="titular-audaz">PAQUETES</h1>
+          <p className="text-fg-muted mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed font-medium lg:text-base">
+            Los paquetes son la forma más inteligente de arrancar tu negocio de
+            reventa. Cada lote incluye modelos de alta demanda listos para
+            vender, con precios directos de importación que te dejan márgenes de
+            ganancia únicos.
           </p>
         </header>
       </Contenedor>
 
       <Seccion denso>
         <Contenedor>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
             {LOTES.map((lote) => (
               <TarjetaLote
                 key={lote.slug}

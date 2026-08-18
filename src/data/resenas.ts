@@ -11,15 +11,23 @@ interface SemillaReseña {
   verificada?: boolean;
 }
 
+/**
+ * Las ocho primeras de cinco estrellas son las que alimentan la prueba social
+ * de la home, y están escritas desde el negocio: quien las firma compró para
+ * revender. Hablan de margen contra el proveedor anterior, de rotación y de que
+ * el pedido llegó a tiempo, porque eso es lo que decide a quien está pensando
+ * en emprender. Las de más abajo mantienen la voz del cliente final, que es la
+ * que tiene sentido en la ficha de producto.
+ */
 const SEMILLAS: readonly SemillaReseña[] = [
   {
     slug: "noir-absolu",
     autor: "Mariana Cépeda",
     rating: 5,
     fecha: "2026-06-18",
-    titulo: "Vale cada peso",
+    titulo: "Se me acabó antes que nada",
     texto:
-      "Lo compré para una boda y terminé usándolo todos los días de diciembre. Me dura desde las 8 de la mañana hasta que llego a casa, y el iris se nota más a las tres horas que al principio. Pedí el de 50 ml y ya voy a por el de 100.",
+      "Lo metí en mi primer pedido de 12 sin muchas esperanzas y fue el primero que se me agotó. Me sale a menos de la mitad de lo que me lo dejaba mi proveedor de antes, así que hasta puedo dar descuento y seguir ganando.",
     verificada: true,
   },
   {
@@ -39,7 +47,7 @@ const SEMILLAS: readonly SemillaReseña[] = [
     fecha: "2026-07-21",
     titulo: "Mi más vendido como revendedora",
     texto:
-      "Llevo tres lotes de 24 y este modelo se me acaba siempre primero. Las clientas lo huelen y lo compran, no hay que explicarles nada. El fondo amaderado es lo que lo salva de ser un dulce más.",
+      "Llevo tres paquetes y este modelo se me acaba siempre primero. Las clientas lo huelen y lo compran, no hay que explicarles nada. Con lo que me ahorro contra mi mayorista de antes saco casi el doble por pieza.",
     verificada: true,
   },
   {
@@ -47,9 +55,9 @@ const SEMILLAS: readonly SemillaReseña[] = [
     autor: "Alejandra Nieto",
     rating: 5,
     fecha: "2026-05-09",
-    titulo: "Dura muchísimo",
+    titulo: "Llegó a tiempo para el 10 de mayo",
     texto:
-      "Me lo pongo a las 7 am y a las 6 pm todavía lo huelo en el suéter. La almendra al principio es fuerte pero a los veinte minutos se acomoda muy rico.",
+      "Pedí ocho piezas un martes pensando en la fecha y el viernes ya las tenía. Se vendieron todas ese fin de semana. Vino bien empacado y con la lista de precios sugeridos, que es justo lo que me faltaba para no rematar.",
     verificada: true,
   },
   {
@@ -57,9 +65,9 @@ const SEMILLAS: readonly SemillaReseña[] = [
     autor: "Javier Montalvo",
     rating: 5,
     fecha: "2026-03-14",
-    titulo: "Cuero de verdad",
+    titulo: "El de ticket más alto de mi mesa",
     texto:
-      "Había probado varios cueros y casi todos huelen a producto de limpieza. Este no: huele a taller, a piel curtida. Proyecta muchísimo las primeras dos horas, con dos disparos sobra.",
+      "Lo pongo como el caro del puesto y es el que más margen deja. El cliente que ya sabe de perfumes lo reconoce al primer olfateo y no regatea. Con otros proveedores un cuero así me costaba el doble.",
     verificada: true,
   },
   {
@@ -77,9 +85,9 @@ const SEMILLAS: readonly SemillaReseña[] = [
     autor: "Paulina Berrones",
     rating: 5,
     fecha: "2026-07-02",
-    titulo: "El azahar más real que he olido",
+    titulo: "Rota rapidísimo en el norte",
     texto:
-      "Soy de Hermosillo y aquí los cítricos se evaporan en media hora. Este me aguanta cinco horas fácil y huele a naranjo de verdad, no a jabón. Ya lo pedí en 200 ml.",
+      "Vendo en Hermosillo y con el calor lo que se busca es cítrico. Pedí doce, me llegaron en tres días y no me duraron el mes. Ya voy por el segundo pedido y esta vez llevo el paquete grande.",
     verificada: true,
   },
   {
@@ -97,9 +105,9 @@ const SEMILLAS: readonly SemillaReseña[] = [
     autor: "Gabriela Ostos",
     rating: 5,
     fecha: "2026-01-22",
-    titulo: "Adictivo en invierno",
+    titulo: "Mi mejor diciembre",
     texto:
-      "Lo compré en diciembre y no me lo quité en dos meses. El ámbar es denso, dulce pero no empalagoso, y la ciruela del principio es preciosa. La estela dura en la bufanda días.",
+      "Compré veinte piezas para la temporada y las vendí todas antes de Navidad. El precio por pieza me dejó margen para regalar el envío y aun así ganar bien. Es el que repito cada invierno.",
     verificada: true,
   },
   {
@@ -107,9 +115,9 @@ const SEMILLAS: readonly SemillaReseña[] = [
     autor: "Diana Sotelo",
     rating: 5,
     fecha: "2025-11-28",
-    titulo: "Cumplidos garantizados",
+    titulo: "Los clientes regresan por él",
     texto:
-      "Nunca me habían preguntado tanto qué perfume traigo. Eso sí: dos toques bastan, con más se vuelve abrumador. En verano lo dejo guardado.",
+      "No es solo que se venda: la gente vuelve a pedirme el mismo, y esa recompra con lo que traía de otro mayorista no me pasaba. Llega sellado y con su caja, que es la mitad de la venta.",
     verificada: true,
   },
   {
@@ -117,9 +125,9 @@ const SEMILLAS: readonly SemillaReseña[] = [
     autor: "Héctor Zambrano",
     rating: 5,
     fecha: "2026-06-05",
-    titulo: "El más versátil que tengo",
+    titulo: "El seguro de mi inventario",
     texto:
-      "Lo uso para trabajar, para salir y hasta para el gimnasio. Nunca queda mal. El vetiver es limpio, verde, sin ese toque terroso que a veces molesta. Segundo frasco ya.",
+      "Es el que le ofrezco a quien no sabe qué llevar, hombre o mujer, y nunca se me queda parado. Lo pido en cada paquete y siempre sale antes que los demás. Cero riesgo.",
     verificada: true,
   },
   {
@@ -137,9 +145,9 @@ const SEMILLAS: readonly SemillaReseña[] = [
     autor: "Regina Alcalá",
     rating: 5,
     fecha: "2026-05-17",
-    titulo: "La tuberosa perfecta",
+    titulo: "Se vende sola en temporada de bodas",
     texto:
-      "He probado muchas y casi todas me resultan mantecosas. Esta está en el punto exacto: floral, cremosa, pero nunca pesada. Para eventos de noche es insuperable.",
+      "De mayo a octubre no doy abasto con este. Lo pido en cada paquete y se va en dos semanas. Mis clientas lo comparan con el de tienda departamental y no notan la diferencia, pero pagan la tercera parte.",
     verificada: true,
   },
   {
@@ -147,9 +155,9 @@ const SEMILLAS: readonly SemillaReseña[] = [
     autor: "Ibrahim Sandoval",
     rating: 5,
     fecha: "2026-04-19",
-    titulo: "Escuela árabe auténtica",
+    titulo: "Con este subí mi ticket promedio",
     texto:
-      "El azafrán del principio es exactamente el de los perfumes que traía mi tío de Dubái. Con medio disparo me dura todo el día y la camisa huele al día siguiente. Rendimiento brutal.",
+      "Lo agregué para atender a clientes que ya saben de perfumes y me cambió el negocio: vendo menos piezas pero cada una deja el doble. El costo al que me llega no lo consigo con nadie más.",
     verificada: true,
   },
   {
@@ -157,9 +165,9 @@ const SEMILLAS: readonly SemillaReseña[] = [
     autor: "Carolina Mejía",
     rating: 5,
     fecha: "2026-02-27",
-    titulo: "Mi primer oud y acerté",
+    titulo: "Empecé con el paquete chico y ya voy en el grande",
     texto:
-      "Tenía miedo de que oliera a medicina, que es lo que me pasó con otros. Este es dulce, la rosa manda al principio y el oud va saliendo poco a poco. Muy fácil de llevar.",
+      "Arranqué con diez piezas para probar, sin conocer a nadie del giro. Se vendieron en tres semanas y con esa ganancia pagué el siguiente pedido. Hoy vivo de esto y no metí capital extra.",
     verificada: true,
   },
   {
@@ -241,6 +249,15 @@ export function distribucion(resenas: Reseña[]): Record<number, number> {
 
 /** Las mejores reseñas del sitio, para la prueba social de la home (§8.10). */
 /** Las mejores reseñas del sitio: alimentan la prueba social y los videos. */
-export const RESEÑAS_DESTACADAS = RESEÑAS.filter(
-  (r) => r.rating >= 4.5 && r.verificada,
-).slice(0, 8);
+const MEJORES = RESEÑAS.filter((r) => r.rating >= 4.5 && r.verificada);
+
+export const RESEÑAS_DESTACADAS = MEJORES.slice(0, 8);
+
+/**
+ * Segunda tanda, para el bloque en vertical de la home.
+ *
+ * Son otras cinco y no las mismas ocho: repetir las tarjetas de arriba unas
+ * pantallas más abajo se lee como relleno, y lo que se busca aquí es que quien
+ * llegó hasta el final siga encontrando testimonios que no había visto.
+ */
+export const RESEÑAS_VERTICALES = MEJORES.slice(8, 13);

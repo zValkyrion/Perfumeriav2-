@@ -13,7 +13,9 @@ import { cn } from "@/lib/utils";
 export function MegaMenu() {
   return (
     <nav aria-label="Principal" className="relative hidden lg:block">
-      <ul className="flex items-center gap-1">
+      {/* Seis enlaces cortos: centrados ocupan la barra en vez de amontonarse
+          en la esquina izquierda de un contenedor ancho. */}
+      <ul className="flex items-center justify-center gap-2">
         {NAVEGACION.map((seccion) => (
           <li key={seccion.label} className="group">
             <Link

@@ -1,57 +1,57 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Contenedor, Seccion, TituloSeccion } from "@/components/comunes/layout";
+import { Contenedor, Seccion } from "@/components/comunes/layout";
 import { TarjetaLote } from "@/components/lotes/tarjeta-lote";
+import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { LOTES } from "@/data/lotes";
+import { listaLotes, migasDePan } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
-  title: "Lotes de mayoreo",
+  // "Paca" es la palabra que usa el revendedor mexicano; "lote" la que usa el
+  // sitio. El título lleva las dos para no perder ninguna de las dos consultas.
+  title: "Pacas de perfumes al mayoreo",
   description:
-    "Ocho lotes armados de 6 a 50 piezas, con precio de distribuidor, envío gratis y material de venta. Surtidos mixtos y temáticos.",
+    "Cinco paquetes armados de 10 a 50 perfumes a precio de importador directo, con envío gratis a todo México y pago seguro.",
+  alternates: { canonical: "/lotes" },
 };
 
 export default function LotesPage() {
-  const mixtos = LOTES.filter((l) => l.tema === "Mixto");
-  const tematicos = LOTES.filter((l) => l.tema !== "Mixto");
-
   return (
     <>
+      <DatosEstructurados
+        datos={migasDePan([
+          { nombre: "Inicio", ruta: "/" },
+          { nombre: "Lotes de mayoreo", ruta: "/lotes" },
+        ])}
+      />
+      <DatosEstructurados
+        datos={listaLotes(LOTES, "Lotes de perfumes al mayoreo")}
+      />
+
       <Contenedor className="pt-8 pb-2 lg:pt-12">
-        <header className="max-w-2xl">
-          <p className="eyebrow mb-2">Para revender</p>
-          <h1 className="font-display text-[32px] leading-[1.05] tracking-tight text-balance lg:text-[44px]">
-            Lotes de mayoreo
-          </h1>
-          <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
-            Surtidos ya balanceados por rotación: no eliges modelo por modelo,
-            pero tampoco te arriesgas a inventario parado. Todos incluyen envío
-            gratis y lista de precios sugeridos.
+        <header className="mx-auto max-w-3xl text-center">
+          <h1 className="titular-audaz">PAQUETES</h1>
+          <p className="text-fg-muted mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed font-medium lg:text-base">
+            Los paquetes son la forma más inteligente de arrancar tu negocio de
+            reventa. Cada lote incluye modelos de alta demanda listos para
+            vender, con precios directos de importación que te dejan márgenes de
+            ganancia únicos.
           </p>
         </header>
       </Contenedor>
 
+      {/* Una sola rejilla: los cinco paquetes son la misma escalera de volumen,
+          así que separarlos en dos bloques solo partía la comparación. */}
       <Seccion denso>
         <Contenedor>
-          <TituloSeccion eyebrow="Por volumen" titulo="Surtido mixto" />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-            {mixtos.map((lote) => (
-              <TarjetaLote key={lote.slug} lote={lote} destacada={lote.masVendido} />
-            ))}
-          </div>
-        </Contenedor>
-      </Seccion>
-
-      <Seccion denso className="border-border-soft border-t">
-        <Contenedor>
-          <TituloSeccion
-            eyebrow="Por público"
-            titulo="Surtido temático"
-            descripcion="Cuando ya sabes qué te compra tu clientela."
-          />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-            {tematicos.map((lote) => (
-              <TarjetaLote key={lote.slug} lote={lote} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+            {LOTES.map((lote) => (
+              <TarjetaLote
+                key={lote.slug}
+                lote={lote}
+                destacada={lote.masVendido}
+              />
             ))}
           </div>
         </Contenedor>

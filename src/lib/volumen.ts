@@ -18,23 +18,33 @@ export const ESCALONES: readonly Escalon[] = [
   {
     min: 3,
     max: 5,
-    descuento: 0.15,
+    descuento: 0.1,
     nombre: "Mayoreo",
-    etiqueta: "Precio mayoreo · envío gratis",
+    etiqueta: "10% de descuento · envío gratis",
   },
   {
     min: 6,
-    max: 11,
-    descuento: 0.25,
+    max: 9,
+    descuento: 0.2,
     nombre: "Mayoreo Plus",
-    etiqueta: "Mayoreo Plus",
+    etiqueta: "20% de descuento · envío gratis",
   },
   {
-    min: 12,
-    max: null,
-    descuento: 0.4,
+    min: 10,
+    max: 19,
+    descuento: 0.3,
     nombre: "Distribuidor",
-    etiqueta: "Precio distribuidor",
+    etiqueta: "30% de descuento · envío gratis",
+  },
+  // A partir de 20 el precio deja de ser automático: se cotiza. Se mantiene el
+  // 30% para que el carrito nunca muestre menos descuento del ya conseguido,
+  // pero la promesa de "precio especial" se hace por WhatsApp, no aquí.
+  {
+    min: 20,
+    max: null,
+    descuento: 0.3,
+    nombre: "Alto volumen",
+    etiqueta: "Precio especial · pide cotización",
   },
 ] as const;
 

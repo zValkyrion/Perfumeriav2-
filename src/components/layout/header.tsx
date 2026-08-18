@@ -2,22 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, User } from "lucide-react";
+import { MessageCircle, User } from "lucide-react";
 import { Logo } from "@/components/comunes/logo";
+import { MARCA } from "@/data/contenido";
 import type { EntradaIndice } from "@/data/productos";
-import { useTienda } from "@/store/tienda";
 import { Buscador } from "./buscador";
 import { BotonCarrito } from "./boton-carrito";
 import { MegaMenu } from "./mega-menu";
 import { NavMovil } from "./nav-movil";
-import { ToggleMayoreo } from "./toggle-mayoreo";
 import { cn } from "@/lib/utils";
 
 /** Cabecera sticky: se encoge de 80px a 60px al pasar de 40px de scroll (§7.2). */
 export function Header({ indice }: { indice: EntradaIndice[] }) {
   const [encogido, setEncogido] = useState(false);
-  const favoritos = useTienda((s) => s.favoritos.length);
-  const hidratado = useTienda((s) => s.hidratado);
 
   useEffect(() => {
     const alScroll = () => setEncogido(window.scrollY > 40);
@@ -35,7 +32,10 @@ export function Header({ indice }: { indice: EntradaIndice[] }) {
           : "border-b border-transparent",
       )}
     >
-      <div className="mx-auto w-full max-w-[1400px] px-4 lg:px-8">
+      {/* Más estrecho que el resto de la página (1400px) a propósito: con el
+          logo pegado a un borde y los iconos al otro, en un monitor ancho la
+          cabecera se leía como tres islas sueltas en vez de como una barra. */}
+      <div className="mx-auto w-full max-w-[1160px] px-4 lg:px-6">
         <div
           className={cn(
             "flex items-center justify-between gap-2 transition-[height] duration-300",
@@ -59,38 +59,30 @@ export function Header({ indice }: { indice: EntradaIndice[] }) {
           {/* Buscador ancho en el centro: en un mayorista es la vía principal
               para llegar al producto, así que ocupa sitio propio y no se
               esconde detrás de una lupa. */}
-          <div className="mx-4 hidden max-w-xl flex-1 lg:block">
+          <div className="mx-6 hidden max-w-lg flex-1 lg:block">
             <Buscador indice={indice} variante="barra" />
           </div>
 
+          {/* Solo cuenta y carrito: el interruptor de modo mayoreo y el acceso
+              a favoritos se retiraron de la cabecera. Favoritos sigue vivo en
+              la barra inferior del móvil y en su propia ruta. */}
           <div className="flex items-center gap-0.5">
-            <div className="hidden lg:block">
-              <ToggleMayoreo compacto />
-            </div>
-
             <div className="lg:hidden">
               <Buscador indice={indice} />
             </div>
 
-            <Link
-              href="/favoritos"
-              aria-label={
-                hidratado && favoritos > 0
-                  ? `Favoritos, ${favoritos} guardados`
-                  : "Favoritos"
-              }
-              className="text-fg-muted hover:text-fg relative hidden size-11 place-items-center rounded-full transition-colors lg:grid"
+            {/* WhatsApp con su color de marca: es el canal por el que se cierra
+                la venta de mayoreo, así que no se disfraza de icono neutro. */}
+            <a
+              href={MARCA.whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Escríbenos por WhatsApp al ${MARCA.whatsapp}`}
+              title={`WhatsApp ${MARCA.whatsapp}`}
+              className="grid size-11 place-items-center rounded-full text-[#25D366] transition-transform hover:scale-110"
             >
-              <Heart size={20} aria-hidden />
-              {hidratado && favoritos > 0 ? (
-                <span
-                  data-precio
-                  className="bg-gold-gradient text-bg absolute top-1 right-0.5 grid min-w-[18px] place-items-center rounded-full px-1 text-[10px] leading-[18px] font-semibold"
-                >
-                  {favoritos}
-                </span>
-              ) : null}
-            </Link>
+              <MessageCircle size={21} aria-hidden />
+            </a>
 
             <Link
               href="/cuenta"

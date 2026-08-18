@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { ArrowRight, HandCoins, Truck, Zap } from "lucide-react";
 import { Contenedor } from "@/components/comunes/layout";
-import { Cortina } from "@/components/comunes/efectos";
 import { Imagen } from "@/components/comunes/imagen";
 import { Sticker } from "@/components/comunes/sticker";
+import { getLote, valorMenudeoLote } from "@/data/lotes";
+import { precioRedondo } from "@/lib/format";
 
 /**
- * Banner del paquete estrella.
+ * Banner del paquete estrella: la paca de 50.
  *
- * La imagen es provisional: apunta al arte generado del lote de 50 y está
- * pensada para sustituirse por la definitiva de 1200 × 900 px sin tocar el
- * resto del bloque.
+ * El precio y el valor de reventa salen del propio paquete, no escritos a mano:
+ * si la escalera de precios cambia, este bloque cambia con ella y no puede
+ * quedarse contradiciendo a la tarjeta de más abajo.
+ *
+ * El arte lo produce `npm run banner-paca` en 1200 × 900. Para sustituirlo por
+ * una foto definitiva basta con dejarla en `public/paca-50-piezas.webp`.
  */
 const BENEFICIOS = [
   { icono: Truck, texto: "Envío gratis" },
@@ -19,13 +23,18 @@ const BENEFICIOS = [
 ];
 
 export function BannerPaquete() {
+  const paca = getLote("paquete-super-mayorista");
+  if (!paca) return null;
+
+  const valorReventa = valorMenudeoLote(paca);
+
   return (
     <Contenedor>
       <div className="grid items-center gap-7 lg:grid-cols-[1fr_1.05fr] lg:gap-12">
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border-soft bg-surface shadow-2xl">
           <Imagen
-            src="/paca-100-piezas.jpg"
-            alt="Paca 100 Piezas - Con lo más vendido - Duplica tu inversión"
+            src="/paca-50-piezas.webp"
+            alt="Paca 50 piezas - Con lo más vendido - Duplica tu inversión"
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority
             className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
@@ -37,13 +46,13 @@ export function BannerPaquete() {
           </span>
           <span className="absolute right-3 bottom-3 z-10">
             <Sticker tono="negro" giro={4} className="text-xs font-bold">
-              $15,000 MXN
+              {precioRedondo(paca.precio)} MXN
             </Sticker>
           </span>
         </div>
 
         <div>
-          <h2 className="titular-medio">PACA 100 PIEZAS</h2>
+          <h2 className="titular-medio">PACA {paca.piezas} PIEZAS</h2>
 
           <p className="text-fg-muted mt-2 text-[15px]">
             Con lo más vendido{" "}
@@ -52,7 +61,7 @@ export function BannerPaquete() {
             </span>{" "}
             duplica tu inversión:{" "}
             <strong className="text-gold-light font-semibold">
-              más de $27,000
+              más de {precioRedondo(valorReventa)}
             </strong>{" "}
             en ventas
           </p>
