@@ -10,6 +10,10 @@ const basePath = repo ? `/${repo}` : "";
 
 const nextConfig: NextConfig = {
   output: "export",
+  // Cada ruta se exporta como `ruta/index.html`, así que GitHub Pages sirve
+  // igual `/mayoreo` que `/mayoreo/`. Sin esto la segunda forma daba 404, y es
+  // la que genera cualquiera que copie el enlace desde la barra del navegador.
+  trailingSlash: true,
   basePath: basePath || undefined,
   assetPrefix: basePath ? `${basePath}/` : undefined,
   env: {

@@ -120,7 +120,14 @@ export function siguienteEscalon(
   const n = Math.max(0, Math.floor(piezas));
   const actual = escalonPara(Math.max(1, n));
   const idx = ESCALONES.indexOf(actual);
-  const proximo = ESCALONES[idx + 1];
+
+  // El siguiente escalón que de verdad baja el precio, no simplemente el
+  // siguiente de la lista: el tramo de alto volumen mantiene el mismo
+  // porcentaje y solo cambia a cotización, así que anunciarlo aquí invitaba a
+  // agregar una pieza más "para el 30%" a quien ya tenía el 30%.
+  const proximo = ESCALONES.slice(idx + 1).find(
+    (e) => e.descuento > actual.descuento,
+  );
   if (!proximo) return null;
 
   const faltan = proximo.min - n;
