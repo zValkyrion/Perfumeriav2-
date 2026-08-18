@@ -7,7 +7,13 @@ import { Slider } from "@/components/ui/slider";
 import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { Precio } from "@/components/comunes/precio";
 import { precioRedondo } from "@/lib/format";
-import { ESCALONES, escalonPara, precioUnitario } from "@/lib/volumen";
+import {
+  ESCALON_INICIAL,
+  ESCALONES,
+  escalonPara,
+  pct,
+  precioUnitario,
+} from "@/lib/volumen";
 import { cn } from "@/lib/utils";
 
 /**
@@ -121,8 +127,11 @@ export function Calculadora({ ticketPromedio }: { ticketPromedio: number }) {
 
       {escalon.descuento === 0 ? (
         <p className="border-border-soft text-fg-muted mt-5 rounded-md border px-3.5 py-3 text-[13px]">
-          Con solo <strong className="text-gold-light">3 piezas</strong> bajas
-          15% y el envío te sale gratis.
+          Con solo{" "}
+          <strong className="text-gold-light">
+            {ESCALON_INICIAL.min} piezas
+          </strong>{" "}
+          bajas {pct(ESCALON_INICIAL.descuento)}% y el envío te sale gratis.
         </p>
       ) : (
         <p className="border-gold/30 bg-gold-muted mt-5 rounded-md border px-3.5 py-3 text-[13px]">

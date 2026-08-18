@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Bookmark, ShoppingBag, Trash2 } from "lucide-react";
+import { ESCALON_INICIAL, ESCALON_TOPE, pct } from "@/lib/volumen";
 import { Button } from "@/components/ui/button";
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio, PrecioAnterior } from "@/components/comunes/precio";
@@ -48,8 +49,10 @@ export function VistaCarrito() {
           </div>
           <h1 className="font-display mb-3 text-3xl">Tu carrito está vacío</h1>
           <p className="text-fg-muted mb-7 text-[15px] leading-relaxed">
-            Desde 3 piezas bajas 15% y el envío corre por nuestra cuenta. Con 12
-            llegas a precio de distribuidor.
+            Desde {ESCALON_INICIAL.min} piezas bajas{" "}
+            {pct(ESCALON_INICIAL.descuento)}% y el envío corre por nuestra
+            cuenta. Con {ESCALON_TOPE.min} llegas al{" "}
+            {pct(ESCALON_TOPE.descuento)}%.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <Button asChild variant="gold" size="touch-lg">

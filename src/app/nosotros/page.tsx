@@ -36,11 +36,11 @@ export default function NosotrosPage() {
         <p>
           La mitad de nuestros pedidos son de una o dos piezas: gente que se está
           dando un gusto. La otra mitad son revendedoras y revendedores que
-          compran de 12 piezas para arriba y viven de ese margen.
+          compran de diez perfumes para arriba y viven de ese margen.
         </p>
         <p>
           Por eso el precio baja solo al agregar piezas al carrito, sin registros
-          ni papeleo. Desde 3 piezas ya hay 15% de descuento y envío gratis; con
+          ni papeleo. Desde 3 perfumes ya hay 10% de descuento y envío gratis; con
           12 o más se llega al precio de distribuidor.
         </p>
       </Bloque>

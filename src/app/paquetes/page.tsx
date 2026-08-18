@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Contenedor, Seccion } from "@/components/comunes/layout";
 import { TarjetaLote } from "@/components/lotes/tarjeta-lote";
 import { LOTES } from "@/data/lotes";
+import { ESCALON_TOPE, pct } from "@/lib/volumen";
 
 export const metadata: Metadata = {
   title: "Paquetes para revender",
@@ -61,8 +62,9 @@ export default function PaquetesPage() {
                 ¿Prefieres armar tu propio surtido?
               </h2>
               <p className="text-fg-muted mt-2 text-sm leading-relaxed">
-                Desde 12 piezas sueltas llegas al mismo 40% de descuento,
-                eligiendo modelo por modelo.
+                Desde {ESCALON_TOPE.min} perfumes sueltos llegas al{" "}
+                {pct(ESCALON_TOPE.descuento)}% de descuento, eligiendo modelo por
+                modelo.
               </p>
             </div>
             <Button asChild variant="gold" size="touch">

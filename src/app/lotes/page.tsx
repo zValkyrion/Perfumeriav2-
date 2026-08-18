@@ -5,6 +5,7 @@ import { Contenedor, Seccion } from "@/components/comunes/layout";
 import { TarjetaLote } from "@/components/lotes/tarjeta-lote";
 import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { LOTES } from "@/data/lotes";
+import { ESCALON_TOPE, pct } from "@/lib/volumen";
 import { listaLotes, migasDePan } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
@@ -65,8 +66,9 @@ export default function LotesPage() {
                 ¿Prefieres armar tu propio surtido?
               </h2>
               <p className="text-fg-muted mt-2 text-sm leading-relaxed">
-                A partir de 12 piezas sueltas llegas al mismo 40% de descuento
-                del precio distribuidor, eligiendo modelo por modelo.
+                A partir de {ESCALON_TOPE.min} perfumes sueltos llegas al{" "}
+                {pct(ESCALON_TOPE.descuento)}% de descuento eligiendo modelo por
+                modelo, y desde 20 cotizamos precio especial.
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
