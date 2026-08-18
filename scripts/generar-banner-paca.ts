@@ -254,6 +254,7 @@ function svg() {
 const WC = 1200;
 const HC = 900;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- se conserva por si hay que regenerar el 1:1
 function svgCuadrado() {
   const mitad = WC / 2;
 

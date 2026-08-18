@@ -31,9 +31,7 @@ export function BannerPaquete() {
   return (
     <Contenedor>
       <div className="grid items-center gap-7 lg:grid-cols-[1fr_1.05fr] lg:gap-12">
-        {/* Cuadrada, como el arte: recortarla a 4:3 se comía el titular de
-            arriba o la franja de abajo, que es donde va la promesa. */}
-        <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border-soft bg-surface shadow-2xl">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border-soft bg-surface shadow-2xl">
           <Imagen
             src="/paca-50-piezas.webp"
             alt="Paca 50 piezas - Con lo más vendido - Duplica tu inversión"

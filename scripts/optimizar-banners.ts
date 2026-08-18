@@ -33,7 +33,7 @@ const BANNERS: [origen: string, destino: string][] = [
   // El arte de la paca llega con el nombre con el que se descargó; el sitio lo
   // busca por el suyo. La correspondencia se declara aquí para no depender de
   // que alguien acierte a renombrar el archivo a mano.
-  ["50_perfumes.png", "paca-50-piezas.webp"],
+  ["50piezas.png", "paca-50-piezas.webp"],
   ["hero-promo-3x2.png", "hero-promo-3x2.webp"],
 ];
 
