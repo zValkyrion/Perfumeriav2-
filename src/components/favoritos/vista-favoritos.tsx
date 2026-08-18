@@ -7,6 +7,7 @@ import { Contenedor } from "@/components/comunes/layout";
 import { GridProductos, GridSkeleton } from "@/components/producto/grid-productos";
 import { PRODUCTOS } from "@/data/productos";
 import { useTienda } from "@/store/tienda";
+import { ESCALON_INICIAL, pct } from "@/lib/volumen";
 
 export function VistaFavoritos() {
   const hidratado = useTienda((s) => s.hidratado);
@@ -24,7 +25,8 @@ export function VistaFavoritos() {
           <p className="text-fg-muted mt-2 text-sm">
             {productos.length}{" "}
             {productos.length === 1 ? "perfume guardado" : "perfumes guardados"}.
-            Recuerda: desde 3 piezas bajas 15% y el envío es gratis.
+            Recuerda: desde {ESCALON_INICIAL.min} piezas bajas{" "}
+            {pct(ESCALON_INICIAL.descuento)}% y el envío es gratis.
           </p>
         ) : null}
       </header>

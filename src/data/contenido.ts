@@ -170,11 +170,11 @@ export const FAQ_CATALOGO = [
   },
   {
     p: "¿Desde cuántas piezas tengo precio de mayoreo?",
-    r: "Desde 3 piezas ya bajas 15% y el envío te sale gratis. Con 6 piezas el descuento sube a 25% y con 12 o más llegas a 40%, que es el precio de distribuidor. No necesitas registrarte ni comprobar nada: el precio baja solo al agregar las piezas al carrito.",
+    r: "Desde 3 perfumes ya bajas 10% y el envío te sale gratis. Con 6 el descuento sube a 20% y con 10 o más llegas a 30%. A partir de 20 cotizamos precio especial por WhatsApp. No necesitas registrarte ni comprobar nada: el precio baja solo al agregar las piezas al carrito.",
   },
   {
     p: "¿Puedo mezclar modelos distintos para llegar al mayoreo?",
-    r: "Sí, y es lo que recomendamos. El descuento se calcula sobre el total de piezas del pedido, no por modelo. Puedes armar 12 piezas con doce fragancias diferentes y aun así pagas precio de distribuidor.",
+    r: "Sí, y es lo que recomendamos. El descuento se calcula sobre el total de piezas del pedido, no por modelo. Puedes armar diez piezas con diez fragancias diferentes y aun así te llevas el 30%.",
   },
   {
     p: "¿Cómo puedo pagar?",
@@ -213,27 +213,27 @@ export const FAQ_CATALOGO = [
 export const FAQ_MAYOREO = [
   {
     p: "¿Necesito RFC o acta constitutiva para comprar al mayoreo?",
-    r: "No. El precio de mayoreo se activa por volumen, no por papeleo. Compras 3 piezas y ya tienes 15%. Si además quieres factura, la emitimos con tus datos fiscales sin problema.",
+    r: "No. El precio de mayoreo se activa por volumen, no por papeleo. Compras 3 perfumes y ya tienes 10%. Si además quieres factura, la emitimos con tus datos fiscales sin problema.",
   },
   {
     p: "¿Cuál es el pedido mínimo?",
-    r: "No hay mínimo. Puedes comprar una sola pieza a precio de menudeo. El mayoreo empieza en 3 piezas y de ahí el precio va bajando por escalones.",
+    r: "No hay mínimo. Puedes comprar un solo perfume a precio de menudeo. El mayoreo empieza en 3 y de ahí el precio va bajando por escalones.",
   },
   {
     p: "¿A cómo debo revender?",
-    r: "Con cada lote te mandamos una lista de precios sugeridos. Como referencia, vendiendo al precio de menudeo que publicamos en la tienda tu margen va del 28% en el lote de 6 piezas hasta el 55% en el de 50.",
+    r: "Con cada paquete te mandamos una lista de precios sugeridos. Como referencia, vendiendo al precio de menudeo que publicamos en la tienda duplicas la inversión: el Paquete Inicio de 10 perfumes cuesta $4,299 y su valor de venta pasa de $8,400.",
   },
   {
     p: "¿Puedo elegir qué modelos vienen en mi lote?",
-    r: "En los lotes armados no, porque el precio depende de esa mezcla exacta. Si quieres elegir modelo por modelo, agrega las piezas sueltas al carrito: a partir de 12 llegas al mismo 40% de descuento del precio distribuidor.",
+    r: "En los paquetes armados no, porque el precio depende de esa mezcla exacta. Si quieres elegir modelo por modelo, agrega las piezas sueltas al carrito: a partir de 10 llegas al 30% de descuento.",
   },
   {
     p: "¿Qué pasa si un modelo no me rota?",
-    r: "En los lotes de 24 y 50 piezas te cambiamos hasta el 20% del pedido por otro modelo dentro de los primeros 60 días, sin costo. Solo pedimos que las piezas estén selladas.",
+    r: "En los paquetes de 40 y 50 perfumes te cambiamos hasta el 20% del pedido por otro modelo dentro de los primeros 60 días, sin costo. Solo pedimos que las piezas estén selladas.",
   },
   {
     p: "¿Manejan precios especiales para volúmenes mayores a 50 piezas?",
-    r: "Sí. A partir de 100 piezas trabajamos precio negociado y asignamos un asesor. Escríbenos por WhatsApp con el volumen estimado y te mandamos la propuesta el mismo día.",
+    r: "Sí. A partir de 20 perfumes trabajamos precio negociado y asignamos un asesor. Escríbenos por WhatsApp con el volumen estimado y te mandamos la propuesta el mismo día.",
   },
 ] as const;
 

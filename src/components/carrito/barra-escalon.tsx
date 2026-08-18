@@ -3,6 +3,7 @@
 import { Truck } from "lucide-react";
 import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { precio } from "@/lib/format";
+import { ESCALON_TOPE, pct } from "@/lib/volumen";
 import type { ResumenCarrito } from "@/lib/carrito";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +35,8 @@ export function BarraEscalon({
         )}
       >
         <p className="text-gold-light text-[13px] font-medium">
-          Tienes el precio distribuidor: 40% de descuento en todo el pedido.
+          Tienes el mejor precio: {pct(ESCALON_TOPE.descuento)}% de descuento en
+          todo el pedido.
         </p>
         <p className="text-fg-muted mt-1 text-xs">
           Llevas {piezasTotales} piezas · ahorras {precio(resumen.ahorroVolumen)} MXN

@@ -21,7 +21,7 @@ export function MegaMenu() {
             <Link
               href={seccion.href}
               className={cn(
-                "subrayado-nav hover:text-fg inline-flex h-11 items-center rounded-full px-3 text-[13px] font-medium tracking-wide transition-colors",
+                "subrayado-nav hover:text-fg inline-flex h-11 items-center rounded-full px-3 text-[14px] font-bold tracking-wide transition-colors",
                 seccion.destacado
                   ? "text-gold-light hover:text-gold uppercase"
                   : "text-fg-muted",

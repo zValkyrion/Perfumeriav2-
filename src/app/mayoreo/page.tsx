@@ -20,14 +20,20 @@ import {
 import { LOTES_DESTACADOS, UTILIDAD_MAXIMA } from "@/data/lotes";
 import { MAS_VENDIDOS, precioDesde } from "@/data/productos";
 import { precioRedondo } from "@/lib/format";
-import { ESCALONES, precioUnitario } from "@/lib/volumen";
+import {
+  ESCALON_INICIAL,
+  ESCALON_TOPE,
+  ESCALONES,
+  pct,
+  precioUnitario,
+} from "@/lib/volumen";
 
 export const metadata: Metadata = {
   // "Perfumes al mayoreo" es la consulta con la que llega el revendedor. El
   // gancho de negocio va en la description, no en el título.
   title: "Perfumes al mayoreo en México",
   description:
-    "Precio de distribuidor desde 3 piezas y hasta 40% de descuento con 12 o más. Sin mínimo de compra, sin papeleo y con envío gratis a todo México.",
+    "Precio de mayoreo desde 3 perfumes y hasta 30% de descuento con 10 o más. Sin mínimo de compra, sin papeleo y con envío gratis a todo México.",
   alternates: { canonical: "/mayoreo" },
 };
 
@@ -59,9 +65,11 @@ export default function MayoreoPage() {
                 Convierte el perfume en tu negocio.
               </h1>
               <p className="text-fg-muted mt-4 max-w-lg text-[15px] leading-relaxed lg:text-lg">
-                Desde 3 piezas obtienes precio de mayoreo y envío gratis. Con 12
-                o más llegas al 40% de descuento, que es nuestro precio de
-                distribuidor. Sin mínimos, sin cuotas y sin papeleo.
+                Desde {ESCALON_INICIAL.min} perfumes obtienes precio de
+                mayoreo y envío gratis. Con {ESCALON_TOPE.min} o más llegas al{" "}
+                {pct(ESCALON_TOPE.descuento)}% de descuento, y a partir de 20
+                cotizamos precio especial. Sin mínimos, sin cuotas y sin
+                papeleo.
               </p>
 
               <dl className="mt-7 flex flex-wrap gap-x-8 gap-y-4">
@@ -70,7 +78,9 @@ export default function MayoreoPage() {
                     Descuento máximo
                   </dt>
                   {/* La cifra ancla del negocio, en tamaño de titular */}
-                  <dd className="cifra-audaz text-gold-gradient">40%</dd>
+                  <dd className="cifra-audaz text-gold-gradient">
+                    {pct(ESCALON_TOPE.descuento)}%
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-fg-subtle text-[11px] tracking-[0.14em] uppercase">
@@ -212,14 +222,16 @@ export default function MayoreoPage() {
             </div>
 
             <div className="border-gold/40 bg-gold-muted rounded-lg border p-6">
-              <p className="text-gold-light text-sm">Comprando 12 piezas</p>
+              <p className="text-gold-light text-sm">
+                Comprando {ESCALON_TOPE.min} perfumes
+              </p>
               <p data-precio className="font-display mt-1 text-4xl">
                 <Precio valor={precioUnitario(ticket, 12)} />
                 <span className="text-fg-subtle text-base"> c/u</span>
               </p>
               <ul className="mt-5 space-y-2.5 text-sm">
                 {[
-                  "40% de descuento por pieza",
+                  `${pct(ESCALON_TOPE.descuento)}% de descuento por pieza`,
                   "Envío gratis a todo México",
                   `Ganas ${precioRedondo((ticket - precioUnitario(ticket, 12)) * 12)} al revender`,
                 ].map((t) => (

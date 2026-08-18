@@ -175,3 +175,24 @@ export function mejorPlazo(
 export const CUPONES: Record<string, { descuento: number; etiqueta: string }> = {
   AURA10: { descuento: 0.1, etiqueta: "10% de bienvenida" },
 };
+
+/**
+ * Los dos extremos de la escalera automática, para el copy.
+ *
+ * Media docena de sitios del sitio prometen "desde N piezas, X%" y hasta ahora
+ * lo hacían con la cifra escrita a mano. Cuando la escalera cambió de 15/25/40
+ * a 10/20/30, esos textos se quedaron prometiendo descuentos que el carrito ya
+ * no aplicaba. Derivarlos de aquí hace imposible esa deriva.
+ */
+const CON_DESCUENTO = ESCALONES.filter((e) => e.descuento > 0);
+
+/** Primer escalón con descuento: el mínimo para entrar a mayoreo. */
+export const ESCALON_INICIAL = CON_DESCUENTO[0]!;
+
+/** Mejor descuento automático, sin pasar por cotización. */
+export const ESCALON_TOPE = CON_DESCUENTO.reduce((a, b) =>
+  b.descuento > a.descuento ? b : a,
+);
+
+/** `0.3` → `30` — para interpolar en texto sin repetir el redondeo. */
+export const pct = (descuento: number) => Math.round(descuento * 100);
