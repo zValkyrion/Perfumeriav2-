@@ -264,6 +264,26 @@ del módulo.
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
 
+### 2026-08-19 · Los borrados no viajaban entre teléfonos
+
+- **Por qué:** `descargar()` solo añadía y actualizaba, nunca quitaba. Quien
+  borraba una ficha la veía desaparecer de su teléfono, pero seguía viva para
+  siempre en los de sus compañeros: cada uno acababa mirando una lista distinta,
+  lo contrario de "todos ven lo de todos". Se detectó al verificar otra cosa —
+  una pestaña seguía pidiendo una ficha ya borrada del servidor.
+- **Implementación:** `propagarBorrados()` elimina lo local que ya no está en el
+  servidor, **solo si está marcado `sincronizado`**. Una ficha en borrador o
+  pendiente nunca llegó a subir: borrarla destruiría el trabajo de la mañana.
+
+### 2026-08-19 · La lista se refresca siempre
+
+- **Por qué:** el refresco estaba condicionado a que "algo hubiera cambiado", y
+  la lista de condiciones se quedó corta dos veces seguidas: primero con las
+  descargas, luego con los borrados. El resultado era el mismo las dos veces —
+  los datos correctos en IndexedDB y la pantalla mostrando otra cosa.
+- **Implementación:** tras cada sincronización se relee de IndexedDB pase lo que
+  pase. Releer es barato; enumerar todos los casos posibles, no.
+
 ### 2026-08-19 · El PIN salió también del repositorio
 
 - **Por qué:** `scripts/probar-api.mjs` lo llevaba como valor por defecto. Es el

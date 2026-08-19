@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  borrarProveedor,
   fotosDe,
   guardarFoto,
   guardarProveedor,
@@ -109,7 +110,10 @@ async function subirFotosDe(token: string, proveedor: Proveedor): Promise<number
  * Las fotos NO bajan: viven en S3 y pesan; la ficha de un dispositivo nuevo
  * muestra los datos y las fotos se consultan desde el panel.
  */
-export async function descargar(token: string): Promise<number> {
+/** Lo que cambió al bajar: cuántas llegaron y cuántas desaparecieron. */
+export type ResultadoDescarga = { traidos: number; borrados: number };
+
+export async function descargar(token: string): Promise<ResultadoDescarga> {
   const { proveedores } = await listarRemoto(token);
   let traidos = 0;
 
@@ -121,5 +125,34 @@ export async function descargar(token: string): Promise<number> {
     traidos++;
   }
 
-  return traidos;
+  const borrados = await propagarBorrados(proveedores.map((p) => p.id));
+  return { traidos, borrados };
+}
+
+/**
+ * Borra en este teléfono lo que ya no está en el servidor.
+ *
+ * Sin esto, un borrado no viajaba: quien eliminaba una ficha la veía desaparecer
+ * de su teléfono, pero seguía viva para siempre en los de sus compañeros. Cada
+ * uno acababa mirando una lista distinta, que es lo contrario de "todos ven lo de
+ * todos".
+ *
+ * **Solo se tocan las fichas marcadas `sincronizado`**: esas estuvieron en el
+ * servidor alguna vez, así que su ausencia significa que alguien las borró. Una
+ * ficha en borrador o pendiente nunca llegó a subir; que no esté allá arriba es
+ * lo normal, y borrarla aquí destruiría el trabajo de la mañana.
+ */
+async function propagarBorrados(idsRemotos: string[]): Promise<number> {
+  const enServidor = new Set(idsRemotos);
+  const locales = await listarProveedores();
+  let borrados = 0;
+
+  for (const local of locales) {
+    if (local.estado !== "sincronizado") continue;
+    if (enServidor.has(local.id)) continue;
+    await borrarProveedor(local.id);
+    borrados++;
+  }
+
+  return borrados;
 }

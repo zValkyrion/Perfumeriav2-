@@ -7,11 +7,19 @@ import { descargar, sincronizar } from "@/lib/sync";
 import type { Sesion } from "@/lib/sesion";
 
 /** Texto único para las dos rutas: la automática y el botón. */
-function resumen(fichas: number, fotos: number, bajadas: number): string {
+function resumen(
+  fichas: number,
+  fotos: number,
+  bajadas: number,
+  borradas: number,
+): string {
   const partes = [
     fichas > 0 ? `${fichas} ficha${fichas === 1 ? "" : "s"} subida${fichas === 1 ? "" : "s"}` : null,
     fotos > 0 ? `${fotos} foto${fotos === 1 ? "" : "s"}` : null,
     bajadas > 0 ? `${bajadas} traída${bajadas === 1 ? "" : "s"} del servidor` : null,
+    borradas > 0
+      ? `${borradas} borrada${borradas === 1 ? "" : "s"} por otro equipo`
+      : null,
   ].filter(Boolean);
   return partes.length ? partes.join(" · ") : "Todo estaba al día";
 }
@@ -65,10 +73,14 @@ export function BarraSync({
     (async () => {
       try {
         const r = await sincronizar(sesion.token!);
-        const bajadas = await descargar(sesion.token!);
-        if (r.fichas > 0 || r.fotos > 0 || bajadas > 0) {
-          setMensaje(resumen(r.fichas, r.fotos, bajadas));
-          avisar.current();
+        const d = await descargar(sesion.token!);
+        // La lista se refresca siempre, pase lo que pase. Condicionarlo a que
+        // "algo haya cambiado" ya falló dos veces: la primera con las descargas y
+        // la segunda con los borrados, que no entraban en la cuenta. Releer de
+        // IndexedDB es barato; enumerar todos los casos posibles, no.
+        avisar.current();
+        if (r.fichas > 0 || r.fotos > 0 || d.traidos > 0 || d.borrados > 0) {
+          setMensaje(resumen(r.fichas, r.fotos, d.traidos, d.borrados));
         }
       } catch {
         // Sin red al abrir es lo normal en la calle: no es un error que reportar.
@@ -83,8 +95,8 @@ export function BarraSync({
     setFallos([]);
     try {
       const r = await sincronizar(sesion.token);
-      const bajadas = await descargar(sesion.token);
-      setMensaje(resumen(r.fichas, r.fotos, bajadas));
+      const d = await descargar(sesion.token);
+      setMensaje(resumen(r.fichas, r.fotos, d.traidos, d.borrados));
       setFallos(r.fallos);
       alTerminar();
     } catch (e) {
