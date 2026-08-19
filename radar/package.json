@@ -1,0 +1,36 @@
+{
+  "name": "radar-proveedores",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3100",
+    "build": "next build && node scripts/arreglar-rsc.mjs",
+    "start": "next start --port 3100",
+    "lint": "eslint",
+    "probar": "node scripts/probar-api.mjs",
+    "desplegar": "sst deploy --stage produccion"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.31.0",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1114.0",
+    "@aws-sdk/client-s3": "^3.1114.0",
+    "@aws-sdk/lib-dynamodb": "^3.1114.0",
+    "@aws-sdk/s3-request-presigner": "^3.1114.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "sst": "^3.19.3",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

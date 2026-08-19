@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "radar",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "radar", "run", "dev"],
+      "port": 3100
     }
   ]
 }

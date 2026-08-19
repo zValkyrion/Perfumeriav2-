@@ -1,0 +1,219 @@
+@import "tailwindcss";
+
+/* ============================================================
+   RADAR — sistema visual
+
+   La paleta y los nombres de token están copiados del tema que
+   la landing sirve de verdad (`data-tema="mayoreo"` en
+   src/app/layout.tsx): fondo claro de tienda, acento rojo de
+   oferta y todo en Inter. No es el "lujo oscuro" del
+   DESIGN_NOTES base — ese sistema existe, pero no es lo que ve
+   el cliente hoy, y esta herramienta debe parecerse a lo que
+   el equipo tiene en la cabeza.
+
+   Se conservan los mismos nombres (`--color-bg`, `--color-fg`,
+   `--color-gold`…) para que quien salte entre los dos proyectos
+   lea el mismo vocabulario, aunque aquí "gold" sea rojo — igual
+   que en la landing.
+
+   Lo propio de esta app es la ergonomía de calle: nada táctil
+   por debajo de 48px, campos de 16px para que iOS no haga zoom
+   y foco siempre visible.
+   ============================================================ */
+@theme {
+  /* Superficies */
+  --color-bg: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-2: #e9ebef;
+  --color-border-strong: #cfd4db;
+  --color-border-soft: #e1e5ea;
+
+  /* Acento de marca — rojo de oferta, igual que la tienda */
+  --color-gold: #e02b20;
+  --color-gold-light: #c01a11;
+  --color-gold-deep: #8f130c;
+  --color-gold-muted: rgb(224 43 32 / 0.1);
+
+  /* Texto */
+  --color-fg: #12151a;
+  --color-fg-muted: #49515c;
+  --color-fg-subtle: #626b78;
+
+  /* Semánticos del semáforo.
+     El rojo de peligro va deliberadamente más oscuro que el rojo de marca:
+     comparten familia, y si fueran el mismo tono la insignia de "riesgoso"
+     se leería como un botón de la tienda. Los cuatro pasan 4.5:1 con texto
+     blanco encima. */
+  --color-success: #12855a;
+  --color-warning: #9a6400;
+  --color-danger: #a3160f;
+  --color-info: #1f5fa8;
+
+  /* Radios — los mismos de la landing */
+  --radius: 16px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Tipografía. El tema de la tienda pone Inter también en los titulares:
+     la serif es lo que más "encarece" una página, y esto es una herramienta
+     de trabajo. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Movimiento (§6.7 del DESIGN_NOTES) */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-rapida: 140ms;
+  --dur-media: 260ms;
+}
+
+:root {
+  /* Degradado de marca: plano y saturado, sin brillo metálico — es el mismo
+     criterio del tema de tienda, que evita a propósito el tic de lujo. */
+  --grad-oro: linear-gradient(180deg, #ef372b 0%, #d21d13 100%);
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  /* Sin zoom accidental al tocar dos veces un botón con prisa. */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  overscroll-behavior-y: contain;
+  font-feature-settings: "cv02", "cv03", "cv04";
+  /* Un escalón por encima del 400 de fábrica, igual que la tienda: sobre fondo
+     claro el peso normal de Inter se desvanece. */
+  font-weight: 500;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+strong,
+b,
+label,
+button {
+  font-weight: 600;
+}
+
+/* Un campo con menos de 16px hace que iOS haga zoom al enfocarlo y descoloque
+   el formulario entero. Es la causa número uno de "se me movió la pantalla". */
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  font-size: max(16px, 1rem);
+}
+
+/* El foco tiene que verse: se usa con sol y a la carrera. */
+:focus-visible {
+  outline: 3px solid var(--color-info);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer utilities {
+  /* Degradado de acento, derivado del token para no repetir hexadecimales. */
+  .bg-gold-gradient {
+    background-image: var(--grad-oro);
+  }
+
+  /* Eyebrow de sección (§6.2 del DESIGN_NOTES) */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.2em] text-gold-light;
+  }
+
+  /* Filo de marca para separar sin usar sombra */
+  .rule-gold {
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-gold-deep),
+      var(--color-gold),
+      var(--color-gold-deep),
+      transparent
+    );
+  }
+
+  /* Elevación por borde y color, nunca por sombra grande (§1.3) */
+  .lift {
+    transition:
+      transform var(--dur-media) var(--ease-out-soft),
+      border-color var(--dur-media) var(--ease-out-soft),
+      background-color var(--dur-media) var(--ease-out-soft);
+  }
+  @media (hover: hover) {
+    .lift:hover {
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--color-gold) 35%, transparent);
+    }
+  }
+  /* En táctil no hay hover: la respuesta al dedo es el hundido. */
+  .lift:active {
+    transform: scale(0.995);
+  }
+}
+
+/* Deslizador táctil: el pulgar necesita 28px de pastilla, no los 12 por
+   defecto del navegador. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -11px;
+  border-radius: 999px;
+  background-image: var(--grad-oro);
+  border: 3px solid var(--color-surface);
+  box-shadow: 0 1px 4px rgb(18 21 26 / 0.28);
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--color-gold);
+  border: 3px solid var(--color-surface);
+}
+
+/* Leaflet pinta su propio marco; que herede el de la app. */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--color-surface-2);
+}

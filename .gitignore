@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# radar (app de campo, ver RADAR_PLAN.md)
+radar/node_modules/
+radar/.next/
+radar/out/
+radar/*.tsbuildinfo
+radar/next-env.d.ts
+radar/.sst/
+radar/sst-env.d.ts

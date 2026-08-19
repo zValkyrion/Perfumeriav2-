@@ -1,0 +1,59 @@
+name: Desplegar Radar a AWS
+
+# Cada push a main que toque `radar/` actualiza CloudFront. El repositorio sigue
+# siendo la fuente de verdad: AWS solo recibe lo que ya está en git.
+#
+# `paths` evita redesplegar la app de campo por un cambio en la landing, que vive
+# en el mismo repositorio y se publica en GitHub Pages con su propio workflow.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "radar/**"
+      - ".github/workflows/radar.yml"
+  workflow_dispatch:
+
+# `id-token` es lo que permite pedirle a AWS un token temporal por OIDC. Así no
+# hay llaves de acceso guardadas en GitHub: nada que rotar, nada que filtrar.
+permissions:
+  id-token: write
+  contents: read
+
+# Dos despliegues a la vez dejan el estado de SST bloqueado y el segundo falla.
+concurrency:
+  group: radar-produccion
+  cancel-in-progress: false
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: radar
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: radar/package-lock.json
+
+      - run: npm ci
+
+      - name: Pedir credenciales temporales a AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::637423567003:role/Elrey_despliegue_github
+          aws-region: us-east-1
+
+      - name: Desplegar
+        run: npx sst deploy --stage produccion
+
+      # Desplegar no es funcionar. Si la API queda rota, el workflow falla y
+      # aparece en rojo en vez de descubrirse en la calle al día siguiente.
+      - name: Probar la API en producción
+        env:
+          RADAR_PIN: ${{ secrets.RADAR_PIN }}
+        run: npm run probar
