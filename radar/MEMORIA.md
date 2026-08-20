@@ -53,7 +53,8 @@ Región **us-east-1**. Cuenta **637423567003**. Etapa: `produccion`.
 
 | | |
 | --- | --- |
-| **Sitio** | https://devfq5kjop78h.cloudfront.net |
+| **Tienda** | https://devfq5kjop78h.cloudfront.net/ |
+| **Panel** | https://devfq5kjop78h.cloudfront.net/radar/ |
 | **API** | https://qdn0ihicj6.execute-api.us-east-1.amazonaws.com |
 
 | Recurso | Nombre real | Para qué |
@@ -268,6 +269,42 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-08-19 · Un solo origen: tienda en / y panel en /radar
+
+- **Por qué:** el panel vivía en un dominio de CloudFront distinto al de la
+  tienda. Con un solo origen, el día que haya dominio se conecta en un único
+  lugar y las dos quedan bajo él.
+- **Implementación:** `scripts/construir-sitio.mjs` compila las dos
+  exportaciones estáticas y las ensambla en un directorio; una sola
+  distribución las sirve.
+- **La trampa del basePath:** el de la tienda dependía de detectar
+  `GITHUB_ACTIONS`, que también se activa en el workflow de CloudFront — allí
+  habría dejado el sitio colgando de `/Perfumeriav2-`. Ahora se activa con
+  `PAGES=1`, que solo pone el workflow de Pages.
+- **El canonical de la tienda NO se movió:** sigue apuntando a GitHub Pages,
+  que es la URL indexada. Cambiarlo ahora obligaría a mudar de URL dos veces —
+  una a CloudFront y otra al dominio propio— y cada mudanza reinicia el SEO.
+- **`basePath` no alcanza para el panel:** Next reescribe los enlaces de `Link`
+  y `router`, pero el manifest, los iconos y el service worker llevan rutas
+  propias y van a mano.
+- **Migración del service worker:** el registro viejo tenía ámbito `/`, que
+  ahora es la tienda. Al abrir el panel se da de baja y se borran sus cachés,
+  para que un worker de la app de campo no intercepte la tienda. Las fichas no
+  se tocan: viven en IndexedDB.
+
+### 2026-08-19 · Saltar entre tienda y panel
+
+- **Por qué:** hacía falta que quien trabaja en el panel pudiera entrar desde
+  la tienda, y volver sin cerrar sesión.
+- **Implementación:** al compartir origen comparten `localStorage`, así que la
+  tienda mira si hay sesión del panel (`radar:token`) y solo entonces pinta el
+  atajo en la cabecera. Un cliente de la tienda no ve nada.
+- **No es control de acceso, y no pretende serlo.** Cualquiera puede escribir su
+  propio `localStorage` y hacer aparecer el botón; no ganaría nada, porque el
+  panel sigue pidiendo el código del equipo y la API rechaza toda petición sin
+  token firmado. Ahí solo se decide si se pinta un enlace.
+- En GitHub Pages el atajo nunca aparece: es otro origen y esa sesión no existe.
 
 ### 2026-08-19 · Los dos despliegues dejan de pisarse
 
