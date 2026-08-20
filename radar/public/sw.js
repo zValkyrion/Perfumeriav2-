@@ -10,7 +10,16 @@
  * caché normal del navegador ya guarda las que se hayan visto) y Nominatim.
  */
 
-const CACHE = "radar-v1";
+/**
+ * La versión del caché se sube a mano en cada despliegue que cambie el armazón.
+ *
+ * El navegador solo reinstala el service worker si este archivo cambia de bytes.
+ * Mientras el nombre siga siendo el mismo, un teléfono que ya lo tenía instalado
+ * conserva el HTML viejo en `radar-v1` y puede seguir pidiendo archivos que ya no
+ * existen — el `activate` de abajo borra todo caché que no sea el actual, así que
+ * subir el número es lo que garantiza que nadie se quede atrás.
+ */
+const CACHE = "radar-v2";
 
 // El armazón mínimo para arrancar. Los chunks de JavaScript se van sumando solos
 // conforme se visitan, porque llevan hash en el nombre y no se pueden listar aquí.
