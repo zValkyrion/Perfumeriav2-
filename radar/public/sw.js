@@ -23,7 +23,14 @@ const CACHE = "radar-v2";
 
 // El armazón mínimo para arrancar. Los chunks de JavaScript se van sumando solos
 // conforme se visitan, porque llevan hash en el nombre y no se pueden listar aquí.
-const ARMAZON = ["/", "/captura/", "/ficha/", "/manifest.webmanifest", "/icono-192.png"];
+const ARMAZON = [
+  "/radar/",
+  "/radar/captura/",
+  "/radar/ficha/",
+  "/radar/comparar/",
+  "/radar/manifest.webmanifest",
+  "/radar/icono-192.png",
+];
 
 self.addEventListener("install", (evento) => {
   evento.waitUntil(
@@ -68,7 +75,7 @@ self.addEventListener("fetch", (evento) => {
         .catch(() =>
           caches
             .match(peticion)
-            .then((guardado) => guardado || caches.match("/")),
+            .then((guardado) => guardado || caches.match("/radar/")),
         ),
     );
     return;

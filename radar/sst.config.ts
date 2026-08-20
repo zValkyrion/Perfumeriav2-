@@ -88,12 +88,16 @@ export default $config({
     });
 
     // ── Sitio ───────────────────────────────────────────────────────────────
-    // La app es un SPA estático (`output: "export"`): S3 + CloudFront, sin
-    // servidor que se caiga cuando el equipo pierde la señal.
+    // Una sola distribución sirve las dos apps: la tienda en la raíz y la de
+    // campo en /radar. Comparten origen —y compartirán dominio— sin que ninguna
+    // necesite saber de la otra.
+    //
+    // Ambas son exportaciones estáticas: no hay servidor que se caiga cuando el
+    // equipo pierde la señal.
     const sitio = new sst.aws.StaticSite("Elrey_radar", {
       build: {
-        command: "npm run build",
-        output: "out",
+        command: "node scripts/construir-sitio.mjs",
+        output: "salida-sitio",
       },
       environment: {
         NEXT_PUBLIC_API: api.url,

@@ -13,7 +13,7 @@ on:
     paths-ignore:
       - "radar/**"
       - "RADAR_PLAN.md"
-      - ".github/workflows/radar.yml"
+      - ".github/workflows/aws.yml"
   workflow_dispatch:
 
 permissions:
@@ -45,6 +45,10 @@ jobs:
         run: npm ci
 
       - name: Build static site
+        # PAGES=1 activa el basePath del repositorio. Sin esta variable la tienda se
+        # compila para la raíz de un dominio, que es como se publica en CloudFront.
+        env:
+          PAGES: "1"
         run: npm run build
 
       - name: Upload artifact

@@ -1,16 +1,14 @@
-name: Desplegar Radar a AWS
+name: Desplegar sitio a AWS
 
-# Cada push a main que toque `radar/` actualiza CloudFront. El repositorio sigue
-# siendo la fuente de verdad: AWS solo recibe lo que ya está en git.
+# Cada push a main actualiza CloudFront. El repositorio sigue siendo la fuente de
+# verdad: AWS solo recibe lo que ya está en git.
 #
-# `paths` evita redesplegar la app de campo por un cambio en la landing, que vive
-# en el mismo repositorio y se publica en GitHub Pages con su propio workflow.
+# Sin filtro de rutas, a diferencia del workflow de Pages: esta distribución
+# sirve **las dos** apps —la tienda en la raíz y la de campo en /radar—, así que
+# un cambio en cualquiera de las dos tiene que llegar hasta aquí.
 on:
   push:
     branches: [main]
-    paths:
-      - "radar/**"
-      - ".github/workflows/radar.yml"
   workflow_dispatch:
 
 # `id-token` es lo que permite pedirle a AWS un token temporal por OIDC. Así no
@@ -38,9 +36,18 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: radar/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            radar/package-lock.json
 
-      - run: npm ci
+      # Las dos apps se compilan: la tienda desde la raíz del repositorio y la de
+      # campo desde radar/. Cada una tiene sus propias dependencias.
+      - name: Instalar dependencias de la tienda
+        working-directory: .
+        run: npm ci
+
+      - name: Instalar dependencias del radar
+        run: npm ci
 
       - name: Pedir credenciales temporales a AWS
         uses: aws-actions/configure-aws-credentials@v4

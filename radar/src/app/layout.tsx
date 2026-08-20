@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   description: "Captura y evaluación de proveedores de perfumería en campo.",
   // Herramienta interna: no tiene por qué aparecer en buscadores.
   robots: { index: false, follow: false },
-  manifest: "/manifest.webmanifest",
+  manifest: "/radar/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Radar", statusBarStyle: "default" },
-  icons: { icon: "/icono-192.png", apple: "/icono-180.png" },
+  icons: { icon: "/radar/icono-192.png", apple: "/radar/icono-180.png" },
 };
 
 export const viewport: Viewport = {
