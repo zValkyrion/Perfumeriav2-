@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { Precio, PrecioAnterior, Descuento } from "@/components/comunes/precio";
 import { Stepper } from "@/components/carrito/stepper";
+import { MARCA } from "@/data/contenido";
 import { precio as fmt, precioPorMl } from "@/lib/format";
 import { ESCALONES, escalonPara, mejorPlazo, precioUnitario, siguienteEscalon } from "@/lib/volumen";
 import { useTienda } from "@/store/tienda";
@@ -216,9 +217,15 @@ export function CompraProducto({ producto }: { producto: Producto }) {
               </tr>
             </thead>
             <tbody className="divide-border-soft divide-y">
-              {ESCALONES.map((e) => {
+              {ESCALONES.map((e, i) => {
                 const activo = e.nombre === escalon.nombre;
                 const precioFila = precioUnitario(presentacion.precio, e.min);
+                // Un escalón que no baja el precio respecto al anterior no
+                // ofrece nada automático: ahí el trato se cierra por WhatsApp.
+                // Repetir la misma tarifa y el mismo −30% lo hacía parecer un
+                // callejón sin salida en la única tabla donde se comparan.
+                const aCotizar =
+                  i > 0 && e.descuento === ESCALONES[i - 1]!.descuento;
                 return (
                   <tr
                     key={e.nombre}
@@ -254,10 +261,23 @@ export function CompraProducto({ producto }: { producto: Producto }) {
                         activo ? "text-gold-light font-medium" : "text-fg-muted",
                       )}
                     >
-                      {fmt(precioFila)} c/u
+                      {aCotizar ? "Precio especial" : `${fmt(precioFila)} c/u`}
                     </td>
                     <td className="text-success px-3.5 py-2.5 text-right text-[12px]">
-                      {e.descuento > 0 ? `−${Math.round(e.descuento * 100)}%` : "—"}
+                      {aCotizar ? (
+                        <a
+                          href={MARCA.whatsappLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gold-light underline underline-offset-4"
+                        >
+                          pide cotización
+                        </a>
+                      ) : e.descuento > 0 ? (
+                        `−${Math.round(e.descuento * 100)}%`
+                      ) : (
+                        "—"
+                      )}
                     </td>
                   </tr>
                 );
