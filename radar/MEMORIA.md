@@ -255,6 +255,11 @@ Cada push a `main` que toque `radar/` despliega y corre las pruebas, vía GitHub
 Actions con OIDC — sin llaves guardadas en GitHub. Detalles y los dos comandos
 pendientes de IAM: [`infra/README.md`](infra/README.md).
 
+La tienda y el radar viven en el mismo repositorio pero se publican en sitios
+distintos, así que cada workflow filtra por rutas: un cambio en `radar/` ya no
+reconstruye ni republica la tienda, y uno en la tienda no toca el radar. Un push
+que mezcle ambos despliega los dos.
+
 El rol `Elrey_despliegue_github` solo puede asumirse desde
 `repo:zValkyrion/Perfumeriav2-:ref:refs/heads/main`. Quien pueda hacer push a
 `main` puede tocar la cuenta de AWS: proteger esa rama es parte de la seguridad
@@ -263,6 +268,15 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-08-19 · Los dos despliegues dejan de pisarse
+
+- **Por qué:** cualquier push disparaba los dos workflows. Tocar la app de campo
+  reconstruía y republicaba la tienda sin que hubiera cambiado nada suyo:
+  republicar producción por trabajo ajeno, sin beneficio.
+- **Implementación:** `paths-ignore` en el workflow de Pages y `paths` en el del
+  radar. El filtro solo salta la ejecución cuando *todos* los archivos del push
+  están en la lista, así que un cambio mezclado sigue desplegando ambos.
 
 ### 2026-08-19 · Los borrados no viajaban entre teléfonos
 
