@@ -301,6 +301,29 @@ del módulo.
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
 
+### 2026-08-20 · Vista de conjunto para administración
+
+- **Por qué:** cada quien veía la lista de sus fichas, pero no había forma de
+  mirar la gira entera: ni ranking global, ni mapa con todos los pines, ni un
+  CSV que llevar a una hoja de cálculo para negociar.
+- **Implementación:** `/radar/admin/`, con resumen por semáforo, `MapaTodos`
+  —Leaflet con un pin por proveedor, del color de su semáforo— y exportación
+  CSV. Reutiliza `analizar()` y `mejorCostoPorMlConPromo()`.
+- **El grupo `admins` decide qué se pinta, no qué se puede leer.** Los datos
+  salen de `GET /proveedores`, que devuelve todo a cualquier token válido —
+  "todos ven lo de todos" (§5) es una decisión del módulo. Esta puerta no guarda
+  ningún secreto. El día que la pantalla lea algo que un `proveedores` no deba
+  ver, el filtro va en `servidor/api.ts`: ponerlo en el navegador no serviría.
+- **Sin red no queda vacía:** si la API no responde, cae a lo que hay en
+  IndexedDB y lo dice — es un subconjunto honesto, no la gira entera.
+- **El CSV lleva la cobertura al lado del puntaje**, por la misma razón que la
+  pantalla: un 80 con el 30% de la ficha respondida no es el mismo 80 que uno con
+  el 90%, y en una hoja sin ese dato nadie lo recuerda. Lo sin evaluar va vacío y
+  no en cero, que se promediaría como si fuera una observación. Empieza con BOM
+  o Excel rompe cada acento.
+- Los dos mapas comparten `components/mapa-base.ts`; `MapaPunto` no cambió de
+  comportamiento.
+
 ### 2026-08-19 · Lector de listas de precios con Textract
 
 - **Por qué:** teclear veinte renglones de pie en la calle era lo que más
@@ -568,6 +591,3 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
   viaje, migrar a Cognito.
 - **Cámara y GPS exigen HTTPS**: funcionan en la URL de CloudFront, no por IP
   local.
-
-- **Panel admin** (ranking global, mapa con todos los pines, export CSV) sigue
-  sin construirse.

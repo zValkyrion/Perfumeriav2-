@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Map as MapaLeaflet, Marker } from "leaflet";
+import { crearMapa, iconoRedondo } from "@/components/mapa-base";
 import "leaflet/dist/leaflet.css";
 
 /**
@@ -49,32 +50,16 @@ export function MapaPunto({
       if (!vivo || !contenedor.current) return;
 
       const centro: [number, number] = [lat ?? 19.4326, lng ?? -99.1332];
-      const m = L.map(contenedor.current, {
-        center: centro,
+      const m = crearMapa(L, contenedor.current, {
+        centro,
         zoom: lat === null ? 12 : 17,
-        // El zoom con dos dedos ya funciona; la rueda solo estorba dentro de un
-        // formulario largo que se recorre con scroll.
-        scrollWheelZoom: false,
-        attributionControl: true,
+        onFallaTesela: () => setSinTeselas(true),
       });
 
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap",
-      })
-        .on("tileerror", () => setSinTeselas(true))
-        .addTo(m);
-
-      // `divIcon` en vez del marcador por defecto: los PNG de Leaflet se rompen
-      // con cualquier empaquetador y esto además se ve en el color de la marca.
-      const icono = L.divIcon({
-        className: "",
-        html: `<span style="display:block;width:22px;height:22px;border-radius:999px;background:var(--color-gold);border:3px solid #fff;box-shadow:0 2px 6px rgb(0 0 0 / .45)"></span>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
-      });
-
-      const mk = L.marker(centro, { icon: icono, draggable: editable }).addTo(m);
+      const mk = L.marker(centro, {
+        icon: iconoRedondo(L, "var(--color-gold)"),
+        draggable: editable,
+      }).addTo(m);
       if (editable) {
         mk.on("dragend", () => {
           const p = mk.getLatLng();

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ChartColumn,
   Check,
 
   Download,
@@ -123,6 +124,16 @@ export default function Pagina() {
             </Boton>
           ) : (
             <>
+              {/* La vista de conjunto solo se le enseña a `admins`. Quien no lo
+                  sea y llegue a /admin recibe la explicación ahí mismo: esto
+                  decide qué se pinta, no qué se puede leer. */}
+              {sesion.grupos.includes("admins") && (
+                <Link href="/admin/" aria-label="Vista de conjunto">
+                  <Boton variante="secundario" className="px-3">
+                    <ChartColumn size={18} />
+                  </Boton>
+                </Link>
+              )}
               <ExportarCopia proveedores={proveedores ?? []} />
               <Boton
                 variante="secundario"
