@@ -14,8 +14,21 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { firmarToken, pinCorrecto } from "./jwt";
-import { identificar, puedeVerProveedores, type Identidad } from "./identidad";
+import {
+  identificar,
+  puedeVerProveedores,
+  tieneIdentidadPropia,
+  type Identidad,
+} from "./identidad";
 import { leerLista } from "./precios";
+import {
+  guardarCarrito,
+  guardarPedido,
+  leerCarrito,
+  listarPedidos,
+  sanearCarrito,
+  sanearPedido,
+} from "./tienda";
 
 /**
  * API del Radar de Proveedores.
@@ -111,6 +124,27 @@ export async function handler(evento: Evento) {
     const sesion = await sesionDe(evento);
     if (!sesion) return json(401, { error: "Sesión inválida o vencida" });
 
+    // Lo de la tienda va antes del filtro por grupo: el carrito y los pedidos
+    // son de quien inició sesión, sea cliente o del equipo. Lo que se exige aquí
+    // no es un grupo sino una identidad propia — el carrito se guarda bajo el
+    // `sub`, y el PIN compartido no identifica a nadie.
+    if (ruta === "/carrito" || ruta === "/pedidos") {
+      if (!tieneIdentidadPropia(sesion)) {
+        return json(403, {
+          error: "El carrito necesita una cuenta propia, no el código del equipo",
+        });
+      }
+      if (metodo === "GET" && ruta === "/carrito") return verCarrito(sesion.sub);
+      if (metodo === "PUT" && ruta === "/carrito") {
+        return ponerCarrito(evento, sesion.sub);
+      }
+      if (metodo === "GET" && ruta === "/pedidos") return verPedidos(sesion.sub);
+      if (metodo === "POST" && ruta === "/pedidos") {
+        return crearPedido(evento, sesion.sub);
+      }
+      return json(405, { error: `${metodo} no va en ${ruta}` });
+    }
+
     // El grupo es el permiso. Un cliente de la tienda tiene sesión válida y aun
     // así no tiene nada que hacer aquí.
     if (!puedeVerProveedores(sesion)) {
@@ -151,6 +185,34 @@ async function acceso(evento: Evento) {
     token: firmarToken(evaluador, Resource.Elrey_jwt_secreto.value),
     evaluador,
   });
+}
+
+// ── Tienda: carrito y pedidos ───────────────────────────────────────────────
+
+/**
+ * El carrito del servidor **no manda sobre el del navegador**: es la copia que
+ * permite retomarlo en otro aparato. La app fusiona lo suyo con esto al iniciar
+ * sesión y vuelve a subir el resultado; aquí solo se lee y se escribe.
+ */
+async function verCarrito(sub: string) {
+  return json(200, await leerCarrito(dynamo, TABLA, sub));
+}
+
+async function ponerCarrito(evento: Evento, sub: string) {
+  const cuerpo = leerCuerpo<unknown>(evento);
+  if (cuerpo === null) return json(400, { error: "Carrito inválido" });
+  return json(200, await guardarCarrito(dynamo, TABLA, sub, sanearCarrito(cuerpo)));
+}
+
+async function verPedidos(sub: string) {
+  return json(200, { pedidos: await listarPedidos(dynamo, TABLA, sub) });
+}
+
+async function crearPedido(evento: Evento, sub: string) {
+  const pedido = sanearPedido(leerCuerpo<unknown>(evento));
+  if (!pedido) return json(400, { error: "Falta el folio del pedido" });
+  await guardarPedido(dynamo, TABLA, sub, pedido);
+  return json(200, { ok: true, folio: pedido.folio });
 }
 
 // ── Proveedores ─────────────────────────────────────────────────────────────

@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Check, Copy, MessageCircle, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,33 +16,90 @@ import {
 import { Contenedor } from "@/components/comunes/layout";
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio } from "@/components/comunes/precio";
-import { ETAPAS_RASTREO, PEDIDOS, etapaActual, getPedido } from "@/data/cuenta";
+import { ETAPAS_RASTREO, etapaActual, getPedido } from "@/data/cuenta";
 import { getPresentacion, getProductoPorId } from "@/data/productos";
 import { MARCA } from "@/data/contenido";
 import { formatoFechaLarga } from "@/lib/format";
+import { haySincronizacion, leerPedidosRemotos } from "@/lib/cuenta-remota";
+import { useSesion } from "@/lib/sesion";
+import type { Pedido } from "@/types";
 import { cn } from "@/lib/utils";
 
-export function generateStaticParams() {
-  return PEDIDOS.map((p) => ({ folio: p.folio }));
+/**
+ * El detalle de un pedido, con su rastreo.
+ *
+ * El folio viaja en la consulta (`?folio=`) y no en la ruta. Antes era
+ * `/cuenta/pedidos/[folio]/` con `generateStaticParams`, que solo podía existir
+ * para los pedidos de muestra: el sitio es una exportación estática, así que un
+ * folio real —creado después de compilar— no tenía página y el enlace de la
+ * lista acababa en 404. Es el mismo problema que el panel resolvió igual, con
+ * `/ficha/?id=`.
+ */
+export function VistaPedido() {
+  const folio = useSearchParams().get("folio") ?? "";
+  const sesion = useSesion();
+  const cuenta = sesion.perfil?.sub || null;
+  const conCuenta = haySincronizacion() && cuenta !== null;
+
+  const [remoto, setRemoto] = useState<{ cuenta: string; pedido: Pedido | null } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!conCuenta || !cuenta || !folio) return;
+    let vivo = true;
+    leerPedidosRemotos()
+      .then((r) => {
+        if (vivo) {
+          setRemoto({ cuenta, pedido: r.pedidos.find((p) => p.folio === folio) ?? null });
+        }
+      })
+      .catch(() => vivo && setRemoto({ cuenta, pedido: null }));
+    return () => {
+      vivo = false;
+    };
+  }, [conCuenta, cuenta, folio]);
+
+  if (!folio) return <Aviso titulo="Falta el folio" />;
+
+  // Sin cuenta se sigue viendo el pedido de muestra, que es lo que enseña la
+  // lista en ese caso. Con cuenta, solo lo que de verdad hay en ella.
+  if (!conCuenta) {
+    const muestra = getPedido(folio);
+    return muestra ? <Detalle pedido={muestra} /> : <Aviso titulo="No encontramos ese pedido" />;
+  }
+
+  if (remoto?.cuenta !== cuenta) {
+    return (
+      <Contenedor className="py-10">
+        <div className="h-64 animate-pulse rounded-lg bg-white/5" />
+      </Contenedor>
+    );
+  }
+
+  return remoto.pedido ? (
+    <Detalle pedido={remoto.pedido} />
+  ) : (
+    <Aviso titulo="No encontramos ese pedido" />
+  );
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/cuenta/pedidos/[folio]">): Promise<Metadata> {
-  const { folio } = await params;
-  return {
-    title: `Pedido ${folio}`,
-    robots: { index: false, follow: true },
-  };
+function Aviso({ titulo }: { titulo: string }) {
+  return (
+    <Contenedor className="py-20 text-center">
+      <h1 className="font-display mb-3 text-3xl">{titulo}</h1>
+      <p className="text-fg-muted mb-7">
+        Puede que sea de otra cuenta o que el enlace esté incompleto. Tus pedidos
+        están en tu cuenta.
+      </p>
+      <Button asChild variant="gold" size="touch-lg">
+        <Link href="/cuenta">Ir a mi cuenta</Link>
+      </Button>
+    </Contenedor>
+  );
 }
 
-export default async function PedidoPage({
-  params,
-}: PageProps<"/cuenta/pedidos/[folio]">) {
-  const { folio } = await params;
-  const pedido = getPedido(decodeURIComponent(folio));
-  if (!pedido) notFound();
-
+function Detalle({ pedido }: { pedido: Pedido }) {
   const etapa = etapaActual(pedido.estatus);
   const cancelado = pedido.estatus === "Cancelado";
 

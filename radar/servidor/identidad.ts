@@ -35,6 +35,16 @@ export type Identidad = {
   evaluador: string;
   /** Grupos de Cognito. Vacío cuando la sesión viene del PIN antiguo. */
   grupos: string[];
+  /**
+   * El identificador estable de Cognito. `null` en las sesiones por PIN, que no
+   * identifican a nadie en concreto.
+   *
+   * Es la clave de partición del carrito y los pedidos, y por eso se usa el
+   * `sub` y no el correo: el correo se puede cambiar desde la cuenta y arrastraría
+   * el carrito a otra partición, dejando el anterior huérfano. El `sub` no cambia
+   * nunca.
+   */
+  sub: string | null;
   /** De dónde salió esta sesión. */
   origen: "cognito" | "pin";
 };
@@ -56,7 +66,7 @@ async function sesionPorCognito(token: string): Promise<Identidad | null> {
       (carga.name as string | undefined) ??
       (carga.email as string | undefined) ??
       carga.sub;
-    return { evaluador: nombre, grupos, origen: "cognito" };
+    return { evaluador: nombre, grupos, sub: carga.sub, origen: "cognito" };
   } catch {
     // No es de Cognito —o está vencido—: puede seguir siendo del PIN.
     return null;
@@ -69,7 +79,7 @@ function sesionPorPin(token: string): Identidad | null {
     Resource.Elrey_jwt_secreto.value,
   );
   if (!sesion) return null;
-  return { evaluador: sesion.evaluador, grupos: [], origen: "pin" };
+  return { evaluador: sesion.evaluador, grupos: [], sub: null, origen: "pin" };
 }
 
 /**
@@ -82,4 +92,20 @@ function sesionPorPin(token: string): Identidad | null {
 export function puedeVerProveedores(identidad: Identidad): boolean {
   if (identidad.origen === "pin") return true;
   return identidad.grupos.includes("proveedores") || identidad.grupos.includes("admins");
+}
+
+/**
+ * ¿Puede tener carrito y pedidos propios?
+ *
+ * Cualquier cuenta de Cognito, sin pedir grupo: quien compra en la tienda está
+ * en `clientes`, y el equipo compra también. Lo que separa aquí no es el grupo
+ * sino **tener identidad**, porque el carrito se guarda bajo el `sub`.
+ *
+ * El PIN compartido no la tiene: es el mismo token para todo el equipo, así que
+ * un carrito guardado con él sería el carrito de todos a la vez.
+ */
+export function tieneIdentidadPropia(
+  identidad: Identidad,
+): identidad is Identidad & { sub: string } {
+  return identidad.origen === "cognito" && typeof identidad.sub === "string";
 }

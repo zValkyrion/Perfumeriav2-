@@ -111,6 +111,11 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | `POST /fotos` | URL prefirmada para subir a S3 |
 | `GET /fotos?proveedorId=` | URLs firmadas de lectura |
 | `POST /precios/leer` | Textract sobre la foto de la lista de precios |
+| `GET/PUT /carrito` | El carrito de la tienda, por usuario |
+| `GET/POST /pedidos` | Los pedidos de ese usuario |
+
+Las dos últimas son de la **tienda**, no del panel, y por eso no piden grupo:
+piden identidad propia. El resto exige `proveedores` o `admins`.
 
 **Autenticación:** PIN de equipo → JWT HS256 firmado con `node:crypto` (sin
 librerías: son treinta líneas y una dependencia menos en el arranque en frío).
@@ -127,12 +132,19 @@ transferencia y arriesgarse al límite de 6 MB de payload.
 ### DynamoDB, tabla única
 
 ```
-PK                SK              Contenido
-PROV#<id>         META            la ficha completa + GSI1PK/GSI1SK
-PROV#<id>         FOTO#<fotoId>   clave en S3, tipo, lat/lng
+PK                SK                 Contenido
+PROV#<id>         META               la ficha completa + GSI1PK/GSI1SK
+PROV#<id>         FOTO#<fotoId>      clave en S3, tipo, lat/lng
+USER#<sub>        CARRITO            carrito, guardados y favoritos de la tienda
+USER#<sub>        PEDIDO#<folio>     un pedido cerrado
 
 GSI "porFecha":   GSI1PK = "PROVEEDORES"   GSI1SK = "<actualizadoEn>#<id>"
 ```
+
+Las filas `USER#` **no llevan `GSI1PK`**. El índice es disperso, así que no las
+ve: `GET /proveedores` sigue devolviendo solo fichas. Es lo que mantiene
+separados los dos mundos dentro de la misma tabla, sin una segunda tabla que
+desplegar y vigilar para el mismo resultado.
 
 ### La regla del dato ausente
 
@@ -268,14 +280,22 @@ cd radar && npx sst unlock --stage produccion
 ## 6.1 Pruebas
 
 ```bash
-npm --prefix radar run probar            # 23 comprobaciones de la API
+npm --prefix radar run probar            # las rutas de la API, de punta a punta
 npm --prefix radar run probar-textract   # el lector de listas de precios
+npm --prefix radar run probar-tienda     # carrito y pedidos, contra la tabla
 ```
 
-Recorre cada ruta con datos reales —incluida la subida de una foto a S3— y
-verifica también los rechazos: PIN equivocado, token inventado, ruta inexistente.
+`probar` recorre cada ruta con datos reales —incluida la subida de una foto a
+S3— y verifica también los rechazos: PIN equivocado, token inventado, ruta
+inexistente, y que el carrito y los pedidos no se abran con el token del PIN.
 Crea una ficha de prueba y la borra al terminar, así que se puede correr contra
 producción sin dejar basura.
+
+`probar-tienda` entra por debajo de HTTP: importa `servidor/tienda.ts` y trabaja
+con un `sub` inventado. El camino feliz del carrito no se puede probar por HTTP
+sin la contraseña de una cuenta, que no vive en el repositorio; esto cubre lo que
+de verdad protege —el saneado de lo que manda el navegador y que las filas de
+usuario no se cuelen entre las fichas— y también limpia lo suyo al terminar.
 
 **Se corre después de cada despliegue.** Dos de los fallos más caros de esta
 construcción no los detectó ni el compilador ni curl (§7): hicieron falta el
@@ -300,6 +320,55 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-08-20 · Carrito y pedidos guardados por usuario
+
+- **Por qué:** el carrito vivía en `localStorage` y se perdía al cambiar de
+  aparato; los pedidos de `/cuenta` eran de muestra y la propia pantalla lo
+  advertía. Quien armaba el carrito en el teléfono no lo encontraba al pagar en
+  la computadora.
+- **Implementación:** `GET/PUT /carrito` y `GET/POST /pedidos` en la misma
+  Lambda, con los datos en la misma tabla bajo `PK = USER#<sub>`. En el cliente,
+  `lib/cuenta-remota.ts` y el componente `SincronizarCuenta`, montado en el
+  layout de la tienda.
+- **La clave es el `sub`, no el correo.** El correo se puede cambiar desde la
+  cuenta y arrastraría el carrito a otra partición, dejando huérfano el anterior.
+- **Estas filas no llevan `GSI1PK`**, así que el índice `porFecha` —que es
+  disperso— no las ve y `GET /proveedores` sigue devolviendo solo fichas. Es lo
+  que mantiene separados los dos mundos dentro de la misma tabla.
+- **El PIN no puede tener carrito.** Es el mismo token para todo el equipo: un
+  carrito guardado con él sería el carrito de todos a la vez. Las rutas de tienda
+  exigen identidad propia (`tieneIdentidadPropia`), no un grupo — quien compra
+  está en `clientes`, y el equipo compra también.
+- **Al entrar se fusiona una sola vez, sumando.** Quien metió tres frascos sin
+  haber entrado no espera perderlos, y quien tenía un carrito guardado tampoco.
+  De las dos formas de equivocarse —dejar de más o borrar de menos— solo una es
+  reversible con un clic.
+- **Un fallo caro que apareció probando:** fusionar en *cada* carga duplicaba las
+  cantidades (2 → 3 → 6 → 12), porque a partir de la segunda vez el carrito local
+  ya *era* el de la cuenta y se sumaba consigo mismo. Ahora el estado guarda
+  `sincronizado: { cuenta, sello }`: la fusión ocurre solo la primera vez que esa
+  cuenta entra en ese navegador, después manda el local si nadie más escribió y
+  manda el servidor si otro aparato escribió después.
+- **Al cerrar sesión el carrito se va con quien se fue**, si había viajado a una
+  cuenta. Si no, la siguiente persona en ese aparato se encontraría los frascos
+  de la anterior sumados a los suyos. El carrito anónimo no se toca.
+- **`useSesion` avisa a todas sus copias.** Cada llamada tenía su propio estado,
+  así que cerrar sesión desde la pantalla de cuenta no lo enteraba al
+  sincronizador y el carrito se quedaba en el navegador hasta la recarga.
+- **El detalle del pedido pasó a `/cuenta/pedido/?folio=`.** Era
+  `/cuenta/pedidos/[folio]/` con `generateStaticParams`, que en una exportación
+  estática solo existe para los folios conocidos al compilar: un pedido real
+  daba 404. Es el mismo problema que el panel resolvió igual, con `/ficha/?id=`.
+- **El total del pedido llega del cliente y se cree.** Hoy no hay cobro real. El
+  día que lo haya, el precio se calcula en el servidor: quien pueda editar su
+  propio JavaScript puede mandar un total de cero. Está anotado en
+  `servidor/tienda.ts`.
+- **Verificado:** `scripts/probar-tienda.ts` contra la tabla real (saneado, ida y
+  vuelta, orden de pedidos y que las filas de usuario no se cuelen entre las
+  fichas), y el recorrido completo en el navegador contra la compilación de
+  producción —fusión, recarga estable, adopción de lo escrito por otro aparato,
+  cierre de sesión, checkout y detalle del pedido.
 
 ### 2026-08-20 · Vista de conjunto para administración
 
@@ -591,3 +660,8 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
   viaje, migrar a Cognito.
 - **Cámara y GPS exigen HTTPS**: funcionan en la URL de CloudFront, no por IP
   local.
+- **El detalle del pedido no rastrea de verdad**: el estatus es el que se guardó
+  al cerrarlo y nadie lo mueve todavía. La guía y la paquetería solo existen en
+  los pedidos de muestra.
+- **El total del pedido lo calcula el navegador.** Sirve mientras el checkout sea
+  una demostración; con cobro real hay que calcularlo en el servidor.

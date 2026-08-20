@@ -188,5 +188,40 @@ ok(
 
 ok("ruta inexistente da 404", (await pedir("/no-existe", { headers: auth })).estado === 404);
 
+// ── Tienda: carrito y pedidos ───────────────────────────────────────────────
+// El carrito se guarda bajo el `sub` de Cognito, así que exige una cuenta
+// propia. El PIN es el mismo token para todo el equipo: un carrito guardado con
+// él sería el carrito de todos a la vez, y por eso se rechaza aunque el token
+// sea válido. Probar el camino feliz pediría la contraseña de una cuenta real,
+// que no vive en este repositorio; lo que sí se puede comprobar aquí —y es lo
+// que protege— es que la puerta esté cerrada.
+for (const [metodo, ruta] of [
+  ["GET", "/carrito"],
+  ["PUT", "/carrito"],
+  ["GET", "/pedidos"],
+  ["POST", "/pedidos"],
+]) {
+  const conPin = await pedir(ruta, {
+    method: metodo,
+    headers: auth,
+    body: metodo === "GET" ? undefined : "{}",
+  });
+  ok(
+    `${metodo} ${ruta} rechaza el token del PIN con 403`,
+    conPin.estado === 403,
+    `HTTP ${conPin.estado}`,
+  );
+
+  const sinToken = await pedir(ruta, {
+    method: metodo,
+    body: metodo === "GET" ? undefined : "{}",
+  });
+  ok(
+    `${metodo} ${ruta} sin token da 401`,
+    sinToken.estado === 401,
+    `HTTP ${sinToken.estado}`,
+  );
+}
+
 console.log(`\n${fallos === 0 ? "TODO EN VERDE" : `${fallos} PRUEBAS FALLARON`}`);
 process.exit(fallos === 0 ? 0 : 1);

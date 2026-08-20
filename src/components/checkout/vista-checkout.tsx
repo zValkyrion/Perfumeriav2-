@@ -26,6 +26,7 @@ import { Precio } from "@/components/comunes/precio";
 import { ResumenPedido } from "@/components/carrito/resumen-pedido";
 import { CP_CONOCIDOS, CP_CONTRA_ENTREGA, OPCIONES_ENVIO } from "@/data/contenido";
 import { resumenCarrito } from "@/lib/carrito";
+import { guardarPedidoRemoto } from "@/lib/cuenta-remota";
 import { precio as fmt } from "@/lib/format";
 import { mensualidad, plazosDisponibles, type PlazoMSI } from "@/lib/volumen";
 import { useTienda } from "@/store/tienda";
@@ -92,10 +93,24 @@ export function VistaCheckout() {
     const folio = `AUR-2026-${String(
       847 + (carrito.reduce((n, i) => n + i.cantidad, 0) % 500),
     ).padStart(5, "0")}`;
+    const fecha = new Date().toISOString().slice(0, 10);
+
+    // Queda en la cuenta para que aparezca en /cuenta desde cualquier aparato.
+    // Sin sesión —o sin red— falla en silencio y el pedido sigue existiendo en
+    // esta pestaña: cortar la confirmación por no haber podido guardar la copia
+    // sería castigar al comprador por un problema del servidor.
+    guardarPedidoRemoto({
+      folio,
+      fecha,
+      estatus: "Pendiente",
+      total,
+      piezas: resumenBase.piezasTotales,
+      items: carrito,
+    }).catch(() => {});
 
     confirmarPedido({
       folio,
-      fecha: new Date().toISOString().slice(0, 10),
+      fecha,
       correo: contacto.correo,
       nombre: contacto.nombre,
       ciudad: contacto.ciudad,

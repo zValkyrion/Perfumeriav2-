@@ -8,6 +8,7 @@
     "start": "next start --port 3100",
     "lint": "eslint",
     "probar": "node scripts/probar-api.mjs",
+    "probar-tienda": "node scripts/probar-tienda.ts",
     "desplegar": "sst deploy --stage produccion",
     "probar-textract": "node scripts/probar-textract.mjs"
   },

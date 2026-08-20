@@ -79,6 +79,12 @@ export type Perfil = {
   correo: string;
   nombre: string;
   grupos: string[];
+  /**
+   * El identificador estable de Cognito, el mismo con el que la API guarda el
+   * carrito. Se usa el `sub` y no el correo para saber "de quién es este
+   * carrito": el correo se puede cambiar y el `sub` no cambia nunca.
+   */
+  sub: string;
 };
 
 /**
@@ -96,6 +102,7 @@ export function leerPerfil(idToken: string): Perfil | null {
       correo: carga.email ?? "",
       nombre: carga.name ?? carga.email ?? "",
       grupos: carga["cognito:groups"] ?? [],
+      sub: carga.sub ?? "",
     };
   } catch {
     return null;
@@ -132,9 +139,34 @@ export type Sesion = {
   salir: () => void;
 };
 
+/**
+ * Todas las copias de `useSesion` de esta pestaña miran el mismo perfil.
+ *
+ * El hook se usa en varios sitios a la vez —la pantalla de cuenta, la cabecera,
+ * el sincronizador del carrito— y cada llamada tenía su propio `useState`. Al
+ * cerrar sesión desde la pantalla de cuenta, las demás seguían creyendo que
+ * había sesión hasta la siguiente recarga: el carrito de quien acababa de salir
+ * se quedaba en el navegador.
+ *
+ * Es una lista de avisos, no un estado global: el dato sigue viviendo en
+ * `localStorage` y esto solo hace que todos se enteren a la vez.
+ */
+const oyentes = new Set<(perfil: Perfil | null) => void>();
+
+function avisar(perfil: Perfil | null) {
+  for (const oyente of oyentes) oyente(perfil);
+}
+
 export function useSesion(): Sesion {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [listo, setListo] = useState(false);
+
+  useEffect(() => {
+    oyentes.add(setPerfil);
+    return () => {
+      oyentes.delete(setPerfil);
+    };
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem(CLAVE_TOKEN);
@@ -150,7 +182,7 @@ export function useSesion(): Sesion {
     if (a.RefreshToken) localStorage.setItem(CLAVE_REFRESCO, a.RefreshToken);
     localStorage.setItem(CLAVE_VENCE, String(Date.now() + a.ExpiresIn * 1000));
     localStorage.setItem(CLAVE_EVALUADOR, p?.nombre ?? "");
-    setPerfil(p);
+    avisar(p);
     return p!;
   }, []);
 
@@ -202,7 +234,7 @@ export function useSesion(): Sesion {
     for (const c of [CLAVE_TOKEN, CLAVE_REFRESCO, CLAVE_VENCE, CLAVE_EVALUADOR]) {
       localStorage.removeItem(c);
     }
-    setPerfil(null);
+    avisar(null);
   }, []);
 
   return { perfil, listo, entrar, cambiarContrasena, salir };

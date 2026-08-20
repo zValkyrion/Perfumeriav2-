@@ -61,6 +61,45 @@ interface Estado {
   /** Cierra el pedido: guarda el comprobante y vacía el carrito. */
   confirmarPedido: (pedido: PedidoConfirmado) => void;
 
+  /**
+   * De quién es este carrito y con qué versión del servidor quedó igualado.
+   *
+   * `null` mientras nadie ha iniciado sesión en este navegador: entonces el
+   * carrito es anónimo y al entrar se **fusiona** con el de la cuenta. Una vez
+   * puesto, el carrito local ya es el de esa cuenta y volver a fusionar sumaría
+   * las cantidades otra vez en cada recarga.
+   *
+   * El `sello` es el `actualizadoEn` que devolvió el servidor la última vez.
+   * Sirve para distinguir "nadie más lo tocó, mandan mis cambios" de "otro
+   * aparato escribió después, me quedo con lo suyo".
+   */
+  sincronizado: { cuenta: string; sello: string } | null;
+
+  /**
+   * Adopta el carrito que resultó de reconciliarse con la cuenta.
+   *
+   * Lo llama `SincronizarCuenta`. La decisión de fusionar, adoptar o conservar
+   * vive allí; aquí solo se deja el resultado con su marca.
+   */
+  adoptarRemoto: (
+    datos: { carrito: ItemCarrito[]; guardados: ItemCarrito[]; favoritos: string[] },
+    marca: { cuenta: string; sello: string },
+  ) => void;
+
+  /** Actualiza el sello tras subir un cambio, sin tocar el carrito. */
+  marcarSello: (sello: string) => void;
+
+  /**
+   * Cierra la sesión del carrito: se lleva lo que era de esa cuenta.
+   *
+   * Un carrito que ya viajó a una cuenta no se queda en el navegador cuando esa
+   * persona se va. Si no, la siguiente que entrara en el mismo aparato se
+   * encontraría los frascos de la anterior sumados a los suyos. El carrito
+   * anónimo —el de quien nunca inició sesión— no se toca: ese sí es de este
+   * navegador.
+   */
+  olvidarCuenta: () => void;
+
   abrirDrawer: () => void;
   cerrarDrawer: () => void;
   setDrawer: (abierto: boolean) => void;
@@ -78,6 +117,7 @@ export const useTienda = create<Estado>()(
       modoMayoreo: false,
       cupon: null,
       ultimoPedido: null,
+      sincronizado: null,
       hidratado: false,
       setHidratado: () => set({ hidratado: true }),
       drawerAbierto: false,
@@ -176,6 +216,27 @@ export const useTienda = create<Estado>()(
       confirmarPedido: (pedido) =>
         set({ ultimoPedido: pedido, carrito: [], cupon: null }),
 
+      adoptarRemoto: ({ carrito, guardados, favoritos }, marca) =>
+        set({ carrito, guardados, favoritos, sincronizado: marca }),
+
+      marcarSello: (sello) =>
+        set((s) =>
+          s.sincronizado ? { sincronizado: { ...s.sincronizado, sello } } : s,
+        ),
+
+      olvidarCuenta: () =>
+        set((s) =>
+          s.sincronizado === null
+            ? s
+            : {
+                carrito: [],
+                guardados: [],
+                favoritos: [],
+                cupon: null,
+                sincronizado: null,
+              },
+        ),
+
       abrirDrawer: () => set({ drawerAbierto: true }),
       cerrarDrawer: () => set({ drawerAbierto: false }),
       setDrawer: (abierto) => set({ drawerAbierto: abierto }),
@@ -192,6 +253,7 @@ export const useTienda = create<Estado>()(
         modoMayoreo: s.modoMayoreo,
         cupon: s.cupon,
         ultimoPedido: s.ultimoPedido,
+        sincronizado: s.sincronizado,
       }),
       onRehydrateStorage: () => (estado) => {
         estado?.setHidratado();

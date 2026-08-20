@@ -20,7 +20,7 @@ export default function robots(): MetadataRoute.Robots {
         "/checkout",
         "/checkout/confirmacion",
         "/cuenta",
-        "/cuenta/pedidos/",
+        "/cuenta/pedido/",
         "/favoritos",
         "/buscar",
       ],

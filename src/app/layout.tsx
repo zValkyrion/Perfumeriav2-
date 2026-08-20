@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { BotonWhatsApp } from "@/components/layout/whatsapp";
 import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
+import { SincronizarCuenta } from "@/components/cuenta/sincronizar-cuenta";
 import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
 import { SelectorTemas } from "@/components/comunes/selector-temas";
 import { TransicionRuta } from "@/components/comunes/transicion-ruta";
@@ -110,6 +111,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <BottomNav />
         <BotonWhatsApp />
         <DrawerCarrito sugeridos={sugeridos} />
+        {/* No pinta nada: mantiene el carrito de esta pestaña y el de la cuenta
+            en el mismo sitio. Va en el layout porque el carrito se toca desde
+            todo el sitio, no solo desde /carrito. */}
+        <SincronizarCuenta />
         {/* TEMPORAL: selector de colorimetrías. Borra esta línea, el
             componente y el bloque "TEMAS DE PRUEBA" de globals.css. */}
         <SelectorTemas />

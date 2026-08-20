@@ -13,10 +13,11 @@ import { GridProductos } from "@/components/producto/grid-productos";
 import { DIRECCIONES, PEDIDOS, USUARIO } from "@/data/cuenta";
 import { AVISO_SIN_PANEL, InicioSesion } from "@/components/cuenta/inicio-sesion";
 import { hayLogin, puedeVerPanel, useSesion } from "@/lib/sesion";
+import { haySincronizacion, leerPedidosRemotos } from "@/lib/cuenta-remota";
 import { PRODUCTOS } from "@/data/productos";
 import { formatoFechaLarga } from "@/lib/format";
 import { useTienda } from "@/store/tienda";
-import type { Direccion, EstatusPedido } from "@/types";
+import type { Direccion, EstatusPedido, Pedido } from "@/types";
 import { NivelCliente } from "./nivel-cliente";
 import { cn } from "@/lib/utils";
 
@@ -28,11 +29,53 @@ const COLOR_ESTATUS: Record<EstatusPedido, string> = {
   Cancelado: "bg-danger/15 text-danger",
 };
 
+/**
+ * Los pedidos de la cuenta, o los de muestra si todavía no hay dónde leerlos.
+ *
+ * `reales` es lo que separa las dos cosas, y separarlas importa: una lista de
+ * muestra presentada como propia es peor que no tener lista, porque quien la ve
+ * cree que su pedido está en camino. Cuando la sesión es real, lo que sale es lo
+ * que hay —aunque sean cero pedidos— y la pantalla lo dice.
+ */
+function usePedidos(cuenta: string | null): {
+  lista: readonly Pedido[];
+  reales: boolean;
+  cargando: boolean;
+} {
+  // La respuesta se guarda junto a la cuenta que la pidió: si alguien cierra
+  // sesión y entra con otra, la lista anterior no se queda en pantalla como si
+  // fuera suya mientras llega la nueva.
+  const [traido, setTraido] = useState<{ cuenta: string; pedidos: Pedido[] } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!haySincronizacion() || !cuenta) return;
+    let vivo = true;
+    leerPedidosRemotos()
+      .then((r) => vivo && setTraido({ cuenta, pedidos: r.pedidos }))
+      // Sin red se queda sin lista en vez de enseñar la de muestra: inventar
+      // pedidos de otra persona en la cuenta de alguien es el peor error posible
+      // en esta pantalla.
+      .catch(() => vivo && setTraido({ cuenta, pedidos: [] }));
+    return () => {
+      vivo = false;
+    };
+  }, [cuenta]);
+
+  if (!haySincronizacion() || !cuenta) {
+    return { lista: PEDIDOS, reales: false, cargando: false };
+  }
+  const listo = traido?.cuenta === cuenta;
+  return { lista: listo ? traido.pedidos : [], reales: true, cargando: !listo };
+}
+
 export function VistaCuenta() {
   const hidratado = useTienda((s) => s.hidratado);
   const favoritos = useTienda((s) => s.favoritos);
   const sesion = useSesion();
   const [avisoSinPanel, setAvisoSinPanel] = useState(false);
+  const pedidos = usePedidos(sesion.perfil?.correo ?? null);
 
   // Depende del perfil, no del montaje: esta pantalla ya está montada mostrando
   // el formulario cuando se inicia sesión, así que un efecto de montaje leería la
@@ -60,10 +103,13 @@ export function VistaCuenta() {
     );
   }
 
-  // El nombre sale de la sesión cuando la hay. Los pedidos y las direcciones
-  // siguen siendo de muestra: todavía no hay dónde guardarlos.
+  // El nombre y los pedidos salen de la cuenta cuando la hay. Las direcciones
+  // siguen siendo de muestra: todavía no hay dónde guardarlas.
   const nombre = sesion.perfil?.nombre || USUARIO.nombre;
   const correo = sesion.perfil?.correo || USUARIO.correo;
+  const piezasCompradas = pedidos.reales
+    ? pedidos.lista.reduce((n, p) => n + p.piezas, 0)
+    : USUARIO.piezasCompradas;
 
   return (
     <Contenedor className="py-6 lg:py-10">
@@ -72,9 +118,16 @@ export function VistaCuenta() {
         <h1 className="font-display text-[32px] leading-tight tracking-tight lg:text-[42px]">
           Hola, {nombre.split(" ")[0]}
         </h1>
-        <p className="text-fg-muted mt-2 text-sm">
-          Cliente desde {formatoFechaLarga(USUARIO.desde)}
-        </p>
+        {/* La antigüedad todavía no se guarda en ningún sitio. Con sesión real
+            se calla en vez de enseñar la del usuario de muestra: sería la fecha
+            de otra persona en la cuenta de quien está mirando. */}
+        {pedidos.reales ? (
+          <p className="text-fg-muted mt-2 text-sm">{correo}</p>
+        ) : (
+          <p className="text-fg-muted mt-2 text-sm">
+            Cliente desde {formatoFechaLarga(USUARIO.desde)}
+          </p>
+        )}
 
         {avisoSinPanel && (
           <p className="border-border-soft text-fg-muted mt-3 max-w-lg rounded-md border px-3 py-2 text-sm">
@@ -127,8 +180,23 @@ export function VistaCuenta() {
 
         <TabsContent value="pedidos">
           <div className="lg:grid lg:grid-cols-[1fr_340px] lg:items-start lg:gap-8">
+            {pedidos.cargando ? (
+              <div className="h-40 animate-pulse rounded-lg bg-white/5" />
+            ) : pedidos.lista.length === 0 ? (
+              <div className="border-border-soft rounded-lg border border-dashed px-6 py-14 text-center">
+                <Package size={28} className="text-fg-subtle mx-auto mb-3" aria-hidden />
+                <p className="font-display mb-2 text-xl">Todavía no hay pedidos</p>
+                <p className="text-fg-muted mb-6 text-sm">
+                  Cuando cierres una compra aparecerá aquí, con su folio y su
+                  rastreo.
+                </p>
+                <Button asChild variant="gold" size="touch">
+                  <Link href="/catalogo">Ver el catálogo</Link>
+                </Button>
+              </div>
+            ) : (
             <ul className="space-y-3">
-              {PEDIDOS.map((p) => (
+              {pedidos.lista.map((p) => (
                 <li
                   key={p.folio}
                   className="border-border-soft bg-surface lift rounded-md border p-4 lg:p-5"
@@ -156,7 +224,7 @@ export function VistaCuenta() {
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <Precio valor={p.total} moneda className="font-medium" />
                     <Button asChild variant="outline" size="touch">
-                      <Link href={`/cuenta/pedidos/${p.folio}`}>
+                      <Link href={`/cuenta/pedido/?folio=${encodeURIComponent(p.folio)}`}>
                         Ver detalle y rastreo
                       </Link>
                     </Button>
@@ -164,9 +232,10 @@ export function VistaCuenta() {
                 </li>
               ))}
             </ul>
+            )}
 
             <div className="mt-6 lg:mt-0">
-              <NivelCliente piezas={USUARIO.piezasCompradas} />
+              <NivelCliente piezas={piezasCompradas} />
             </div>
           </div>
         </TabsContent>
@@ -195,7 +264,12 @@ export function VistaCuenta() {
         </TabsContent>
 
         <TabsContent value="datos">
-          <MisDatos nombre={nombre} correo={correo} />
+          <MisDatos
+            nombre={nombre}
+            correo={correo}
+            piezas={piezasCompradas}
+            reales={pedidos.reales}
+          />
         </TabsContent>
       </Tabs>
     </Contenedor>
@@ -380,17 +454,34 @@ function FormDireccion({
   );
 }
 
-function MisDatos({ nombre, correo }: { nombre: string; correo: string }) {
+function MisDatos({
+  nombre,
+  correo,
+  piezas,
+  reales,
+}: {
+  nombre: string;
+  correo: string;
+  piezas: number;
+  reales: boolean;
+}) {
+  const filas: [string, string][] = [
+    ["Nombre", nombre],
+    ["Correo", correo],
+    ["Piezas compradas", String(piezas)],
+  ];
+  // El teléfono y la antigüedad todavía no se guardan en ningún sitio: con
+  // sesión real se omiten en vez de enseñar los del usuario de muestra, que
+  // serían los datos de otra persona.
+  if (!reales) {
+    filas.splice(2, 0, ["WhatsApp", USUARIO.telefono]);
+    filas.push(["Cliente desde", formatoFechaLarga(USUARIO.desde)]);
+  }
+
   return (
     <div className="max-w-lg">
       <dl className="divide-border-soft border-border-soft divide-y border-y">
-        {[
-          ["Nombre", nombre],
-          ["Correo", correo],
-          ["WhatsApp", USUARIO.telefono],
-          ["Cliente desde", formatoFechaLarga(USUARIO.desde)],
-          ["Piezas compradas", String(USUARIO.piezasCompradas)],
-        ].map(([k, v]) => (
+        {filas.map(([k, v]) => (
           <div key={k} className="grid grid-cols-[140px_1fr] gap-4 py-3.5 text-sm">
             <dt className="text-fg-subtle">{k}</dt>
             <dd>{v}</dd>
@@ -399,8 +490,9 @@ function MisDatos({ nombre, correo }: { nombre: string; correo: string }) {
       </dl>
 
       <p className="text-fg-subtle mt-5 text-xs leading-relaxed">
-        Esta es una tienda de demostración: la sesión es simulada y no hay
-        autenticación real ni datos guardados en ningún servidor.
+        {reales
+          ? "Tu carrito, tus favoritos y tus pedidos se guardan en tu cuenta, así que los encuentras igual desde el teléfono o la computadora. El cobro todavía no es real: el checkout deja el pedido registrado, no cobrado."
+          : "Esta es una tienda de demostración: sin iniciar sesión, los pedidos y las direcciones que se ven aquí son de ejemplo."}
       </p>
     </div>
   );
