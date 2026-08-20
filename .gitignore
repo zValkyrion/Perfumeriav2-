@@ -47,4 +47,6 @@ radar/out/
 radar/*.tsbuildinfo
 radar/next-env.d.ts
 radar/.sst/
-radar/sst-env.d.ts
+# sst-env.d.ts SÍ se versiona: lo genera SST, pero el build del sitio corre a
+# mitad del despliegue y en un checkout limpio todavía no existe. Sin él, la CI
+# falla con "Property Elrey_proveedores does not exist on type Resource".
