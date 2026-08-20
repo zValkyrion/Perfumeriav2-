@@ -247,9 +247,11 @@
 }
 
 /* ============================================================
-   TEMAS DE PRUEBA — bloque temporal para comparar colorimetrías.
-   Para quitarlos: borra este bloque, el componente SelectorTemas
-   y su línea en app/layout.tsx. Nada más depende de ellos.
+   COLORIMETRÍAS — «mayoreo» es la que el sitio usa hoy; la fija el
+   `data-tema` del <html> en app/layout.tsx. Las demás quedaron de
+   cuando se comparaban entre sí. El selector flotante que las
+   cambiaba se retiró: era una herramienta de desarrollo y estaba
+   publicada en la tienda.
 
    Cada tema solo redefine su paleta; el resto se deriva del bloque
    de arriba. Se usa `:root[data-tema]` (especificidad 0,2,0) para

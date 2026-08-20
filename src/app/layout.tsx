@@ -8,7 +8,6 @@ import { BotonWhatsApp } from "@/components/layout/whatsapp";
 import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
 import { SincronizarCuenta } from "@/components/cuenta/sincronizar-cuenta";
 import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
-import { SelectorTemas } from "@/components/comunes/selector-temas";
 import { TransicionRuta } from "@/components/comunes/transicion-ruta";
 import { MAS_VENDIDOS, indiceCompacto } from "@/data/productos";
 import { organizacion, sitioWeb } from "@/lib/jsonld";
@@ -79,11 +78,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        {/* TEMPORAL (pruebas de tema): aplica la colorimetría guardada antes
-            del primer pintado para que no se vea el cambio de color. */}
+        {/* Limpia la colorimetría que dejó guardada el selector de pruebas.
+            El selector ya no existe: sin esto, quien probó un tema en su
+            momento se quedaría con él pegado para siempre y sin forma de
+            volver. Se puede borrar esta línea dentro de unos meses. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('aura-tema');if(!t)return;if(t==='oro'){delete document.documentElement.dataset.tema}else{document.documentElement.dataset.tema=t}}catch(e){}})()`,
+            __html: `(function(){try{localStorage.removeItem('aura-tema')}catch(e){}})()`,
           }}
         />
       </head>
@@ -115,9 +116,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             en el mismo sitio. Va en el layout porque el carrito se toca desde
             todo el sitio, no solo desde /carrito. */}
         <SincronizarCuenta />
-        {/* TEMPORAL: selector de colorimetrías. Borra esta línea, el
-            componente y el bloque "TEMAS DE PRUEBA" de globals.css. */}
-        <SelectorTemas />
 
         <Toaster
           position="bottom-center"
