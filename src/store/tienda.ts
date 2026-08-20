@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { ML_PAQUETE } from "@/lib/carrito";
+import { ML_PAQUETE, stockDisponible } from "@/lib/carrito";
 import { CUPONES } from "@/lib/volumen";
 import type { ItemCarrito } from "@/types";
 
@@ -124,15 +124,20 @@ export const useTienda = create<Estado>()(
 
       agregar: (productoId, ml, cantidad = 1) =>
         set((s) => {
+          // El tope es el stock, y se aplica sobre el total de la línea, no
+          // sobre lo que se añade: sin esto, dos pulsaciones de «Agregar al
+          // carrito» dejaban 14 piezas de algo que solo tiene 7.
+          const tope = stockDisponible(productoId, ml);
           const existente = s.carrito.find((i) => mismo(i, productoId, ml));
+          const nueva = Math.min(tope, (existente?.cantidad ?? 0) + cantidad);
+          if (nueva <= 0) return s;
+
           return {
             carrito: existente
               ? s.carrito.map((i) =>
-                  mismo(i, productoId, ml)
-                    ? { ...i, cantidad: i.cantidad + cantidad }
-                    : i,
+                  mismo(i, productoId, ml) ? { ...i, cantidad: nueva } : i,
                 )
-              : [...s.carrito, { productoId, ml, cantidad }],
+              : [...s.carrito, { productoId, ml, cantidad: nueva }],
           };
         }),
 
@@ -145,7 +150,15 @@ export const useTienda = create<Estado>()(
             cantidad <= 0
               ? s.carrito.filter((i) => !mismo(i, productoId, ml))
               : s.carrito.map((i) =>
-                  mismo(i, productoId, ml) ? { ...i, cantidad } : i,
+                  mismo(i, productoId, ml)
+                    ? {
+                        ...i,
+                        cantidad: Math.min(
+                          cantidad,
+                          stockDisponible(productoId, ml),
+                        ),
+                      }
+                    : i,
                 ),
         })),
 
@@ -171,15 +184,20 @@ export const useTienda = create<Estado>()(
           const item = s.guardados.find((i) => mismo(i, productoId, ml));
           if (!item) return s;
           const existente = s.carrito.find((i) => mismo(i, productoId, ml));
+          // Mismo tope que al agregar: volver del "guardado para después"
+          // tampoco puede pasar de las existencias.
+          const tope = stockDisponible(productoId, ml);
+          const nueva = Math.min(
+            tope,
+            (existente?.cantidad ?? 0) + item.cantidad,
+          );
           return {
             guardados: s.guardados.filter((i) => !mismo(i, productoId, ml)),
             carrito: existente
               ? s.carrito.map((i) =>
-                  mismo(i, productoId, ml)
-                    ? { ...i, cantidad: i.cantidad + item.cantidad }
-                    : i,
+                  mismo(i, productoId, ml) ? { ...i, cantidad: nueva } : i,
                 )
-              : [...s.carrito, item],
+              : [...s.carrito, { ...item, cantidad: nueva }],
           };
         }),
 

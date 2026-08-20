@@ -62,8 +62,31 @@ export function CompraProducto({ producto }: { producto: Producto }) {
   }, []);
 
   function alCarrito() {
+    const yaEnCarrito =
+      useTienda
+        .getState()
+        .carrito.find(
+          (i) => i.productoId === producto.id && i.ml === presentacion.ml,
+        )?.cantidad ?? 0;
+    const cabe = Math.max(0, presentacion.stock - yaEnCarrito);
+
     agregar(producto.id, presentacion.ml, cantidad);
     abrirDrawer();
+
+    // Si el stock recorta lo que se pidió hay que decirlo. Un "agregado" que
+    // añade menos de lo que dice se descubre al pagar, que es el peor momento.
+    if (cabe < cantidad) {
+      toast.warning(
+        cabe === 0
+          ? `Ya tienes las ${presentacion.stock} piezas disponibles`
+          : `Solo quedaban ${cabe} ${cabe === 1 ? "pieza" : "piezas"}`,
+        {
+          description: `${producto.nombre} · ${presentacion.ml} ml`,
+        },
+      );
+      return;
+    }
+
     toast.success(`${producto.nombre} agregado`, {
       description: `${cantidad} × ${presentacion.ml} ml · ${fmt(unitario)} c/u`,
     });
