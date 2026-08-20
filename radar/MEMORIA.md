@@ -393,6 +393,19 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
 - Los dos mapas comparten `components/mapa-base.ts`; `MapaPunto` no cambió de
   comportamiento.
 
+### 2026-08-20 · Fuera los datos de prueba de producción
+
+- **Por qué:** las cuatro fichas que quedaban eran de las pruebas de
+  construcción, no de la gira, y ensuciaban cualquier vista de conjunto.
+- **Implementación:** borradas con el mismo orden que `borrar()` —primero los
+  objetos de S3, luego DynamoDB—, porque al revés las imágenes quedan huérfanas
+  en el bucket. Tabla y bucket comprobados después: cero fichas, cero objetos.
+- **Se respaldaron antes.** Dos no estaban vacías: una con 27 ejes respondidos,
+  4 precios y las 5 fotos, y otra con 24 ejes y un teléfono. La copia (JSON más
+  las fotos) quedó en `Documentos/GitHub/respaldo-radar-2026-08-20/`, fuera del
+  repositorio. Un borrado que no se puede deshacer merece una copia aunque quien
+  lo pide sepa lo que hay.
+
 ### 2026-08-20 · Las acciones de la CI suben de versión
 
 - **Por qué:** GitHub avisaba de que apuntaban a Node 20, y la prueba nueva

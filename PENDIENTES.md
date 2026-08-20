@@ -133,55 +133,57 @@ Contexto completo en [AUTENTICACION_PLAN.md](AUTENTICACION_PLAN.md).
 
 ---
 
-## 5. Carrito y pedidos por usuario (fase 5)
+## 5. Carrito y pedidos por usuario (fase 5) — ✅ hecho el 2026-08-20
 
-**Por qué.** El carrito vive en `localStorage` (`src/store/tienda.ts`), así que se
-pierde al cambiar de dispositivo. Los pedidos y direcciones de `/cuenta` son de
-muestra (`src/data/cuenta.ts`) y la propia pantalla lo advierte.
+Carrito, guardados y favoritos viajan con la cuenta; los pedidos de `/cuenta` son
+los de verdad. Rutas `GET/PUT /carrito` y `GET/POST /pedidos`, con los datos en
+`Elrey_proveedores` bajo `PK = USER#<sub>`. La fusión al entrar **suma** y ocurre
+una sola vez por cuenta y navegador. El detalle del pedido se mudó a
+`/cuenta/pedido/?folio=` porque la ruta estática solo existía para los folios de
+muestra. El porqué de cada decisión está en la bitácora de
+[radar/MEMORIA.md](radar/MEMORIA.md).
 
-**Cómo.**
+Lo que **no** quedó cubierto y sigue pendiente:
 
-1. Tabla nueva o reutilizar `Elrey_proveedores` con otro prefijo de clave:
-   `PK = USER#<sub>`, `SK = CARRITO` / `PEDIDO#<folio>`.
-2. Endpoints `GET/PUT /carrito` y `GET /pedidos`, protegidos por el grupo
-   `clientes` (o cualquiera con sesión).
-3. **Decidir la fusión**: qué pasa con lo que había en el carrito anónimo cuando
-   alguien inicia sesión. Lo normal es sumar, no reemplazar.
-4. Sustituir el usuario ficticio de `vista-cuenta.tsx` por los datos reales.
-
-**Esfuerzo:** 4–6 horas.
+- **Las direcciones siguen siendo de muestra** (`src/data/cuenta.ts`). Se editan
+  en memoria y se pierden al recargar. Es el mismo patrón que el carrito: otra
+  `SK` bajo `USER#<sub>` y un par de rutas.
+- **El total del pedido lo calcula el navegador** y el servidor se lo cree. Da
+  igual mientras el checkout sea una demostración; con cobro real hay que
+  calcularlo en el servidor a partir del catálogo.
+- **Nadie mueve el estatus de un pedido.** Nace en «Pendiente» y ahí se queda: no
+  hay panel de pedidos ni guía de paquetería para los reales.
 
 ---
 
-## 6. Panel de administración
+## 6. Panel de administración — ✅ hecho el 2026-08-20
 
-**Por qué.** Cada quien ve la lista de fichas, pero no hay vista de conjunto: ni
-ranking global, ni mapa con todos los pines, ni exportación.
+`/radar/admin/`: resumen por semáforo, ranking global, mapa con todos los pines
+del color de su semáforo y exportación CSV. Visible solo para `admins`, con el
+enlace en la portada del panel.
 
-**Cómo.** Ruta nueva en el panel (`radar/src/app/admin/`), visible solo con el
-grupo `admins`. Reutiliza lo que ya existe:
-
-- `analizar()` de `radar/src/lib/analisis.ts` para el ranking.
-- `MapaPunto` de `radar/src/components/mapa-punto.tsx`, con varios marcadores.
-- Exportar CSV a partir de `listarRemoto()`.
-
-Ojo: el permiso real lo pone la API. Si el panel admin lee datos que un
-`proveedores` no debería ver, hay que filtrar en `servidor/api.ts`, no en el
-navegador.
-
-**Esfuerzo:** 3–4 horas.
+**Esa puerta no guarda ningún secreto y no hay que confundirse:** los datos salen
+de `GET /proveedores`, que devuelve todo a cualquier token válido. Si algún día
+esta pantalla lee algo que un `proveedores` no deba ver, el filtro va en
+`servidor/api.ts`, no en el navegador.
 
 ---
 
 ## 7. Menores
 
-- **Limpiar los datos de prueba.** Quedan cuatro fichas —tres sin nombre y una
-  llamada «Carlos»— y cinco fotos en S3. Se borran desde el panel, y el borrado
-  se lleva las fotos consigo.
+- ~~Limpiar los datos de prueba.~~ ✅ Borradas las cuatro fichas y las cinco
+  fotos el 2026-08-20. La tabla y el bucket quedaron en cero. Dos de ellas no
+  estaban vacías —una con 27 ejes, 4 precios y las 5 fotos; otra con 24 ejes y un
+  teléfono—, así que antes se guardó copia completa (JSON y fotos) en
+  `Documentos/GitHub/respaldo-radar-2026-08-20/`, fuera del repositorio.
 - **La copia JSON no incluye las fotos** (son Blobs y no sobreviven a
   `JSON.stringify`). Si alguna vez importa, habría que empaquetarlas aparte.
-- **Aviso de Node 20 en la CI.** GitHub avisa que las acciones apuntan a Node 20.
-  Funciona igual; se calla subiendo las acciones cuando salga la versión nueva.
+- ~~Aviso de Node 20 en la CI.~~ ✅ Las acciones subieron a su versión actual y
+  la CI corre Node 22, que además hace falta para `probar-tienda`.
+- **El atajo «Panel» de la cabecera no desaparece al cerrar sesión** hasta que se
+  recarga: `src/components/comunes/acceso-panel.tsx` lee `localStorage` solo al
+  montarse. Ya existe la forma de arreglarlo —`useSesion` avisa a todas sus
+  copias desde el 2026-08-20—, es cambiarlo por el hook.
 
 ---
 
@@ -200,6 +202,11 @@ que costó descubrir:
 - **Desplegar desde la CI**, no desde una laptop con Windows: allí Next genera
   los payloads de navegación con otro nombre y provoca 403 en cada prefetch.
 - **La lista de precios se guarda en JPEG**, no en WebP: Textract no lee WebP.
+- **La fusión del carrito ocurre una sola vez** por cuenta y navegador, y por eso
+  el estado guarda `sincronizado`. Fusionar en cada carga duplica las cantidades
+  en cada recarga: 2 → 3 → 6 → 12.
+- **El carrito se guarda bajo el `sub` de Cognito**, no bajo el correo: el correo
+  se puede cambiar y dejaría el carrito anterior huérfano.
 
 ---
 
@@ -210,6 +217,7 @@ Después de cualquier cambio:
 ```bash
 RADAR_PIN=xxxxxxxx npm --prefix radar run probar
 RADAR_PIN=xxxxxxxx npm --prefix radar run probar-textract
+npm --prefix radar run probar-tienda
 ```
 
 Compilar no es funcionar. Los fallos más caros de esta construcción —el preflight
