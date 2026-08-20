@@ -393,6 +393,17 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
 - Los dos mapas comparten `components/mapa-base.ts`; `MapaPunto` no cambió de
   comportamiento.
 
+### 2026-08-20 · Las acciones de la CI suben de versión
+
+- **Por qué:** GitHub avisaba de que apuntaban a Node 20, y la prueba nueva
+  (`probar-tienda.ts`) se ejecuta sin compilar, cosa que solo viene de serie
+  desde Node 22.18. El aviso era cosmético; esto no.
+- **Implementación:** `node-version: 22` y las acciones a su versión actual
+  (`checkout@v7`, `setup-node@v7`, `configure-aws-credentials@v6`,
+  `upload-pages-artifact@v5`, `deploy-pages@v5`). El único cambio de ruptura de
+  todas ellas es el propio salto de runtime; `cache: npm` ya iba explícito, así
+  que el autocacheo que estrenó `setup-node@v5` no cambia nada aquí.
+
 ### 2026-08-19 · Lector de listas de precios con Textract
 
 - **Por qué:** teclear veinte renglones de pie en la calle era lo que más

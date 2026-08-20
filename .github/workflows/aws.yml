@@ -30,11 +30,13 @@ jobs:
         working-directory: radar
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          # 22 y no 20: `scripts/probar-tienda.ts` se ejecuta directo, y quitar
+          # los tipos sin compilar solo viene de serie desde Node 22.18.
+          node-version: "22"
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -50,7 +52,7 @@ jobs:
         run: npm ci
 
       - name: Pedir credenciales temporales a AWS
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::637423567003:role/Elrey_despliegue_github
           aws-region: us-east-1
@@ -64,3 +66,10 @@ jobs:
         env:
           RADAR_PIN: ${{ secrets.RADAR_PIN }}
         run: npm run probar
+
+      # El carrito y los pedidos no se pueden probar por HTTP sin la contraseña
+      # de una cuenta, que no vive aquí. Esto entra por debajo, contra la tabla
+      # real, y verifica lo que de verdad importa: el saneado de lo que manda el
+      # navegador y que las filas de usuario no se cuelen entre las fichas.
+      - name: Probar el carrito y los pedidos
+        run: npm run probar-tienda
