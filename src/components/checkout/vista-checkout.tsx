@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -26,7 +26,12 @@ import { Precio } from "@/components/comunes/precio";
 import { ResumenPedido } from "@/components/carrito/resumen-pedido";
 import { CP_CONOCIDOS, CP_CONTRA_ENTREGA, OPCIONES_ENVIO } from "@/data/contenido";
 import { resumenCarrito } from "@/lib/carrito";
-import { guardarPedidoRemoto } from "@/lib/cuenta-remota";
+import {
+  guardarPedidoRemoto,
+  haySincronizacion,
+  leerDireccionesRemotas,
+} from "@/lib/cuenta-remota";
+import { useSesion } from "@/lib/sesion";
 import { precio as fmt } from "@/lib/format";
 import { mensualidad, plazosDisponibles, type PlazoMSI } from "@/lib/volumen";
 import { useTienda } from "@/store/tienda";
@@ -49,12 +54,55 @@ export function VistaCheckout() {
   const cupon = useTienda((s) => s.cupon);
   const confirmarPedido = useTienda((s) => s.confirmarPedido);
 
+  const sesion = useSesion();
+
   const [paso, setPaso] = useState(0);
   const [contacto, setContacto] = useState<DatosContacto | null>(null);
   const [envio, setEnvio] = useState<string>("estandar");
   const [metodo, setMetodo] = useState("tarjeta");
   const [plazo, setPlazo] = useState<PlazoMSI | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  /**
+   * Trae la dirección predeterminada de la cuenta y rellena el primer paso.
+   *
+   * Es para lo que sirve guardarla: la pantalla de la cuenta promete tenerla
+   * lista para el siguiente pedido, y una libreta que el checkout ignora
+   * convierte esa frase en mentira.
+   *
+   * El correo sale de la sesión y no de la dirección, porque la dirección es a
+   * dónde se manda el paquete y el correo es a dónde va la guía de rastreo.
+   */
+  useEffect(() => {
+    if (!haySincronizacion() || !sesion.perfil) return;
+    const perfil = sesion.perfil;
+    let vivo = true;
+    leerDireccionesRemotas()
+      .then((r) => {
+        const d = r.direcciones.find((x) => x.predeterminada) ?? r.direcciones[0];
+        if (!vivo || !d) return;
+        // Solo si no hay nada escrito ya: volver atrás en el formulario no
+        // puede pisar lo que la persona acaba de teclear.
+        setContacto((actual) =>
+          actual ?? {
+            correo: perfil.correo,
+            nombre: d.nombre || perfil.nombre,
+            telefono: d.telefono,
+            calle: d.calle,
+            colonia: d.colonia,
+            cp: d.cp,
+            ciudad: d.ciudad,
+            estado: d.estado,
+          },
+        );
+      })
+      .catch(() => {
+        // Sin red se llena a mano, como siempre.
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [sesion.perfil]);
 
   const resumenBase = resumenCarrito(carrito, cupon);
   const opcion = OPCIONES_ENVIO.find((o) => o.id === envio) ?? OPCIONES_ENVIO[0];
@@ -202,6 +250,10 @@ export function VistaCheckout() {
         <div className="min-w-0">
           {paso === 0 ? (
             <PasoContacto
+              // Remonta una sola vez cuando llega la dirección guardada: el
+              // formulario lee sus valores iniciales al montarse, así que sin
+              // esto el prellenado no se vería nunca.
+              key={contacto ? "con-datos" : "vacio"}
               inicial={contacto}
               onListo={(datos) => {
                 setContacto(datos);

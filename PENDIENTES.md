@@ -143,11 +143,12 @@ una sola vez por cuenta y navegador. El detalle del pedido se mudó a
 muestra. El porqué de cada decisión está en la bitácora de
 [radar/MEMORIA.md](radar/MEMORIA.md).
 
+Las direcciones se sumaron el mismo día: `GET/PUT /direcciones` bajo
+`SK = DIRECCIONES`, con una sola predeterminada impuesta por el servidor, y el
+checkout se prellena con ella —que es para lo que sirve guardarla—.
+
 Lo que **no** quedó cubierto y sigue pendiente:
 
-- **Las direcciones siguen siendo de muestra** (`src/data/cuenta.ts`). Se editan
-  en memoria y se pierden al recargar. Es el mismo patrón que el carrito: otra
-  `SK` bajo `USER#<sub>` y un par de rutas.
 - **El total del pedido lo calcula el navegador** y el servidor se lo cree. Da
   igual mientras el checkout sea una demostración; con cobro real hay que
   calcularlo en el servidor a partir del catálogo.

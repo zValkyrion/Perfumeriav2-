@@ -1,6 +1,6 @@
 "use client";
 
-import type { ItemCarrito, Pedido } from "@/types";
+import type { Direccion, ItemCarrito, Pedido } from "@/types";
 
 /**
  * Carrito y pedidos guardados en el servidor, por usuario.
@@ -76,6 +76,24 @@ export function guardarCarritoRemoto(contenido: {
   return pedir<CarritoRemoto>("/carrito", {
     method: "PUT",
     body: JSON.stringify(contenido),
+  });
+}
+
+export function leerDireccionesRemotas() {
+  return pedir<{ direcciones: Direccion[] }>("/direcciones");
+}
+
+/**
+ * Guarda la libreta entera, no dirección por dirección.
+ *
+ * Son pocas y siempre se editan mirando la lista completa; además, la regla de
+ * «una sola predeterminada» se resuelve así en un único sitio —el servidor— en
+ * vez de repartirla entre varias llamadas que pueden cruzarse.
+ */
+export function guardarDireccionesRemotas(direcciones: Direccion[]) {
+  return pedir<{ direcciones: Direccion[] }>("/direcciones", {
+    method: "PUT",
+    body: JSON.stringify({ direcciones }),
   });
 }
 

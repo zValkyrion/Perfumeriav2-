@@ -25,10 +25,13 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import {
   guardarCarrito,
+  guardarDirecciones,
   guardarPedido,
   leerCarrito,
+  leerDirecciones,
   listarPedidos,
   sanearCarrito,
+  sanearDirecciones,
   sanearPedido,
 } from "../servidor/tienda.ts";
 
@@ -88,6 +91,31 @@ await guardarPedido(dynamo, TABLA, SUB, sanearPedido({
 const pedidos = await listarPedidos(dynamo, TABLA, SUB);
 ok("se listan los dos pedidos", pedidos.length === 2);
 ok("del más reciente al más viejo", pedidos[0]?.folio === "AUR-2026-00002", pedidos.map((p) => p.folio).join(", "));
+
+// ── Direcciones ─────────────────────────────────────────────────────────────
+const dirSucias = sanearDirecciones({
+  direcciones: [
+    { id: "d1", alias: "Casa", calle: "Av. Insurgentes 233", cp: "37000", predeterminada: true },
+    { id: "d2", alias: "Local", calle: "Centro 10", predeterminada: true }, // dos marcadas
+    { alias: "sin id" },                                                    // fuera
+    "basura",
+  ],
+});
+ok("las direcciones sin id se descartan", dirSucias.length === 2, JSON.stringify(dirSucias.map((d) => d.id)));
+ok(
+  "solo queda una predeterminada, la primera",
+  dirSucias.filter((d) => d.predeterminada).length === 1 && dirSucias[0]!.predeterminada,
+);
+ok("los campos que faltan quedan vacíos, no rotos", dirSucias[0]!.colonia === "" && dirSucias[0]!.ciudad === "");
+
+const sinNinguna = sanearDirecciones([{ id: "x", alias: "Única" }]);
+ok("si ninguna viene marcada, se marca la primera", sinNinguna[0]!.predeterminada === true);
+
+ok("un usuario nuevo no tiene direcciones", (await leerDirecciones(dynamo, TABLA, SUB)).length === 0);
+await guardarDirecciones(dynamo, TABLA, SUB, dirSucias);
+const dirLeidas = await leerDirecciones(dynamo, TABLA, SUB);
+ok("las direcciones vuelven como se guardaron", dirLeidas.length === 2 && dirLeidas[0]!.calle === "Av. Insurgentes 233");
+ok("y conservan su predeterminada", dirLeidas.filter((d) => d.predeterminada).length === 1);
 
 // ── Lo importante: no se mezclan con las fichas ─────────────────────────────
 const porFecha = await dynamo.send(new QueryCommand({

@@ -198,6 +198,8 @@ ok("ruta inexistente da 404", (await pedir("/no-existe", { headers: auth })).est
 for (const [metodo, ruta] of [
   ["GET", "/carrito"],
   ["PUT", "/carrito"],
+  ["GET", "/direcciones"],
+  ["PUT", "/direcciones"],
   ["GET", "/pedidos"],
   ["POST", "/pedidos"],
 ]) {

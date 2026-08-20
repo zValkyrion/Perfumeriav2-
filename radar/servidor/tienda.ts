@@ -13,6 +13,7 @@ import {
  * desplegar y vigilar para el mismo resultado.
  *
  *   PK = USER#<sub>   SK = CARRITO         → el carrito, tal cual lo tiene la app
+ *   PK = USER#<sub>   SK = DIRECCIONES     → la libreta de direcciones
  *   PK = USER#<sub>   SK = PEDIDO#<folio>  → un pedido cerrado
  *
  * Estas filas **no llevan `GSI1PK`**, así que el índice `porFecha` —que es
@@ -32,6 +33,19 @@ export type Carrito = {
   guardados: ItemCarrito[];
   favoritos: string[];
   actualizadoEn: string;
+};
+
+export type Direccion = {
+  id: string;
+  alias: string;
+  nombre: string;
+  calle: string;
+  colonia: string;
+  cp: string;
+  ciudad: string;
+  estado: string;
+  telefono: string;
+  predeterminada: boolean;
 };
 
 export type Pedido = {
@@ -108,6 +122,55 @@ export function sanearCarrito(cuerpo: unknown): Omit<Carrito, "actualizadoEn"> {
     guardados: sanearItems(c.guardados),
     favoritos: sanearFavoritos(c.favoritos),
   };
+}
+
+const MAX_DIRECCIONES = 20;
+
+/**
+ * Sanea la libreta de direcciones.
+ *
+ * **Una sola predeterminada, o ninguna.** Es lo único que el checkout no puede
+ * resolver por su cuenta: con dos marcadas elegiría la primera que encuentre y
+ * el paquete saldría a la dirección equivocada sin que nadie lo note hasta que
+ * no llega. Si vienen varias, gana la primera; si no viene ninguna y hay
+ * direcciones, se marca la primera.
+ *
+ * Los campos se recortan pero **no se exigen**: alguien puede guardar media
+ * dirección y volver luego a completarla, y perderle lo escrito por no haber
+ * puesto la colonia sería peor que guardar un hueco.
+ */
+export function sanearDirecciones(cuerpo: unknown): Direccion[] {
+  const lista = Array.isArray(cuerpo)
+    ? cuerpo
+    : Array.isArray((cuerpo as { direcciones?: unknown })?.direcciones)
+      ? (cuerpo as { direcciones: unknown[] }).direcciones
+      : [];
+
+  const salida: Direccion[] = [];
+  for (const bruto of lista.slice(0, MAX_DIRECCIONES)) {
+    if (typeof bruto !== "object" || bruto === null) continue;
+    const d = bruto as Record<string, unknown>;
+    const id = texto(d.id, 60).trim();
+    if (!id) continue;
+    salida.push({
+      id,
+      alias: texto(d.alias, 40),
+      nombre: texto(d.nombre, 120),
+      calle: texto(d.calle, 200),
+      colonia: texto(d.colonia, 120),
+      cp: texto(d.cp, 10),
+      ciudad: texto(d.ciudad, 120),
+      estado: texto(d.estado, 120),
+      telefono: texto(d.telefono, 40),
+      predeterminada: d.predeterminada === true,
+    });
+  }
+
+  const primera = salida.findIndex((d) => d.predeterminada);
+  return salida.map((d, i) => ({
+    ...d,
+    predeterminada: primera === -1 ? i === 0 : i === primera,
+  }));
 }
 
 const ESTATUS = new Set([
@@ -200,6 +263,40 @@ export async function guardarCarrito(
     }),
   );
   return { ...contenido, actualizadoEn };
+}
+
+export async function leerDirecciones(
+  dynamo: DynamoDBDocumentClient,
+  tabla: string,
+  sub: string,
+): Promise<Direccion[]> {
+  const salida = await dynamo.send(
+    new QueryCommand({
+      TableName: tabla,
+      KeyConditionExpression: "PK = :pk AND SK = :sk",
+      ExpressionAttributeValues: { ":pk": `USER#${sub}`, ":sk": "DIRECCIONES" },
+    }),
+  );
+  return sanearDirecciones(salida.Items?.[0]?.direcciones ?? []);
+}
+
+export async function guardarDirecciones(
+  dynamo: DynamoDBDocumentClient,
+  tabla: string,
+  sub: string,
+  direcciones: Direccion[],
+): Promise<void> {
+  await dynamo.send(
+    new PutCommand({
+      TableName: tabla,
+      Item: {
+        PK: `USER#${sub}`,
+        SK: "DIRECCIONES",
+        direcciones,
+        actualizadoEn: new Date().toISOString(),
+      },
+    }),
+  );
 }
 
 export async function listarPedidos(

@@ -13,7 +13,12 @@ import { GridProductos } from "@/components/producto/grid-productos";
 import { DIRECCIONES, PEDIDOS, USUARIO } from "@/data/cuenta";
 import { AVISO_SIN_PANEL, InicioSesion } from "@/components/cuenta/inicio-sesion";
 import { hayLogin, puedeVerPanel, useSesion } from "@/lib/sesion";
-import { haySincronizacion, leerPedidosRemotos } from "@/lib/cuenta-remota";
+import {
+  guardarDireccionesRemotas,
+  haySincronizacion,
+  leerDireccionesRemotas,
+  leerPedidosRemotos,
+} from "@/lib/cuenta-remota";
 import { PRODUCTOS } from "@/data/productos";
 import { formatoFechaLarga } from "@/lib/format";
 import { useTienda } from "@/store/tienda";
@@ -103,8 +108,7 @@ export function VistaCuenta() {
     );
   }
 
-  // El nombre y los pedidos salen de la cuenta cuando la hay. Las direcciones
-  // siguen siendo de muestra: todavía no hay dónde guardarlas.
+  // El nombre, los pedidos y las direcciones salen de la cuenta cuando la hay.
   const nombre = sesion.perfil?.nombre || USUARIO.nombre;
   const correo = sesion.perfil?.correo || USUARIO.correo;
   const piezasCompradas = pedidos.reales
@@ -241,7 +245,7 @@ export function VistaCuenta() {
         </TabsContent>
 
         <TabsContent value="direcciones">
-          <Direcciones />
+          <Direcciones cuenta={sesion.perfil?.sub ?? null} nombre={nombre} />
         </TabsContent>
 
         <TabsContent value="favoritos">
@@ -277,42 +281,109 @@ export function VistaCuenta() {
 }
 
 /** CRUD de direcciones en memoria (§13). */
-function Direcciones() {
-  const [direcciones, setDirecciones] = useState<Direccion[]>([...DIRECCIONES]);
+function Direcciones({ cuenta, nombre }: { cuenta: string | null; nombre: string }) {
+  const conCuenta = haySincronizacion() && cuenta !== null;
+  // `null` mientras se traen. Sin cuenta no hay nada que traer: se enseñan las
+  // de muestra, igual que los pedidos.
+  const [direcciones, setDirecciones] = useState<Direccion[] | null>(
+    conCuenta ? null : [...DIRECCIONES],
+  );
   const [editando, setEditando] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!conCuenta) return;
+    let vivo = true;
+    leerDireccionesRemotas()
+      .then((r) => vivo && setDirecciones(r.direcciones))
+      // Sin red se muestra la libreta vacía y no las de muestra: enseñar la
+      // dirección de otra persona en la cuenta de alguien sería peor que no
+      // enseñar ninguna.
+      .catch(() => vivo && setDirecciones([]))
+      .finally(() => {
+        if (vivo && conCuenta) setError(null);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [conCuenta, cuenta]);
+
+  /**
+   * Aplica un cambio y lo sube.
+   *
+   * Se pinta primero y se guarda después: editar una dirección no puede
+   * quedarse esperando a la red. Lo que responde el servidor manda, porque es
+   * quien decide cuál queda como predeterminada.
+   */
+  function aplicar(siguiente: Direccion[]) {
+    setDirecciones(siguiente);
+    if (!conCuenta) return;
+    setError(null);
+    guardarDireccionesRemotas(siguiente)
+      .then((r) => setDirecciones(r.direcciones))
+      .catch(() =>
+        setError(
+          "No se pudo guardar en tu cuenta. Revisa la conexión y vuelve a intentarlo.",
+        ),
+      );
+  }
 
   function eliminar(id: string) {
-    setDirecciones((d) => d.filter((x) => x.id !== id));
+    aplicar((direcciones ?? []).filter((x) => x.id !== id));
   }
 
   function predeterminar(id: string) {
-    setDirecciones((d) =>
-      d.map((x) => ({ ...x, predeterminada: x.id === id })),
+    aplicar(
+      (direcciones ?? []).map((x) => ({ ...x, predeterminada: x.id === id })),
     );
   }
 
   function agregar() {
     const id = `d${Date.now()}`;
-    setDirecciones((d) => [
-      ...d,
+    const lista = direcciones ?? [];
+    // No se sube todavía: una dirección en blanco no vale de nada guardada, y
+    // se guarda sola al pulsar «Guardar» del formulario.
+    setDirecciones([
+      ...lista,
       {
         id,
         alias: "Nueva dirección",
-        nombre: USUARIO.nombre,
+        nombre,
         calle: "",
         colonia: "",
         cp: "",
         ciudad: "",
         estado: "",
-        telefono: USUARIO.telefono,
-        predeterminada: d.length === 0,
+        telefono: conCuenta ? "" : USUARIO.telefono,
+        predeterminada: lista.length === 0,
       },
     ]);
     setEditando(id);
   }
 
+  if (direcciones === null) {
+    return <div className="h-40 animate-pulse rounded-lg bg-white/5" />;
+  }
+
   return (
     <div>
+      {error ? (
+        <p className="border-danger/40 bg-danger/10 text-danger mb-3 rounded-md border px-3 py-2 text-sm">
+          {error}
+        </p>
+      ) : null}
+
+      {direcciones.length === 0 ? (
+        <div className="border-border-soft rounded-lg border border-dashed px-6 py-12 text-center">
+          <MapPin size={28} className="text-fg-subtle mx-auto mb-3" aria-hidden />
+          <p className="font-display mb-2 text-xl">Todavía no hay direcciones</p>
+          <p className="text-fg-muted text-sm">
+            Guarda una y la tendrás lista para el siguiente pedido, desde
+            cualquier dispositivo.
+          </p>
+        </div>
+      ) : null}
+
       <ul className="grid gap-3 sm:grid-cols-2">
         {direcciones.map((d) => (
           <li
@@ -326,8 +397,8 @@ function Direcciones() {
               <FormDireccion
                 direccion={d}
                 onGuardar={(nueva) => {
-                  setDirecciones((lista) =>
-                    lista.map((x) => (x.id === nueva.id ? nueva : x)),
+                  aplicar(
+                    direcciones.map((x) => (x.id === nueva.id ? nueva : x)),
                   );
                   setEditando(null);
                 }}

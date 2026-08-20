@@ -112,9 +112,10 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | `GET /fotos?proveedorId=` | URLs firmadas de lectura |
 | `POST /precios/leer` | Textract sobre la foto de la lista de precios |
 | `GET/PUT /carrito` | El carrito de la tienda, por usuario |
+| `GET/PUT /direcciones` | La libreta de direcciones de ese usuario |
 | `GET/POST /pedidos` | Los pedidos de ese usuario |
 
-Las dos últimas son de la **tienda**, no del panel, y por eso no piden grupo:
+Las tres últimas son de la **tienda**, no del panel, y por eso no piden grupo:
 piden identidad propia. El resto exige `proveedores` o `admins`.
 
 **Autenticación:** PIN de equipo → JWT HS256 firmado con `node:crypto` (sin
@@ -136,6 +137,7 @@ PK                SK                 Contenido
 PROV#<id>         META               la ficha completa + GSI1PK/GSI1SK
 PROV#<id>         FOTO#<fotoId>      clave en S3, tipo, lat/lng
 USER#<sub>        CARRITO            carrito, guardados y favoritos de la tienda
+USER#<sub>        DIRECCIONES        la libreta de direcciones
 USER#<sub>        PEDIDO#<folio>     un pedido cerrado
 
 GSI "porFecha":   GSI1PK = "PROVEEDORES"   GSI1SK = "<actualizadoEn>#<id>"
@@ -320,6 +322,34 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-08-20 · Las direcciones también viven en la cuenta
+
+- **Por qué:** era lo último de la fase 5 que seguía siendo de muestra. Se
+  editaban en memoria y se perdían al recargar, así que la pestaña prometía una
+  libreta de direcciones y no guardaba ninguna.
+- **Implementación:** `GET/PUT /direcciones` sobre `PK = USER#<sub>`,
+  `SK = DIRECCIONES`. Se guarda la libreta **entera de una vez** y no dirección
+  por dirección: son pocas, siempre se editan mirando la lista completa, y así
+  la regla de «una sola predeterminada» se resuelve en un único sitio.
+- **Una sola predeterminada, o ninguna**, y la impone el servidor. Es lo único
+  que el checkout no puede resolver por su cuenta: con dos marcadas elegiría la
+  primera que encontrara y el paquete saldría a la dirección equivocada sin que
+  nadie lo note hasta que no llega.
+- **Los campos se recortan pero no se exigen.** Alguien puede guardar media
+  dirección y volver luego a completarla; perderle lo escrito por no haber
+  puesto la colonia sería peor que guardar un hueco.
+- **El checkout se prellena con la predeterminada.** Es para lo que sirve
+  guardarla, y la pantalla de la cuenta lo promete con esas palabras: una
+  libreta que el checkout ignora convierte esa frase en mentira. El correo sale
+  de la sesión y no de la dirección —la dirección es a dónde va el paquete, el
+  correo a dónde va la guía—, y solo se rellena si no hay nada escrito ya.
+- **Un detalle que costó una vuelta:** el formulario lee sus valores iniciales al
+  montarse, así que la dirección que llega después no se veía. Se le pone una
+  `key` que cambia una sola vez, cuando llegan los datos.
+- **Sin red se muestra la libreta vacía**, no las de muestra: enseñar la
+  dirección de otra persona en la cuenta de alguien es peor que no enseñar
+  ninguna. Es la misma regla que ya seguían los pedidos.
 
 ### 2026-08-20 · Sesenta y seis páginas salían en blanco al entrar directo
 

@@ -23,10 +23,13 @@ import {
 import { leerLista } from "./precios";
 import {
   guardarCarrito,
+  guardarDirecciones,
   guardarPedido,
   leerCarrito,
+  leerDirecciones,
   listarPedidos,
   sanearCarrito,
+  sanearDirecciones,
   sanearPedido,
 } from "./tienda";
 
@@ -128,7 +131,7 @@ export async function handler(evento: Evento) {
     // son de quien inició sesión, sea cliente o del equipo. Lo que se exige aquí
     // no es un grupo sino una identidad propia — el carrito se guarda bajo el
     // `sub`, y el PIN compartido no identifica a nadie.
-    if (ruta === "/carrito" || ruta === "/pedidos") {
+    if (ruta === "/carrito" || ruta === "/pedidos" || ruta === "/direcciones") {
       if (!tieneIdentidadPropia(sesion)) {
         return json(403, {
           error: "El carrito necesita una cuenta propia, no el código del equipo",
@@ -137,6 +140,12 @@ export async function handler(evento: Evento) {
       if (metodo === "GET" && ruta === "/carrito") return verCarrito(sesion.sub);
       if (metodo === "PUT" && ruta === "/carrito") {
         return ponerCarrito(evento, sesion.sub);
+      }
+      if (metodo === "GET" && ruta === "/direcciones") {
+        return verDirecciones(sesion.sub);
+      }
+      if (metodo === "PUT" && ruta === "/direcciones") {
+        return ponerDirecciones(evento, sesion.sub);
       }
       if (metodo === "GET" && ruta === "/pedidos") return verPedidos(sesion.sub);
       if (metodo === "POST" && ruta === "/pedidos") {
@@ -202,6 +211,23 @@ async function ponerCarrito(evento: Evento, sub: string) {
   const cuerpo = leerCuerpo<unknown>(evento);
   if (cuerpo === null) return json(400, { error: "Carrito inválido" });
   return json(200, await guardarCarrito(dynamo, TABLA, sub, sanearCarrito(cuerpo)));
+}
+
+/**
+ * La libreta de direcciones. Se guarda entera de una vez y no dirección por
+ * dirección: son pocas, siempre se editan mirando la lista completa, y así la
+ * regla de «una sola predeterminada» se resuelve en un único sitio.
+ */
+async function verDirecciones(sub: string) {
+  return json(200, { direcciones: await leerDirecciones(dynamo, TABLA, sub) });
+}
+
+async function ponerDirecciones(evento: Evento, sub: string) {
+  const cuerpo = leerCuerpo<unknown>(evento);
+  if (cuerpo === null) return json(400, { error: "Direcciones inválidas" });
+  const direcciones = sanearDirecciones(cuerpo);
+  await guardarDirecciones(dynamo, TABLA, sub, direcciones);
+  return json(200, { direcciones });
 }
 
 async function verPedidos(sub: string) {
