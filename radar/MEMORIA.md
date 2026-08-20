@@ -557,6 +557,10 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
 
 ## 8. Pendientes conocidos
 
+> La lista accionable, con el cómo de cada uno, está en
+> [../PENDIENTES.md](../PENDIENTES.md). Aquí quedan solo las limitaciones que
+> conviene tener presentes al usar la app.
+
 - **La copia JSON no incluye las fotos** (son Blobs, no sobreviven a
   `JSON.stringify`). Están en el teléfono y en S3.
 - **PIN compartido**: no se puede revocar a una sola persona sin cambiárselo a
