@@ -12,6 +12,7 @@ import {
   Plus,
   Scale,
   Search,
+  Store,
   X,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
@@ -101,6 +102,16 @@ export default function Pagina() {
           </h1>
         </div>
         <div className="flex shrink-0 gap-2">
+          {/* Vuelta a la tienda. Comparten dominio, así que es un enlace normal:
+              se sale del panel sin cerrar sesión y se vuelve cuando haga falta. */}
+          {!comparando && (
+            <a href="/" aria-label="Ir a la tienda">
+              <Boton variante="secundario" className="px-3">
+                <Store size={18} />
+              </Boton>
+            </a>
+          )}
+
           {comparando ? (
             <Boton
               variante="secundario"

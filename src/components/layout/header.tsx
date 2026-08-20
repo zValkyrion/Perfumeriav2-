@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageCircle, User } from "lucide-react";
+import { AccesoPanel } from "@/components/comunes/acceso-panel";
 import { Logo } from "@/components/comunes/logo";
 import { MARCA } from "@/data/contenido";
 import type { EntradaIndice } from "@/data/productos";
@@ -67,6 +68,10 @@ export function Header({ indice }: { indice: EntradaIndice[] }) {
               a favoritos se retiraron de la cabecera. Favoritos sigue vivo en
               la barra inferior del móvil y en su propia ruta. */}
           <div className="flex items-center gap-0.5">
+            {/* Solo aparece en el dispositivo de quien ya trabaja en el panel.
+                Un cliente de la tienda no ve nada. */}
+            <AccesoPanel className="mr-1" />
+
             <div className="lg:hidden">
               <Buscador indice={indice} />
             </div>
