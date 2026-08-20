@@ -44,6 +44,11 @@ export interface ResumenCarrito {
   subtotalMenudeo: number;
   subtotal: number;
   ahorroVolumen: number;
+  /** Piezas en el carrito que participan en el 3x2. */
+  piezas3x2: number;
+  /** Cuántas de esas salen gratis. */
+  piezasGratis3x2: number;
+  descuento3x2: number;
   cupon: string | null;
   descuentoCupon: number;
   envio: number;
@@ -55,6 +60,66 @@ export interface ResumenCarrito {
 
 function redondear(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/**
+ * Cuántas unidades de una línea se pueden llegar a tener en el carrito.
+ *
+ * Vive aquí y no en la pantalla porque el tope tiene que valer para **todas**
+ * las formas de agregar: la ficha, la tarjeta del catálogo y los sugeridos del
+ * drawer. El control de cantidad ya no dejaba pasar del stock, pero pulsar
+ * «Agregar al carrito» dos veces sumaba sobre lo que ya había: con 7 en
+ * existencia se llegaba a 14 sin un solo aviso.
+ *
+ * Los lotes no tienen existencias propias —se arman al vender— y por eso
+ * conservan el tope genérico que ya usaba el resumen.
+ */
+export function stockDisponible(productoId: string, ml: number): number {
+  if (ml === ML_PAQUETE) {
+    if (getLote(productoId)) return 99;
+    return getSet(productoId)?.stock ?? 0;
+  }
+  const producto = getProductoPorId(productoId);
+  if (!producto) return 0;
+  return getPresentacion(producto, ml).stock;
+}
+
+/**
+ * El 3x2, tal como lo prometen los términos: «al llevar tres piezas
+ * participantes, la de menor precio no se cobra».
+ *
+ * Cuenta **sobre todo el carrito**, no por línea: la promesa habla de piezas
+ * participantes, no de tres del mismo frasco, y llevar tres modelos distintos
+ * con la etiqueta es exactamente el caso que el catálogo invita a hacer.
+ *
+ * Se ordena de caro a barato y se regala una de cada tres. Así, en cada grupo
+ * de tres, la que sale gratis es la más barata — que es lo que dice el texto y
+ * también lo que menos sorprende a quien lo lee al revés.
+ *
+ * Trabaja con el precio **ya rebajado por volumen**, porque los términos dicen
+ * que las dos cosas se suman. Regalarla a precio de lista pagaría el descuento
+ * dos veces sobre la misma pieza.
+ */
+function calcular3x2(lineas: LineaCarrito[]): {
+  piezas: number;
+  gratis: number;
+  descuento: number;
+} {
+  const precios: number[] = [];
+  for (const l of lineas) {
+    if (l.tipo !== "producto" || !l.producto?.badges.includes("3x2")) continue;
+    for (let i = 0; i < l.item.cantidad; i++) precios.push(l.unitario);
+  }
+
+  precios.sort((a, b) => b - a);
+  let descuento = 0;
+  let gratis = 0;
+  for (let i = 2; i < precios.length; i += 3) {
+    descuento += precios[i]!;
+    gratis++;
+  }
+
+  return { piezas: precios.length, gratis, descuento: redondear(descuento) };
 }
 
 /**
@@ -159,6 +224,8 @@ export function resumenCarrito(
   const subtotal = redondear(lineas.reduce((n, l) => n + l.subtotal, 0));
   const ahorroVolumen = redondear(subtotalMenudeo - subtotal);
 
+  const promo3x2 = calcular3x2(lineas);
+
   const cuponValido = cupon && CUPONES[cupon] ? cupon : null;
   const descuentoCupon = cuponValido
     ? redondear(subtotal * CUPONES[cuponValido]!.descuento)
@@ -189,12 +256,17 @@ export function resumenCarrito(
     subtotalMenudeo,
     subtotal,
     ahorroVolumen,
+    piezas3x2: promo3x2.piezas,
+    piezasGratis3x2: promo3x2.gratis,
+    descuento3x2: promo3x2.descuento,
     cupon: cuponValido,
     descuentoCupon,
     envio,
     envioGratis,
-    total: redondear(subtotal - descuentoCupon + envio),
-    ahorroTotal: redondear(ahorroVolumen + descuentoCupon),
+    total: redondear(subtotal - promo3x2.descuento - descuentoCupon + envio),
+    ahorroTotal: redondear(
+      ahorroVolumen + promo3x2.descuento + descuentoCupon,
+    ),
     vacio: lineas.length === 0,
   };
 }

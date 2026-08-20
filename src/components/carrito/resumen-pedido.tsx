@@ -51,6 +51,18 @@ export function ResumenPedido({
           </div>
         ) : null}
 
+        {resumen.descuento3x2 > 0 ? (
+          <div className="text-success flex justify-between">
+            <dt>
+              3x2 ({resumen.piezasGratis3x2}{" "}
+              {resumen.piezasGratis3x2 === 1 ? "pieza gratis" : "piezas gratis"})
+            </dt>
+            <dd>
+              −<Precio valor={resumen.descuento3x2} />
+            </dd>
+          </div>
+        ) : null}
+
         {resumen.descuentoCupon > 0 ? (
           <div className="text-success flex justify-between">
             <dt className="flex items-center gap-1.5">

@@ -25,6 +25,11 @@ export function BarraEscalon({
 
   if (resumen.vacio) return null;
 
+  // Cuántas piezas participantes faltan para completar el siguiente 3x2. Con
+  // dos en el carrito, la tercera sale gratis: decirlo es lo que convierte la
+  // etiqueta del catálogo en una compra.
+  const faltan3x2 = resumen.piezas3x2 > 0 ? (3 - (resumen.piezas3x2 % 3)) % 3 : 0;
+
   // Ya está en el escalón máximo: se celebra en vez de pedir más.
   if (!siguiente) {
     return (
@@ -41,6 +46,7 @@ export function BarraEscalon({
         <p className="text-fg-muted mt-1 text-xs">
           Llevas {piezasTotales} piezas · ahorras {precio(resumen.ahorroVolumen)} MXN
         </p>
+        <Aviso3x2 faltan={faltan3x2} gratis={resumen.piezasGratis3x2} />
       </div>
     );
   }
@@ -93,7 +99,62 @@ export function BarraEscalon({
         )}
         <span aria-hidden>·</span>
         <span>Ahora: {escalon.etiqueta}</span>
+        <Aviso3x2 faltan={faltan3x2} gratis={resumen.piezasGratis3x2} enLinea />
       </p>
     </div>
+  );
+}
+
+/**
+ * El estado del 3x2, junto al del volumen.
+ *
+ * Con dos piezas participantes en el carrito, la tercera sale gratis: decirlo
+ * ahí es lo que convierte la etiqueta del catálogo en una compra. Si no falta
+ * ninguna, se confirma lo ya conseguido en vez de callar — un descuento que
+ * aparece solo en el resumen se lee como un error de cuentas.
+ */
+function Aviso3x2({
+  faltan,
+  gratis,
+  enLinea = false,
+}: {
+  faltan: number;
+  gratis: number;
+  enLinea?: boolean;
+}) {
+  if (faltan === 0 && gratis === 0) return null;
+
+  const texto =
+    faltan > 0 ? (
+      <>
+        Agrega {faltan} {faltan === 1 ? "pieza" : "piezas"} con 3x2 y{" "}
+        {faltan === 1 ? "una sale gratis" : "otra sale gratis"}
+      </>
+    ) : (
+      <>
+        3x2: {gratis} {gratis === 1 ? "pieza gratis" : "piezas gratis"}
+      </>
+    );
+
+  if (enLinea) {
+    return (
+      <>
+        <span aria-hidden>·</span>
+        <span className={faltan > 0 ? "text-gold-light" : "text-success"}>
+          {texto}
+        </span>
+      </>
+    );
+  }
+
+  return (
+    <p
+      className={cn(
+        "mt-1 text-xs",
+        faltan > 0 ? "text-gold-light" : "text-success",
+      )}
+    >
+      {texto}
+    </p>
   );
 }

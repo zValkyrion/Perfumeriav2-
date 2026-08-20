@@ -59,7 +59,15 @@ export function VistaCheckout() {
   const resumenBase = resumenCarrito(carrito, cupon);
   const opcion = OPCIONES_ENVIO.find((o) => o.id === envio) ?? OPCIONES_ENVIO[0];
   const costoEnvio = resumenBase.envioGratis && envio === "estandar" ? 0 : opcion.precio;
-  const total = resumenBase.subtotal - resumenBase.descuentoCupon + costoEnvio;
+  // Se rehace el total porque el envío depende de la opción elegida aquí, no
+  // del carrito. Todo lo que descuenta tiene que restarse igual que allá: si
+  // aquí falta un concepto, el checkout cobra más que el carrito y nadie lo ve
+  // hasta que llega el cargo.
+  const total =
+    resumenBase.subtotal -
+    resumenBase.descuento3x2 -
+    resumenBase.descuentoCupon +
+    costoEnvio;
 
   const resumen = { ...resumenBase, envio: costoEnvio, total };
   const contraEntregaOk = contacto ? CP_CONTRA_ENTREGA.has(contacto.cp) : false;
