@@ -314,15 +314,20 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
 - **Implementación:** la función se guarda en una ref y el efecto depende solo del
   token.
 
-### 2026-08-19 · 403 en cada prefetch de navegación
+### 2026-08-19 · 403 en cada prefetch de navegación (bug de compilar en Windows)
 
-- **Por qué:** en exportación estática, Next **escribe** el payload de ruta en una
-  carpeta (`captura/__next.captura/__PAGE__.txt`) pero el cliente lo **pide** con
-  puntos (`captura/__next.captura.__PAGE__.txt`). Esa clave no existía en S3, así
-  que CloudFront devolvía 403 y la navegación caía a recarga completa: más lenta y,
-  con roaming, datos tirados en algo ya descargado.
-- **Implementación:** `scripts/arreglar-rsc.mjs` duplica cada payload con el
-  nombre que se pide. Corre al final de `npm run build`.
+- **Por qué:** compilando en Windows, la exportación estática escribe el payload
+  de cada ruta dentro de una carpeta (`captura/__next.captura/__PAGE__.txt`)
+  mientras el cliente lo pide con puntos
+  (`captura/__next.captura.__PAGE__.txt`). Esa clave no existía en S3: CloudFront
+  devolvía 403 y la navegación caía a recarga completa.
+- **Descubrimiento posterior:** en Linux no pasa. El primer despliegue por CI
+  informó `payloads duplicados: 0` y en S3 apareció el archivo con puntos generado
+  de forma nativa. **Era un problema de la máquina que compilaba, no del código.**
+- **Implementación:** `scripts/arreglar-rsc.mjs` duplica los payloads al final de
+  `npm run build`. En Linux no encuentra nada y no hace nada, así que es seguro
+  dejarlo — pero la conclusión real es **desplegar desde la CI**, no desde una
+  laptop con Windows.
 
 ### 2026-08-19 · El preflight CORS moría en la ruta `$default`
 
