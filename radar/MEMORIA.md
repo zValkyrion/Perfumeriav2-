@@ -321,6 +321,88 @@ del módulo.
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
 
+### 2026-08-20 · Sesenta y seis páginas salían en blanco al entrar directo
+
+- **Por qué:** el catálogo, sus trece categorías y las cincuenta y dos fichas de
+  producto mostraban un esqueleto que nunca se llenaba —sin nombre, sin precio y
+  sin botón de comprar— cuando alguien **entraba directo**. Navegando desde
+  dentro del sitio se veían bien, así que el fallo caía exactamente sobre quien
+  llega de Google, de un enlace compartido o de recargar. Estaba igual en
+  CloudFront y en GitHub Pages, que es a donde apunta el canonical.
+- **La causa:** los dos únicos `loading.tsx` del proyecto, en `catalogo/` y en
+  `producto/[slug]/`. Suman justo las 66 páginas afectadas; ninguna otra ruta
+  los tenía y ninguna otra fallaba.
+- **Qué pasaba:** un `loading.tsx` crea un límite de Suspense alrededor de la
+  página. Con `output: export` el contenido se emite dentro de un `div` oculto y
+  un script lo inserta, pero al hidratar React vuelve a dejar ese hueco
+  pendiente y ahí se queda para siempre.
+- **Cómo se reconoce:** en el HTML compilado, las páginas rotas traían una
+  llamada a `$RC(` y dos `div` ocultos; las sanas, ninguna. Es el chequeo de un
+  comando: `grep -rlF '$RC(' out --include=index.html` tiene que devolver cero.
+- **Implementación:** borrar los dos archivos. En una exportación estática no
+  cubrían ninguna espera real —el HTML ya viene con el contenido dentro—, así
+  que no aportaban nada y rompían la página. `GridSkeleton` y `Skeleton` se
+  quedan: los usan el carrito y favoritos.
+- **Descartados probándolos, para no volver a recorrerlos:** `TransicionRuta` y
+  su `key`, el `content-type` del payload, el tamaño del payload y
+  `localStorage`. No había ningún error en consola, ni capturando desde antes de
+  que arrancara React. El fallo es anterior a los cambios de ese día: se
+  reprodujo compilando `b0ed30d`.
+
+### 2026-08-20 · El 3x2 se anunciaba y nunca se cobraba
+
+- **Por qué:** veinte productos llevan la etiqueta, hay una sección titulada
+  «3x2 en toda la tienda» y los términos lo detallan. En `lib/carrito.ts` no
+  había una sola línea que lo aplicara: tres Praliné costaban 3 213 pesos, el
+  10 % por volumen y nada más. La promesa se rompía en la pantalla de pagar.
+- **Implementación:** `calcular3x2()` cuenta **sobre todo el carrito**, no por
+  línea —el texto habla de piezas participantes, y llevar tres modelos distintos
+  con la etiqueta es lo que el catálogo invita a hacer—, ordena de caro a barato
+  y regala una de cada tres.
+- **Sobre el precio ya rebajado por volumen**, porque los términos dicen que las
+  dos cosas se suman. Regalarla a precio de lista pagaría el mismo descuento dos
+  veces sobre la misma pieza.
+- **El checkout rehacía el total por su cuenta** —el envío depende de la opción
+  que se elija ahí— y se habría saltado el descuento: el carrito decía 2 142 y
+  el checkout iba a cobrar 3 933. Cualquier concepto nuevo que descuente hay que
+  restarlo en los dos sitios.
+
+### 2026-08-20 · El carrito aceptaba más piezas de las que hay
+
+- **Por qué:** el control de cantidad topaba bien en el stock, pero pulsar
+  «Agregar al carrito» dos veces sumaba sobre lo que ya había: con siete piezas
+  en existencia se llegaba a catorce, sin aviso, y el checkout las aceptaba.
+- **Implementación:** `stockDisponible()` en `lib/carrito.ts` y el tope aplicado
+  en el store, que es por donde entran todas las formas de agregar —la ficha, la
+  tarjeta del catálogo y los sugeridos del drawer—. Se aplica sobre el total de
+  la línea, no sobre lo que se añade.
+- Cuando el tope recorta, la ficha lo dice. Un «agregado» que añade menos de lo
+  que pidió se descubre al pagar, que es el peor momento.
+
+### 2026-08-20 · Fuera el selector de colorimetrías
+
+- **Por qué:** era una herramienta para comparar paletas durante el diseño,
+  marcada como temporal en el código, y llevaba publicada en la tienda todo este
+  tiempo, flotando en la esquina de todas las páginas del sitio real.
+- **Implementación:** se va el botón, **no las paletas**. El bloque de
+  `globals.css` se queda porque contiene `mayoreo`, que es la colorimetría que
+  el sitio usa hoy —la fija el `data-tema` del `<html>`— y borrarlo cambiaría el
+  aspecto entero de la tienda.
+- El script del `<head>` pasa de restaurar el tema guardado a borrarlo: sin
+  selector, quien probó uno se quedaría con él pegado y sin forma de volver.
+
+### 2026-08-20 · Tres detalles que restaban credibilidad
+
+- **El escalón de 20+** mostraba el mismo precio y el mismo −30 % que el de
+  10–19, así que el tramo más alto parecía un callejón sin salida. No era un
+  error de datos —a partir de ahí se cotiza por WhatsApp, y así está escrito en
+  el propio escalón—: faltaba decirlo en la tabla, que es donde se compara.
+- **Los diálogos, el panel lateral y el carrusel** cerraban con «Close»,
+  «Previous slide» y «Next slide»: texto para lectores de pantalla, invisible
+  salvo para quien más depende de él, en una tienda que habla español entera.
+- **`/checkout/confirmacion`** titulaba «Pedido confirmado» también cuando no
+  había ninguno, que es lo que ocurre al volver por el historial.
+
 ### 2026-08-20 · Carrito y pedidos guardados por usuario
 
 - **Por qué:** el carrito vivía en `localStorage` y se perdía al cambiar de

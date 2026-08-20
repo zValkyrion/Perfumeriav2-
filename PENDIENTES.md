@@ -169,7 +169,27 @@ esta pantalla lee algo que un `proveedores` no deba ver, el filtro va en
 
 ---
 
-## 7. Menores
+## 7. Auditoría de la tienda — ✅ hecha el 2026-08-20
+
+Recorrido completo del sitio sobre la compilación de producción y sobre las dos
+publicaciones. Arreglado y desplegado:
+
+- **66 páginas salían en blanco al entrar directo** —catálogo, sus categorías y
+  todas las fichas de producto—, incluida GitHub Pages, que es a donde apunta el
+  canonical. Eran los dos `loading.tsx`. Ver la bitácora y la regla de arriba.
+- **El 3x2 no se cobraba**, anunciándose en veinte productos, en una sección
+  propia y en los términos. Ahora se aplica en el carrito y en el checkout.
+- **Se podían meter más piezas de las que hay** pulsando «Agregar» dos veces.
+- **El selector de colorimetrías de desarrollo** estaba publicado en la tienda.
+- El escalón de 20+, tres textos en inglés y el título de la confirmación.
+
+Lo que la auditoría encontró y **sigue abierto** está repartido abajo y en el
+§5. Nada de esto se probó en un navegador distinto del integrado: conviene abrir
+una ficha de producto en un teléfono real.
+
+---
+
+## 8. Menores
 
 - ~~Limpiar los datos de prueba.~~ ✅ Borradas las cuatro fichas y las cinco
   fotos el 2026-08-20. La tabla y el bucket quedaron en cero. Dos de ellas no
@@ -202,6 +222,14 @@ que costó descubrir:
 - **Desplegar desde la CI**, no desde una laptop con Windows: allí Next genera
   los payloads de navegación con otro nombre y provoca 403 en cada prefetch.
 - **La lista de precios se guarda en JPEG**, no en WebP: Textract no lee WebP.
+- **Nada de `loading.tsx` en la tienda.** Con `output: export`, ese archivo crea
+  un límite de Suspense que al hidratar se queda pendiente para siempre: la
+  página entera en blanco al entrar directo. Costó 66 páginas rotas descubrirlo.
+  Se comprueba con `grep -rlF '$RC(' out --include=index.html`, que tiene que
+  devolver cero.
+- **El 3x2 se resta en el carrito y también en el checkout.** El checkout rehace
+  el total por su cuenta porque el envío depende de la opción elegida ahí; un
+  concepto que descuente y solo se reste en un sitio hace que se cobre de más.
 - **La fusión del carrito ocurre una sola vez** por cuenta y navegador, y por eso
   el estado guarda `sincronizado`. Fusionar en cada carga duplica las cantidades
   en cada recarga: 2 → 3 → 6 → 12.
