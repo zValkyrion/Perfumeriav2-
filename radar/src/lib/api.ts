@@ -17,16 +17,21 @@ export function hayApi(): boolean {
   return BASE !== "";
 }
 
-/** Corta a los 15 s: sin esto, con señal pésima la petición cuelga para siempre. */
+/**
+ * Corta la espera: sin esto, con señal pésima la petición cuelga para siempre.
+ *
+ * Quince segundos alcanzan para cualquier consulta normal. Leer una foto con
+ * Textract es otra cosa —analiza la imagen entera— y por eso puede pedir más.
+ */
 async function pedir<T>(
   ruta: string,
-  opciones: RequestInit & { token?: string } = {},
+  opciones: RequestInit & { token?: string; msCorte?: number } = {},
 ): Promise<T> {
   if (!BASE) throw new Error("La app no tiene API configurada");
 
-  const { token, ...resto } = opciones;
+  const { token, msCorte = 15000, ...resto } = opciones;
   const ctrl = new AbortController();
-  const corte = setTimeout(() => ctrl.abort(), 15000);
+  const corte = setTimeout(() => ctrl.abort(), msCorte);
 
   try {
     const res = await fetch(`${BASE}${ruta}`, {
@@ -121,4 +126,29 @@ export async function subirFoto(url: string, blob: Blob): Promise<void> {
   } finally {
     clearTimeout(corte);
   }
+}
+
+export type FilaLeida = {
+  texto: string;
+  precio: number | null;
+  ml: number | null;
+};
+
+/**
+ * Manda a leer la foto de la lista de precios.
+ *
+ * Tarda unos segundos: Textract analiza la imagen entera. Por eso el corte es
+ * más largo que el del resto de llamadas.
+ */
+export function leerPrecios(
+  token: string,
+  proveedorId: string,
+  fotoId: string,
+) {
+  return pedir<{ filas: FilaLeida[]; renglones: number }>("/precios/leer", {
+    method: "POST",
+    token,
+    msCorte: 45000,
+    body: JSON.stringify({ proveedorId, fotoId }),
+  });
 }

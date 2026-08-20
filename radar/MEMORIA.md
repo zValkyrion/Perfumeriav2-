@@ -110,6 +110,7 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | `DELETE /proveedores/{id}` | Borra ficha y sus fotos |
 | `POST /fotos` | URL prefirmada para subir a S3 |
 | `GET /fotos?proveedorId=` | URLs firmadas de lectura |
+| `POST /precios/leer` | Textract sobre la foto de la lista de precios |
 
 **Autenticación:** PIN de equipo → JWT HS256 firmado con `node:crypto` (sin
 librerías: son treinta líneas y una dependencia menos en el arranque en frío).
@@ -267,7 +268,8 @@ cd radar && npx sst unlock --stage produccion
 ## 6.1 Pruebas
 
 ```bash
-npm --prefix radar run probar     # 22 comprobaciones contra producción
+npm --prefix radar run probar            # 23 comprobaciones de la API
+npm --prefix radar run probar-textract   # el lector de listas de precios
 ```
 
 Recorre cada ruta con datos reales —incluida la subida de una foto a S3— y
@@ -299,6 +301,26 @@ del módulo.
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
 
+### 2026-08-19 · Lector de listas de precios con Textract
+
+- **Por qué:** teclear veinte renglones de pie en la calle era lo que más
+  tiempo costaba de cada visita. Ahora se fotografía la hoja del mostrador.
+- **Implementación:** `POST /precios/leer` corre `AnalyzeDocument` con TABLES
+  sobre la foto ya subida a S3 y devuelve renglones con su precio y su volumen.
+  La app los muestra y **la persona asigna** cada uno a su presentación.
+- **Propone, no decide.** Una lista de mostrador tiene tachones y abreviaturas
+  que solo entiende quien las escribió; rellenar precios sin que nadie los mire
+  metería datos falsos justo en el campo que decide con quién se compra.
+- **Textract no admite WebP.** Nuestras fotos se comprimen a WebP para ahorrar
+  roaming, y la primera prueba murió con `UnsupportedDocumentException`. La
+  hoja de precios —y solo esa— se guarda en JPEG, con algo más de calidad
+  porque un artefacto de compresión sobre un 8 lo convierte en un 3.
+- **La clave en S3 se consulta, no se reconstruye.** La extensión depende del
+  formato, y adivinarla ya falló una vez.
+- **Un bug de dos cifras:** la expresión que buscaba importes tenía `\d{1,3}`
+  sin alternativa para números planos, así que un precio de 2800 se leía como
+  280. Diez veces más barato, en el dato que ordena a los proveedores. La
+  prueba cubre ahora las tres formas: sin separador, con coma y con punto.
 ### 2026-08-19 · Inicio de sesión en la tienda, con selector de destino
 
 - **Por qué:** la tienda no tenía autenticación y su pantalla de cuenta mostraba
@@ -542,7 +564,6 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
   viaje, migrar a Cognito.
 - **Cámara y GPS exigen HTTPS**: funcionan en la URL de CloudFront, no por IP
   local.
-- **Textract sobre la foto de la lista de precios** es el extra con más retorno
-  pendiente: fotografiar la hoja en vez de teclear 20 precios.
+
 - **Panel admin** (ranking global, mapa con todos los pines, export CSV) sigue
   sin construirse.

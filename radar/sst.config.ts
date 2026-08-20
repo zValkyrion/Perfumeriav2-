@@ -156,6 +156,12 @@ export default $config({
       name: `Elrey_api_${$app.stage}`,
       memory: "512 MB",
       timeout: "20 seconds",
+      // Textract no se enlaza como un recurso de SST: se concede por política.
+      // El alcance es la acción, no el bucket — Textract lee de S3 con el
+      // permiso de esta misma función, que ya está limitado a nuestro bucket.
+      permissions: [
+        { actions: ["textract:AnalyzeDocument"], resources: ["*"] },
+      ],
     });
 
     // ── Sitio ───────────────────────────────────────────────────────────────

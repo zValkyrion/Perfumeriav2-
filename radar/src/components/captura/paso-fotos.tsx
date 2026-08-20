@@ -16,7 +16,9 @@ export function PasoFotos({ proveedor }: { proveedor: Proveedor }) {
   }, [proveedor.id]);
 
   const agregar = async (tipo: TipoFoto, archivo: File) => {
-    const blob = await comprimir(archivo);
+    // La hoja de precios se guarda en JPEG porque Textract no lee WebP, y esa
+    // foto está para que la lea. Las demás siguen en WebP: pesan la mitad.
+    const blob = await comprimir(archivo, tipo === "lista_precios" ? "jpeg" : "webp");
     const foto: Foto = {
       id: crypto.randomUUID(),
       proveedorId: proveedor.id,

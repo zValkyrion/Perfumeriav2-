@@ -11,7 +11,22 @@
 const LADO_MAX = 1600;
 const CALIDAD = 0.72;
 
-export async function comprimir(archivo: File): Promise<Blob> {
+/**
+ * La lista de precios va en JPEG, no en WebP.
+ *
+ * **Textract no admite WebP** — solo JPEG, PNG, PDF y TIFF — y esa foto existe
+ * justamente para que la lea una máquina. El resto siguen en WebP, que pesa
+ * mucho menos y se sube con datos de roaming.
+ *
+ * La calidad sube un poco porque aquí lo que importa son los números impresos:
+ * un artefacto de compresión sobre un 8 lo convierte en un 3.
+ */
+const CALIDAD_TEXTO = 0.85;
+
+export async function comprimir(
+  archivo: File,
+  formato: "webp" | "jpeg" = "webp",
+): Promise<Blob> {
   const bitmap = await createImageBitmap(archivo);
   const escala = Math.min(1, LADO_MAX / Math.max(bitmap.width, bitmap.height));
   const ancho = Math.round(bitmap.width * escala);
@@ -26,10 +41,14 @@ export async function comprimir(archivo: File): Promise<Blob> {
   bitmap.close();
 
   const blob = await new Promise<Blob | null>((resolve) =>
-    lienzo.toBlob(resolve, "image/webp", CALIDAD),
+    lienzo.toBlob(
+      resolve,
+      `image/${formato}`,
+      formato === "jpeg" ? CALIDAD_TEXTO : CALIDAD,
+    ),
   );
-  // Si el navegador no sabe escribir WebP, es preferible la foto original que
-  // ninguna foto.
+  // Si el navegador no sabe escribir ese formato, es preferible la foto
+  // original que ninguna foto.
   return blob ?? archivo;
 }
 

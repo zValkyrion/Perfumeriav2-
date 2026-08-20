@@ -11,6 +11,7 @@ import {
   TIPOS_PRODUCTO,
 } from "@/data/catalogo";
 import { PREGUNTAS } from "@/data/preguntas";
+import { LectorPrecios } from "@/components/captura/lector-precios";
 import { Promociones } from "@/components/captura/promociones";
 import {
   AreaTexto,
@@ -41,9 +42,12 @@ import type {
 export function PasoEvaluacion({
   proveedor,
   actualizar,
+  token,
 }: {
   proveedor: Proveedor;
   actualizar: (cambios: Partial<Proveedor>) => void;
+  /** Para leer la lista de precios con Textract. Sin él, esa tarjeta se calla. */
+  token: string | null;
 }) {
   const ejes = proveedor.ejes;
   const setEje = <K extends keyof Ejes>(clave: K, valor: Ejes[K]) =>
@@ -53,6 +57,15 @@ export function PasoEvaluacion({
     lista.includes(valor) ? lista.filter((v) => v !== valor) : [...lista, valor];
 
   const analisis = analizar(proveedor);
+
+  /** Escribe un precio leído de la foto en su presentación. */
+  const fijarPrecioLeido = (presentacion: Presentacion, precio: number) => {
+    const resto = proveedor.precios.filter((x) => x.presentacion !== presentacion);
+    const actual = proveedor.precios.find((x) => x.presentacion === presentacion);
+    actualizar({
+      precios: [...resto, { presentacion, precio, moq: actual?.moq ?? null }],
+    });
+  };
 
   /** Deslizador atado a un eje; el rótulo sale del guion de preguntas. */
   const Slider = <K extends keyof Ejes>({
@@ -123,6 +136,12 @@ export function PasoEvaluacion({
       </Tarjeta>
 
       <Precios proveedor={proveedor} actualizar={actualizar} />
+
+      <LectorPrecios
+        proveedor={proveedor}
+        token={token}
+        onPrecio={fijarPrecioLeido}
+      />
 
       <Promociones proveedor={proveedor} actualizar={actualizar} />
 

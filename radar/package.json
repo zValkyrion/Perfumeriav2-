@@ -8,7 +8,8 @@
     "start": "next start --port 3100",
     "lint": "eslint",
     "probar": "node scripts/probar-api.mjs",
-    "desplegar": "sst deploy --stage produccion"
+    "desplegar": "sst deploy --stage produccion",
+    "probar-textract": "node scripts/probar-textract.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.1114.0",
     "@aws-sdk/client-s3": "^3.1114.0",
+    "@aws-sdk/client-textract": "^3.1114.0",
     "@aws-sdk/lib-dynamodb": "^3.1114.0",
     "@aws-sdk/s3-request-presigner": "^3.1114.0",
     "@tailwindcss/postcss": "^4",

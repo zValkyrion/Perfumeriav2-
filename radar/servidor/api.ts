@@ -15,6 +15,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { firmarToken, pinCorrecto } from "./jwt";
 import { identificar, puedeVerProveedores, type Identidad } from "./identidad";
+import { leerLista } from "./precios";
 
 /**
  * API del Radar de Proveedores.
@@ -125,6 +126,7 @@ export async function handler(evento: Evento) {
     }
     if (metodo === "POST" && ruta === "/fotos") return urlDeSubida(evento);
     if (metodo === "GET" && ruta === "/fotos") return listarFotos(evento);
+    if (metodo === "POST" && ruta === "/precios/leer") return leerPrecios(evento);
 
     return json(404, { error: `Sin ruta para ${metodo} ${ruta}` });
   } catch (e) {
@@ -237,6 +239,57 @@ async function borrar(evento: Evento) {
   return json(200, { ok: true, fotosBorradas: claves.length });
 }
 
+
+/**
+ * Lee la lista de precios de una foto ya subida a S3.
+ *
+ * La foto tiene que estar arriba antes de llamar aquí: Textract lee del bucket,
+ * no del teléfono. Mandar la imagen por API Gateway habría sido pagar dos veces
+ * la misma transferencia y chocar con su límite de 6 MB.
+ */
+async function leerPrecios(evento: Evento) {
+  const cuerpo = leerCuerpo<{ proveedorId?: string; fotoId?: string }>(evento);
+  if (!cuerpo?.proveedorId || !cuerpo.fotoId) {
+    return json(400, { error: "Faltan proveedorId o fotoId" });
+  }
+
+  // La clave se consulta en DynamoDB en vez de reconstruirla: la extensión
+  // depende del formato con que se tomó la foto, y adivinarla ya falló una vez.
+  const guardado = await dynamo.send(
+    new QueryCommand({
+      TableName: TABLA,
+      KeyConditionExpression: "PK = :pk AND SK = :sk",
+      ExpressionAttributeValues: {
+        ":pk": `PROV#${cuerpo.proveedorId}`,
+        ":sk": `FOTO#${cuerpo.fotoId}`,
+      },
+    }),
+  );
+  const clave = String(guardado.Items?.[0]?.clave ?? "");
+  if (!clave) {
+    return json(409, { error: "La foto todavía no está subida. Sincroniza y reintenta." });
+  }
+
+  try {
+    const lectura = await leerLista(BUCKET, clave);
+    return json(200, lectura);
+  } catch (e) {
+    console.error("textract falló", e);
+    const motivo = e instanceof Error ? e.message : String(e);
+    // Que la foto no esté en S3 es el error más probable y tiene arreglo desde
+    // la app; el resto son problemas del servicio y no ayuda disfrazarlos.
+    if (motivo.includes("NoSuchKey") || motivo.includes("InvalidS3Object")) {
+      return json(409, { error: "La foto todavía no está subida. Sincroniza y reintenta." });
+    }
+    if (motivo.includes("UnsupportedDocument")) {
+      return json(415, {
+        error: "Esa foto se tomó en un formato que el lector no entiende. Tómala de nuevo.",
+      });
+    }
+    return json(502, { error: "No se pudo leer la lista de precios" });
+  }
+}
+
 // ── Fotos ───────────────────────────────────────────────────────────────────
 
 /**
@@ -261,13 +314,18 @@ async function urlDeSubida(evento: Evento) {
     return json(400, { error: "Faltan proveedorId o fotoId" });
   }
 
-  const clave = `${cuerpo.proveedorId}/${cuerpo.fotoId}.webp`;
+  // La extensión sigue al tipo real: la lista de precios llega en JPEG para que
+  // Textract pueda leerla —no admite WebP— y el resto sigue en WebP, que pesa
+  // la mitad y se sube con datos de roaming.
+  const tipoMime = cuerpo.contentType ?? "image/webp";
+  const extension = tipoMime.includes("jpeg") ? "jpg" : "webp";
+  const clave = `${cuerpo.proveedorId}/${cuerpo.fotoId}.${extension}`;
   const url = await getSignedUrl(
     s3,
     new PutObjectCommand({
       Bucket: BUCKET,
       Key: clave,
-      ContentType: cuerpo.contentType ?? "image/webp",
+      ContentType: tipoMime,
     }),
     { expiresIn: 900 },
   );

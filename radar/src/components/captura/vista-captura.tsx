@@ -133,7 +133,13 @@ export function VistaCaptura() {
 
       {paso === 0 && <PasoIdentidad proveedor={proveedor} actualizar={actualizar} />}
       {paso === 1 && <PasoFotos proveedor={proveedor} />}
-      {paso === 2 && <PasoEvaluacion proveedor={proveedor} actualizar={actualizar} />}
+      {paso === 2 && (
+        <PasoEvaluacion
+          proveedor={proveedor}
+          actualizar={actualizar}
+          token={token}
+        />
+      )}
 
       <div className="fixed inset-x-0 bottom-0 mx-auto flex max-w-2xl gap-2 border-t border-border-strong bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {paso > 0 && (
