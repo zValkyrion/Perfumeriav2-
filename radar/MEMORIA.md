@@ -299,6 +299,24 @@ del módulo.
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
 
+### 2026-08-19 · Inicio de sesión en la tienda, con selector de destino
+
+- **Por qué:** la tienda no tenía autenticación y su pantalla de cuenta mostraba
+  un usuario ficticio. Hacía falta entrar desde ahí, y que el equipo pudiera
+  saltar al panel sin cambiar de sitio.
+- **Implementación:** pantalla propia en /cuenta con un selector discreto
+  «Cliente / Equipo», en Cliente por defecto. Tras entrar, si eligió Equipo y su
+  token trae el grupo, va al panel.
+- **El selector no es un permiso**, solo dice a dónde ir después. Quien lo elige
+  sin tener el grupo entra como cliente y recibe una explicación: el permiso vive
+  en el token que firma Cognito y lo comprueba la API.
+- **Dos fallos que solo aparecieron probando:** el aviso de «no tienes acceso» se
+  perdía porque la pantalla de login desaparece en cuanto hay sesión; viaja ahora
+  por sessionStorage. Y leerlo en un efecto de montaje no servía —esa vista ya
+  estaba montada mostrando el formulario—, así que el efecto depende del perfil.
+- El atajo del encabezado dejó de bastarle con «hay sesión» y ahora exige el
+  grupo: un cliente inicia sesión igual y no debe ver la puerta del panel.
+
 ### 2026-08-19 · Identidad real con Cognito y grupos
 
 - **Por qué:** el panel entraba con un PIN compartido: sin identidad, sin roles

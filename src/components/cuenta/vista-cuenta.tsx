@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart, MapPin, Package, Pencil, Plus, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Contenedor } from "@/components/comunes/layout";
 import { Precio } from "@/components/comunes/precio";
 import { GridProductos } from "@/components/producto/grid-productos";
 import { DIRECCIONES, PEDIDOS, USUARIO } from "@/data/cuenta";
+import { AVISO_SIN_PANEL, InicioSesion } from "@/components/cuenta/inicio-sesion";
+import { hayLogin, puedeVerPanel, useSesion } from "@/lib/sesion";
 import { PRODUCTOS } from "@/data/productos";
 import { formatoFechaLarga } from "@/lib/format";
 import { useTienda } from "@/store/tienda";
@@ -29,19 +31,78 @@ const COLOR_ESTATUS: Record<EstatusPedido, string> = {
 export function VistaCuenta() {
   const hidratado = useTienda((s) => s.hidratado);
   const favoritos = useTienda((s) => s.favoritos);
+  const sesion = useSesion();
+  const [avisoSinPanel, setAvisoSinPanel] = useState(false);
+
+  // Depende del perfil, no del montaje: esta pantalla ya está montada mostrando
+  // el formulario cuando se inicia sesión, así que un efecto de montaje leería la
+  // marca antes de que exista. Se borra al leerla para que el aviso no reaparezca
+  // en visitas posteriores a la cuenta.
+  useEffect(() => {
+    if (!sesion.perfil) return;
+    if (sessionStorage.getItem(AVISO_SIN_PANEL)) {
+      setAvisoSinPanel(true);
+      sessionStorage.removeItem(AVISO_SIN_PANEL);
+    }
+  }, [sesion.perfil]);
 
   const productosFavoritos = PRODUCTOS.filter((p) => favoritos.includes(p.id));
+
+  // Antes de leer `localStorage` no se sabe si hay sesión: pintar la pantalla
+  // de acceso y quitarla medio segundo después es peor que esperar.
+  if (hayLogin() && !sesion.listo) return null;
+
+  if (hayLogin() && !sesion.perfil) {
+    return (
+      <Contenedor className="py-10 lg:py-16">
+        <InicioSesion sesion={sesion} />
+      </Contenedor>
+    );
+  }
+
+  // El nombre sale de la sesión cuando la hay. Los pedidos y las direcciones
+  // siguen siendo de muestra: todavía no hay dónde guardarlos.
+  const nombre = sesion.perfil?.nombre || USUARIO.nombre;
+  const correo = sesion.perfil?.correo || USUARIO.correo;
 
   return (
     <Contenedor className="py-6 lg:py-10">
       <header className="mb-7">
         <p className="eyebrow mb-2">Mi cuenta</p>
         <h1 className="font-display text-[32px] leading-tight tracking-tight lg:text-[42px]">
-          Hola, {USUARIO.nombre.split(" ")[0]}
+          Hola, {nombre.split(" ")[0]}
         </h1>
         <p className="text-fg-muted mt-2 text-sm">
           Cliente desde {formatoFechaLarga(USUARIO.desde)}
         </p>
+
+        {avisoSinPanel && (
+          <p className="border-border-soft text-fg-muted mt-3 max-w-lg rounded-md border px-3 py-2 text-sm">
+            Tu cuenta no tiene acceso al panel de proveedores, así que entraste
+            como cliente. Si crees que debería tenerlo, pídeselo a un
+            administrador.
+          </p>
+        )}
+
+        {sesion.perfil && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {puedeVerPanel(sesion.perfil) && (
+              <a
+                href="/radar/"
+                className="text-gold-light inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold"
+              >
+                Ir al panel de proveedores
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={sesion.salir}
+              className="text-fg-subtle hover:text-fg-muted inline-flex min-h-11 items-center text-sm"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        )}
       </header>
 
       <Tabs defaultValue="pedidos">
@@ -134,7 +195,7 @@ export function VistaCuenta() {
         </TabsContent>
 
         <TabsContent value="datos">
-          <MisDatos />
+          <MisDatos nombre={nombre} correo={correo} />
         </TabsContent>
       </Tabs>
     </Contenedor>
@@ -319,13 +380,13 @@ function FormDireccion({
   );
 }
 
-function MisDatos() {
+function MisDatos({ nombre, correo }: { nombre: string; correo: string }) {
   return (
     <div className="max-w-lg">
       <dl className="divide-border-soft border-border-soft divide-y border-y">
         {[
-          ["Nombre", USUARIO.nombre],
-          ["Correo", USUARIO.correo],
+          ["Nombre", nombre],
+          ["Correo", correo],
           ["WhatsApp", USUARIO.telefono],
           ["Cliente desde", formatoFechaLarga(USUARIO.desde)],
           ["Piezas compradas", String(USUARIO.piezasCompradas)],

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LayoutDashboard } from "lucide-react";
+import { leerPerfil, puedeVerPanel } from "@/lib/sesion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,7 +32,11 @@ export function AccesoPanel({ className }: { className?: string }) {
       // saludar. Sin token no se muestra nada, aunque quede el nombre de antes.
       const token = localStorage.getItem("radar:token");
       if (!token) return;
-      setQuien(localStorage.getItem("radar:evaluador"));
+      // El grupo del token decide, no el simple hecho de tener sesión: un cliente
+      // de la tienda inicia sesión igual y no tiene nada que hacer en el panel.
+      const perfil = leerPerfil(token);
+      if (!puedeVerPanel(perfil)) return;
+      setQuien(perfil?.nombre ?? null);
     } catch {
       // Navegador con almacenamiento bloqueado: se comporta como un visitante.
     }
