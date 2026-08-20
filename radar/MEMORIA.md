@@ -66,6 +66,7 @@ Región **us-east-1**. Cuenta **637423567003**. Etapa: `produccion`.
 | API Gateway | `Elrey_api` | HTTP API v2 |
 | CloudFront | distribución de `Elrey_radar` | Sirve el sitio |
 | SSM | `Elrey_pin`, `Elrey_jwt_secreto` | Secretos (vía `sst secret`) |
+| Cognito | `Elrey_usuarios` (`us-east-1_qpU8tmkIB`) | Identidad y grupos |
 
 ### La excepción a `Elrey_`
 
@@ -177,6 +178,34 @@ dirección, ciudad y notas.
 
 ---
 
+## 4.1 Identidad y permisos
+
+Un solo pool de Cognito para clientes y equipo: **son las mismas personas** —
+quien captura proveedores también compra— y con dos pools tendría dos
+contraseñas para el mismo humano. Lo que separa es el grupo, no la cuenta.
+
+| Grupo | Precedencia | Qué abre |
+| --- | --- | --- |
+| `admins` | 1 | Todo |
+| `proveedores` | 2 | El panel |
+| `clientes` | 3 | Solo la tienda |
+
+**El grupo es el permiso.** La API verifica el ID token contra las claves
+públicas de Cognito y comprueba `cognito:groups`: sin `proveedores` ni `admins`
+responde 403 aunque la sesión sea válida. Nadie puede auto-asignarse un grupo.
+
+Se verifica el **ID token** y no el de acceso porque solo aquel trae el correo,
+y sin correo la ficha quedaría firmada por un identificador que no le dice nada
+a nadie — la trazabilidad es justo lo que se ganaba al salir del PIN compartido.
+
+Sin autoservicio por ahora: las cuentas las crea un admin. Alta, baja y retirada
+del PIN, en [`infra/usuarios.md`](infra/usuarios.md).
+
+**Sin señal se sigue entrando** si ya se entró antes: el token de identidad dura
+una hora y el de refresco 90 días, así que una gira entera cabe en un solo
+inicio de sesión. Solo la primera vez hace falta red.
+
+---
 ## 5. Sincronización
 
 El teléfono es la fuente de verdad mientras el equipo está en la calle.
@@ -270,6 +299,23 @@ del módulo.
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
 
+### 2026-08-19 · Identidad real con Cognito y grupos
+
+- **Por qué:** el panel entraba con un PIN compartido: sin identidad, sin roles
+  y sin forma de revocar a una sola persona. La ficha se firmaba con un nombre
+  tecleado a mano, que nadie garantizaba que fuera el suyo.
+- **Implementación:** pool `Elrey_usuarios` con los grupos `admins`,
+  `proveedores` y `clientes`. La API valida el ID token contra Cognito y exige
+  grupo; el panel entra con correo y contraseña desde pantallas propias, sin
+  SDK — la API de Cognito es JSON sobre HTTPS y meter el SDK de AWS en el
+  navegador costaría cientos de kilobytes que el equipo paga en roaming.
+- **Verificado en producción:** una cuenta en `proveedores` entra y su ficha
+  queda firmada con su identidad; una en `clientes` inicia sesión igual pero
+  recibe 403 del panel. También el reto de contraseña temporal en el primer
+  acceso.
+- **El PIN sigue vivo a propósito.** Cortarlo antes de que todos tengan cuenta
+  dejaría a alguien fuera a mitad de una gira. Los cuatro pasos para retirarlo
+  están en `infra/usuarios.md`.
 ### 2026-08-19 · Un solo origen: tienda en / y panel en /radar
 
 - **Por qué:** el panel vivía en un dominio de CloudFront distinto al de la

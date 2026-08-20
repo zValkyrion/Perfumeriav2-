@@ -60,6 +60,77 @@ export default $config({
       },
     });
 
+    // ── Identidad ───────────────────────────────────────────────────────────
+    //
+    // Un solo pool para clientes y equipo: son las mismas personas —quien
+    // captura proveedores también compra— y con dos pools tendrían dos
+    // contraseñas para el mismo humano. Lo que separa es el grupo, no la cuenta.
+    const usuarios = new sst.aws.CognitoUserPool("Elrey_usuarios", {
+      // Se entra con el correo, no con un nombre de usuario que haya que
+      // recordar aparte.
+      usernames: ["email"],
+      transform: {
+        userPool: {
+          name: "Elrey_usuarios",
+          // Sin autoservicio por ahora: las cuentas del equipo las crea un
+          // admin. Se abrirá cuando entre el registro de clientes, y aun
+          // entonces el alta automática solo podrá caer en `clientes`.
+          adminCreateUserConfig: { allowAdminCreateUserOnly: true },
+          passwordPolicy: {
+            minimumLength: 10,
+            requireLowercase: true,
+            requireNumbers: true,
+            requireUppercase: false,
+            requireSymbols: false,
+            // Días que vale la contraseña temporal que reparte el admin.
+            temporaryPasswordValidityDays: 14,
+          },
+        },
+      },
+    });
+
+    const clienteWeb = usuarios.addClient("Elrey_web", {
+      transform: {
+        client: {
+          name: "Elrey_web",
+          // Las pantallas son nuestras, así que el navegador habla directo con
+          // Cognito: usuario y contraseña por TLS, y refresco para que una gira
+          // entera quepa en un solo inicio de sesión.
+          explicitAuthFlows: [
+            "ALLOW_USER_PASSWORD_AUTH",
+            "ALLOW_REFRESH_TOKEN_AUTH",
+          ],
+          // Sin secreto: vive en un navegador, donde nada es secreto.
+          generateSecret: false,
+          accessTokenValidity: 1,
+          idTokenValidity: 1,
+          tokenValidityUnits: {
+            accessToken: "hours",
+            idToken: "hours",
+            refreshToken: "days",
+          },
+          // 90 días: el equipo pasa semanas en la calle sin señal fiable y no
+          // puede quedarse fuera por caducidad a mitad de una visita.
+          refreshTokenValidity: 90,
+        },
+      },
+    });
+
+    // Los grupos son el permiso. Nadie puede auto-asignarse uno: eso es lo que
+    // sostiene todo el esquema.
+    const grupos = [
+      { nombre: "admins", precedencia: 1, texto: "Control total del sistema" },
+      { nombre: "proveedores", precedencia: 2, texto: "Acceso al panel de proveedores" },
+      { nombre: "clientes", precedencia: 3, texto: "Compradores de la tienda" },
+    ];
+    for (const g of grupos) {
+      new aws.cognito.UserGroup(`Elrey_grupo_${g.nombre}`, {
+        userPoolId: usuarios.id,
+        name: g.nombre,
+        precedence: g.precedencia,
+        description: g.texto,
+      });
+    }
     // ── API ─────────────────────────────────────────────────────────────────
     const api = new sst.aws.ApiGatewayV2("Elrey_api", {
       cors: {
@@ -81,7 +152,7 @@ export default $config({
     // nada: el paquete es idéntico y la concurrencia sobra.
     api.route("$default", {
       handler: "servidor/api.handler",
-      link: [tabla, fotos, pin, jwtSecreto],
+      link: [tabla, fotos, pin, jwtSecreto, usuarios, clienteWeb],
       name: `Elrey_api_${$app.stage}`,
       memory: "512 MB",
       timeout: "20 seconds",
@@ -101,6 +172,8 @@ export default $config({
       },
       environment: {
         NEXT_PUBLIC_API: api.url,
+        NEXT_PUBLIC_COGNITO_CLIENTE: clienteWeb.id,
+        NEXT_PUBLIC_COGNITO_REGION: "us-east-1",
       },
     });
 
@@ -108,6 +181,8 @@ export default $config({
       api: api.url,
       sitio: sitio.url,
       tabla: tabla.name,
+      pool: usuarios.id,
+      clienteCognito: clienteWeb.id,
       bucket: fotos.name,
     };
   },

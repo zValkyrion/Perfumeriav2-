@@ -30,6 +30,15 @@ declare module "sst" {
       "type": "sst.aws.StaticSite"
       "url": string
     }
+    "Elrey_usuarios": {
+      "id": string
+      "type": "sst.aws.CognitoUserPool"
+    }
+    "Elrey_web": {
+      "id": string
+      "secret": string
+      "type": "sst.aws.CognitoUserPoolClient"
+    }
   }
 }
 /// <reference path="sst-env.d.ts" />

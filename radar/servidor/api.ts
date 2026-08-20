@@ -13,7 +13,8 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { firmarToken, pinCorrecto, verificarToken, type Sesion } from "./jwt";
+import { firmarToken, pinCorrecto } from "./jwt";
+import { identificar, puedeVerProveedores, type Identidad } from "./identidad";
 
 /**
  * API del Radar de Proveedores.
@@ -80,10 +81,8 @@ function leerCuerpo<T>(evento: Evento): T | null {
   }
 }
 
-function sesionDe(evento: Evento): Sesion | null {
-  const cabecera = evento.headers.authorization ?? evento.headers.Authorization;
-  if (!cabecera?.startsWith("Bearer ")) return null;
-  return verificarToken(cabecera.slice(7), Resource.Elrey_jwt_secreto.value);
+function sesionDe(evento: Evento): Promise<Identidad | null> {
+  return identificar(evento.headers.authorization ?? evento.headers.Authorization);
 }
 
 export async function handler(evento: Evento) {
@@ -95,15 +94,27 @@ export async function handler(evento: Evento) {
 
   try {
     if (metodo === "GET" && ruta === "/salud") {
-      return json(200, { ok: true, tabla: TABLA, bucket: BUCKET });
+      return json(200, {
+        ok: true,
+        tabla: TABLA,
+        bucket: BUCKET,
+        pool: Resource.Elrey_usuarios.id,
+        clienteCognito: Resource.Elrey_web.id,
+      });
     }
 
     if (metodo === "POST" && ruta === "/acceso") return acceso(evento);
 
-    // Todo lo demás exige token. La app puede capturar sin él —los datos viven
-    // en el teléfono—, pero nada sube sin haber pasado por el PIN.
-    const sesion = sesionDe(evento);
+    // Todo lo demás exige identidad. La app puede capturar sin ella —los datos
+    // viven en el teléfono—, pero nada sube sin haber iniciado sesión.
+    const sesion = await sesionDe(evento);
     if (!sesion) return json(401, { error: "Sesión inválida o vencida" });
+
+    // El grupo es el permiso. Un cliente de la tienda tiene sesión válida y aun
+    // así no tiene nada que hacer aquí.
+    if (!puedeVerProveedores(sesion)) {
+      return json(403, { error: "Tu cuenta no tiene acceso al panel de proveedores" });
+    }
 
     if (metodo === "GET" && ruta === "/proveedores") return listar();
     if (metodo === "PUT" && ruta.startsWith("/proveedores/")) {
@@ -156,7 +167,7 @@ async function listar() {
   return json(200, { proveedores });
 }
 
-async function guardar(evento: Evento, sesion: Sesion) {
+async function guardar(evento: Evento, sesion: Identidad) {
   const id = evento.pathParameters?.id ?? evento.requestContext.http.path.split("/")[2];
   const ficha = leerCuerpo<Record<string, unknown>>(evento);
   if (!ficha || !id) return json(400, { error: "Ficha inválida" });

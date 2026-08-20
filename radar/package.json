@@ -29,6 +29,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "aws-jwt-verify": "^5.2.1",
     "sst": "^3.19.3",
     "tailwindcss": "^4",
     "typescript": "^5"
