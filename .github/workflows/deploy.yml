@@ -3,6 +3,17 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: ["main"]
+    # La app de campo vive en el mismo repositorio pero se publica en otro sitio
+    # (CloudFront, ver .github/workflows/radar.yml). Sin esto, tocar el radar
+    # reconstruía y republicaba la tienda sin que hubiera cambiado nada suyo.
+    #
+    # El filtro solo salta la ejecución cuando *todos* los archivos del push
+    # están en esta lista: un cambio que mezcle tienda y radar sigue desplegando
+    # la tienda, que es lo que debe pasar.
+    paths-ignore:
+      - "radar/**"
+      - "RADAR_PLAN.md"
+      - ".github/workflows/radar.yml"
   workflow_dispatch:
 
 permissions:
