@@ -10,7 +10,9 @@
     "imagenes": "tsx scripts/generar-imagenes.ts",
     "banners": "tsx scripts/optimizar-banners.ts",
     "banner-paca": "tsx scripts/generar-banner-paca.ts",
-    "og": "tsx scripts/generar-og.ts"
+    "og": "tsx scripts/generar-og.ts",
+    "catalogo": "tsx scripts/catalogo.ts",
+    "catalogo:exportar": "tsx scripts/catalogo.ts exportar"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

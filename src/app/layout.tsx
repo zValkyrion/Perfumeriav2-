@@ -8,6 +8,7 @@ import { BotonWhatsApp } from "@/components/layout/whatsapp";
 import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
 import { SincronizarCuenta } from "@/components/cuenta/sincronizar-cuenta";
 import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
+import { PixelMeta } from "@/components/comunes/pixel-meta";
 import { TransicionRuta } from "@/components/comunes/transicion-ruta";
 import { MAS_VENDIDOS, indiceCompacto } from "@/data/productos";
 import { organizacion, sitioWeb } from "@/lib/jsonld";
@@ -92,6 +93,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Identidad del sitio: se declara una sola vez, aquí. */}
         <DatosEstructurados datos={organizacion()} />
         <DatosEstructurados datos={sitioWeb()} />
+
+        {/* Pixel de Meta. No pinta nada y no carga nada mientras
+            `NEXT_PUBLIC_META_PIXEL` esté sin definir. */}
+        <PixelMeta />
 
         <a
           href="#contenido"

@@ -53,10 +53,17 @@ export default function TerminosPage() {
 
       <Bloque titulo="4. Pagos">
         <p>
-          Aceptamos tarjeta de crédito y débito, transferencia SPEI, efectivo en
-          tiendas de conveniencia y pago contra entrega en zonas seleccionadas.
-          Los meses sin intereses dependen del banco emisor y del monto mínimo
-          publicado en el checkout.
+          Aceptamos pago con Clip —tarjeta de crédito, débito y efectivo—,
+          depósito o transferencia bancaria, y pago contra entrega. Los meses sin
+          intereses dependen del banco emisor y del monto mínimo publicado en el
+          checkout.
+        </p>
+        <p>
+          El pago contra entrega está disponible en pedidos menores a ${" "}
+          10,000.00 MXN e implica un costo de servicio de $ 400.00 por el cobro
+          en destino, que se muestra desglosado en el checkout y se suma al
+          total antes de confirmar. Los pedidos por depósito o transferencia se
+          apartan 24 horas a la espera del comprobante.
         </p>
       </Bloque>
 

@@ -4,6 +4,12 @@ export const MARCA = {
   nombre: "EL REY DE LOS PERFUMES",
   tagline: "La misma fragancia. El mismo frasco. Sin pagar la etiqueta.",
   whatsapp: "55 4047 9322",
+  /**
+   * El mismo número en el formato que exige wa.me: lada de país y sin signos.
+   * Existe aparte porque el aviso de compra arma su enlace con un texto que se
+   * calcula, y no puede reutilizar un enlace con el mensaje ya incrustado.
+   */
+  whatsappNumero: "525540479322",
   whatsappLink:
     "https://wa.me/525540479322?text=Hola%2C%20vengo%20de%20la%20tienda%20en%20l%C3%ADnea%20y%20tengo%20una%20duda",
   /** Cotización de alto volumen: entra al chat con el asunto ya escrito. */
@@ -124,7 +130,7 @@ export const FAQ_HOME = [
   {
     grupo: "Pagos",
     p: "¿Puedo pagar al recibir?",
-    r: "Sí, está disponible solo en ciertos pedidos, dependiendo del tipo de producto y del monto. Si aplica para tu compra, aparecerá la opción en el checkout.",
+    r: "Sí, en pedidos menores a $ 10,000.00 MXN. El servicio de cobro en destino cuesta $ 400.00 y se suma al total; lo ves desglosado en el checkout antes de confirmar. Si tu pedido pasa de esa cifra, lo acordamos por WhatsApp.",
   },
   {
     grupo: "Calidad y garantías",
@@ -178,7 +184,7 @@ export const FAQ_CATALOGO = [
   },
   {
     p: "¿Cómo puedo pagar?",
-    r: "Tarjeta de crédito o débito, transferencia SPEI, efectivo en OXXO y pago contra entrega en zonas seleccionadas. Con tarjetas participantes tienes 3, 6, 9 o 12 meses sin intereses según el monto de tu compra.",
+    r: "Tres formas: con Clip, que acepta tarjeta de crédito, débito y efectivo; por depósito o transferencia, y te mandamos las instrucciones por WhatsApp; y pago contra entrega en pedidos menores a $ 10,000.00 MXN, con un costo de servicio de $ 400.00. Con tarjetas participantes tienes 3, 6, 9 o 12 meses sin intereses según el monto de tu compra.",
   },
   {
     p: "¿Desde qué monto hay meses sin intereses?",
@@ -198,7 +204,7 @@ export const FAQ_CATALOGO = [
   },
   {
     p: "¿Tienen pago contra entrega?",
-    r: "Sí, en zonas metropolitanas de León, Guadalajara, CDMX, Monterrey, Puebla y Querétaro para pedidos de hasta $ 3,000.00 MXN. Al elegir tu código postal en el checkout te decimos si tu domicilio califica.",
+    r: "Sí, en pedidos menores a $ 10,000.00 MXN. El servicio de cobro en destino cuesta $ 400.00 y se suma al total; lo verás desglosado en el checkout antes de confirmar. Para pedidos mayores lo acordamos por WhatsApp.",
   },
   {
     p: "¿Cuánto dura un perfume en la piel?",
@@ -327,13 +333,22 @@ export const OPCIONES_ENVIO = [
 
 export type IdEnvio = (typeof OPCIONES_ENVIO)[number]["id"];
 
+/**
+ * Los sellos de pago del pie de página.
+ *
+ * Solo lo que la tienda cobra de verdad: Clip procesa las tarjetas y el
+ * efectivo, y las otras dos son las que se acuerdan por WhatsApp. Enseñar
+ * PayPal o Mercado Pago sin tenerlos contratados es prometer un botón que no
+ * existe, y quien lo busque en el checkout se va. Las reglas de cada uno están
+ * en `src/data/pagos.ts`.
+ */
 export const METODOS_PAGO = [
+  "Clip",
   "Visa",
   "Mastercard",
-  "American Express",
-  "PayPal",
-  "Mercado Pago",
-  "OXXO",
+  "Efectivo",
+  "Transferencia",
+  "Contra entrega",
 ] as const;
 
 export const PAQUETERIAS = ["DHL", "Estafeta", "FedEx", "99 Minutos"] as const;
@@ -356,17 +371,3 @@ export const CP_CONOCIDOS: Record<string, { ciudad: string; estado: string }> = 
   "91000": { ciudad: "Xalapa", estado: "Veracruz" },
   "80000": { ciudad: "Culiacán", estado: "Sinaloa" },
 };
-
-/** Códigos postales con pago contra entrega disponible. */
-export const CP_CONTRA_ENTREGA = new Set([
-  "37160",
-  "37000",
-  "44100",
-  "45050",
-  "06700",
-  "03100",
-  "64000",
-  "66220",
-  "72000",
-  "76000",
-]);

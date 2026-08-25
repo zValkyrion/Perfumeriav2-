@@ -58,6 +58,14 @@ jobs:
           aws-region: us-east-1
 
       - name: Desplegar
+        # Mismas variables opcionales que el workflow de Pages: `sst.config.ts`
+        # las lee de aquí y se las pasa a la compilación de la tienda. Si están
+        # vacías, la tienda se publica sin pixel, sin enlace de Clip y avisando
+        # de los pedidos solo por WhatsApp.
+        env:
+          NEXT_PUBLIC_META_PIXEL: ${{ vars.META_PIXEL }}
+          NEXT_PUBLIC_CLIP_LINK: ${{ vars.CLIP_LINK }}
+          NEXT_PUBLIC_WEBHOOK_PEDIDOS: ${{ vars.WEBHOOK_PEDIDOS }}
         run: npx sst deploy --stage produccion
 
       # Desplegar no es funcionar. Si la API queda rota, el workflow falla y

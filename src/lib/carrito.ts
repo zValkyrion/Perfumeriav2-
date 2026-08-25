@@ -53,6 +53,15 @@ export interface ResumenCarrito {
   descuentoCupon: number;
   envio: number;
   envioGratis: boolean;
+  /**
+   * Comisión del servicio de cobro en destino (pago contra entrega).
+   *
+   * El carrito siempre la deja en cero: aquí todavía no se ha elegido cómo se
+   * paga. La pone el checkout al rehacer el total, igual que hace con el envío,
+   * y vive en el resumen para que el panel de totales la enseñe como un
+   * concepto más en vez de inflar el total sin explicación.
+   */
+  comision: number;
   total: number;
   ahorroTotal: number;
   vacio: boolean;
@@ -263,6 +272,7 @@ export function resumenCarrito(
     descuentoCupon,
     envio,
     envioGratis,
+    comision: 0,
     total: redondear(subtotal - promo3x2.descuento - descuentoCupon + envio),
     ahorroTotal: redondear(
       ahorroVolumen + promo3x2.descuento + descuentoCupon,

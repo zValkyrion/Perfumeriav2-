@@ -208,6 +208,66 @@ una ficha de producto en un teléfono real.
 
 ---
 
+## 9. Funciones de la página — lo construido y lo que falta
+
+Del documento «Funciones de la página» (2026-08-25). Lo hecho está en la bitácora
+de [radar/MEMORIA.md](radar/MEMORIA.md), entrada del 2026-08-25.
+
+### Listo, pero esperando un dato tuyo
+
+Nada de esto se puede terminar desde el código: falta información que solo tú
+tienes. Cada pieza ya está cableada y funciona sin ella.
+
+| Qué falta | Dónde se pone | Qué pasa mientras no esté |
+| --- | --- | --- |
+| **Identificador del pixel de Meta** (15 dígitos) | Variable `META_PIXEL` del repositorio en GitHub | No se carga el pixel: ni script, ni cookie, ni una petición a Facebook |
+| **Enlace de cobro de Clip** (`https://pay.clip.mx/…`) | Variable `CLIP_LINK` | El pedido se cierra igual y el cobro se acuerda por WhatsApp |
+| **Webhook de avisos** (Make, Zapier, n8n…) | Variable `WEBHOOK_PEDIDOS` | El aviso va solo por WhatsApp, desde el botón de la confirmación |
+| **CLABE, banco y titular** | `NEXT_PUBLIC_CLABE`, `NEXT_PUBLIC_BANCO`, `NEXT_PUBLIC_TITULAR` | El checkout dice la verdad: las instrucciones van por WhatsApp |
+
+Las variables se ponen en **Settings → Secrets and variables → Actions →
+Variables** del repositorio. Los dos workflows y `radar/sst.config.ts` ya las
+recogen; basta con volver a desplegar.
+
+**La CLABE es el único caso donde conviene pensárselo**: puesta ahí, aparece en
+el código fuente de la página, visible para cualquiera. Si prefieres darla solo
+por WhatsApp —que es lo que dice el documento—, no la pongas y déjalo como está.
+
+### Pendiente de contenido
+
+- **Catálogo completo con sus precios.** Ya no hay que tocar código: se edita
+  `catalogo/productos.csv` en Excel y se carga con `npm run catalogo`. Las
+  instrucciones completas, columna por columna, están en
+  [catalogo/LEEME.md](catalogo/LEEME.md). El archivo trae ya los 52 productos
+  actuales para que se vea el formato lleno.
+- **Tabla de descuentos.** La escalera actual —3+ 10%, 6+ 20%, 10+ 30%, 20+ a
+  cotizar— vive en `src/lib/volumen.ts` y ya se aplica sola en el carrito y en el
+  checkout. Si la tabla que mandes es distinta, se cambia **solo ahí**: media
+  docena de textos del sitio derivan sus cifras de ese archivo justamente para
+  que no se queden prometiendo lo anterior.
+
+### Segunda tanda
+
+- **Contabilización automática de stock.** Hoy las existencias son un número
+  estable entre 15 y 30 derivado del slug, no un inventario. Restar al vender
+  necesita que el stock viva en el servidor, no en el navegador — es el mismo
+  trabajo que el §5 deja anotado para el total del pedido.
+- **Correos automatizados de marketing.** Depende de SES fuera del sandbox (§4).
+- **IA para automatizar procesos.** Sin definir todavía.
+
+### Deudas que este trabajo dejó a la vista
+
+- **El envío estándar cuesta $ 149.00 en el carrito y $ 0.00 en el checkout.**
+  `resumenCarrito` cobra 149 cuando no hay envío gratis, pero la opción
+  «Estándar» de `OPCIONES_ENVIO` tiene precio 0 y el checkout rehace el total con
+  ella. Un pedido de una pieza se anuncia a $ 149 más caro de lo que se cobra.
+  Es anterior a este trabajo y no lo toqué porque hay que decidir cuál de las dos
+  cifras es la buena.
+- **El pedido no cambia de estatus** ni hay panel donde verlos (§5). Con el aviso
+  por WhatsApp y el webhook eso duele menos, pero sigue ahí.
+
+---
+
 ## Lo que NO hay que deshacer
 
 Decisiones tomadas con motivo. Si alguien las revierte por descuido, rompe cosas
@@ -236,6 +296,30 @@ que costó descubrir:
   en cada recarga: 2 → 3 → 6 → 12.
 - **El carrito se guarda bajo el `sub` de Cognito**, no bajo el correo: el correo
   se puede cambiar y dejaría el carrito anterior huérfano.
+- **El tope del pago contra entrega se mide antes de su propia comisión.** Al
+  revés, un pedido de $ 9,700 se quedaría fuera por culpa de los $ 400 del
+  servicio.
+- **La comisión del cobro en destino se enseña como concepto**, nunca sumada
+  callada al total: es el mismo error que el 3x2, cobrar de más sin que se vea.
+- **El pixel no carga sin `META_PIXEL`.** No es un descuido: evita que el
+  desarrollo cuente visitas en las estadísticas de la campaña.
+- **Subir la versión del estado persistido exige `migrate`.** Sin él, zustand
+  tira lo guardado y todo el mundo pierde el carrito. La versión 2 solo descarta
+  el comprobante viejo.
+- **No se piden datos de tarjeta en la tienda.** Es una exportación estática: sin
+  servidor que cobre, un formulario de tarjeta recoge un número de tarjeta para
+  nada. El cobro con tarjeta lo hace Clip, en su propia pantalla.
+- **El CSV manda sobre `semillas.ts` y `marcas.ts`.** Esos dos archivos están
+  generados y lo dicen en su primera línea. Editarlos a mano funciona hasta la
+  siguiente `npm run catalogo`, que se lo lleva todo.
+- **Una carga de catálogo con errores no escribe nada.** Nunca a medias: medio
+  catálogo cargado parece que funcionó y es peor que ninguno.
+- **La compra exprés salta pasos, nunca la confirmación.** Un botón que cobra sin
+  enseñar el total antes no es rapidez, es un cargo sorpresa — y con el contra
+  entrega son $400 de diferencia.
+- **`maxPaso` es lo que marca una sección del checkout como hecha**, no `paso`.
+  Con `paso`, corregir la dirección apaga entrega y pago y obliga a recorrer todo
+  otra vez.
 
 ---
 

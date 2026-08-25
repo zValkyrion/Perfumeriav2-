@@ -47,8 +47,18 @@ jobs:
       - name: Build static site
         # PAGES=1 activa el basePath del repositorio. Sin esta variable la tienda se
         # compila para la raíz de un dominio, que es como se publica en CloudFront.
+        #
+        # Las tres variables de abajo son opcionales y viven en las *variables*
+        # del repositorio (Settings → Secrets and variables → Actions →
+        # Variables), no en el código: el identificador del pixel y el enlace de
+        # cobro cambian sin tocar la tienda, y el webhook apunta a un servicio
+        # que se puede sustituir. Vacías, la tienda funciona igual: no carga el
+        # pixel, no manda a Clip y avisa solo por WhatsApp.
         env:
           PAGES: "1"
+          NEXT_PUBLIC_META_PIXEL: ${{ vars.META_PIXEL }}
+          NEXT_PUBLIC_CLIP_LINK: ${{ vars.CLIP_LINK }}
+          NEXT_PUBLIC_WEBHOOK_PEDIDOS: ${{ vars.WEBHOOK_PEDIDOS }}
         run: npm run build
 
       - name: Upload artifact

@@ -77,6 +77,38 @@ minúsculas. El *identificador* dentro de `sst.config.ts` sí es `Elrey_fotos`, 
 que en el código se sigue leyendo con la convención:
 `Resource.Elrey_fotos.name`.
 
+### Configuración de la tienda: variables, no recursos
+
+Cuatro cosas de la tienda no son infraestructura y por eso no viven en
+`sst.config.ts` ni en el código: el pixel de Meta, el enlace de cobro de Clip, el
+webhook que avisa de cada pedido y los datos bancarios. Cambian sin que cambie
+nada de la nube, y dos de ellas son de un proveedor externo que mañana puede ser
+otro.
+
+| Variable | Dónde se pone | Qué enciende | Vacía |
+| --- | --- | --- | --- |
+| `META_PIXEL` | Variables del repositorio en GitHub | Pixel de Meta y sus cinco eventos | No se carga nada de Facebook |
+| `CLIP_LINK` | Variables del repositorio | Manda a la pantalla de cobro de Clip al confirmar | El cobro se acuerda por WhatsApp |
+| `WEBHOOK_PEDIDOS` | Variables del repositorio | Cada pedido sale en JSON al confirmarse | El aviso va solo por WhatsApp |
+| `NEXT_PUBLIC_CLABE` · `_BANCO` · `_TITULAR` | Igual, si se decide | Enseña la cuenta en el checkout | Dice que las instrucciones van por WhatsApp |
+
+**Van en *Variables*, no en *Secrets*.** No son secretos: las tres primeras
+acaban dentro del HTML público, que es donde tienen que estar para funcionar.
+Ponerlas como secreto daría una falsa sensación de protección sobre algo que
+cualquiera lee con «ver código fuente».
+
+**La CLABE es la excepción que hay que pensar.** Puesta ahí, queda a la vista de
+cualquier visitante. El documento del encargo dice que las instrucciones se
+mandan por WhatsApp, así que lo normal es dejarla vacía; existe la opción por si
+algún día conviene lo contrario.
+
+El camino completo: variable de GitHub → `env:` del workflow →
+`sst.config.ts` (`environment` del `StaticSite`) o directamente
+`npm run build` en el workflow de Pages → `process.env.NEXT_PUBLIC_*` incrustado
+en la compilación. **Los dos despliegues las llevan**, porque los dos publican la
+misma tienda y una campaña que solo mide en una de las dos publicaciones mide
+mal.
+
 ### Lo que deliberadamente NO hay
 
 Ni VPC, ni RDS, ni NAT Gateway. Un NAT Gateway cuesta ~32 USD/mes fijos y no
@@ -322,6 +354,164 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-08-25 · Carga del catálogo por CSV y checkout de una sola página
+
+Puntos 4 y 5 del documento «Funciones de la página». Solo tienda.
+
+**Carga del catálogo** (`scripts/catalogo.ts`, `catalogo/*.csv`)
+
+- **Por qué:** el catálogo son 52 fichas con notas, textos y precios dentro de un
+  `.ts`. Llevar ahí la lista de precios real a mano es media tarde y una errata
+  de comilla que tumba la compilación, y quien tiene la lista no escribe
+  TypeScript.
+- **Dos direcciones.** `npm run catalogo:exportar` baja el catálogo actual a
+  `catalogo/productos.csv` y `catalogo/marcas.csv`; `npm run catalogo` los sube a
+  `src/data/semillas.ts` y `src/data/marcas.ts`. Exportar existe para poder
+  editar sobre lo que ya hay en vez de partir de una hoja en blanco.
+- **El CSV es la fuente y el `.ts` la salida.** El archivo generado lo dice en su
+  primera línea. Quien lo edite a mano lo pierde en la siguiente carga.
+- **No se escribe un catálogo a medias.** Una fila con la familia mal escrita no
+  se rellena con un valor por defecto: el proceso se detiene, no toca nada y
+  dice fila y columna con la numeración de Excel. Medio catálogo cargado es peor
+  que ninguno porque parece que funcionó, y una familia puesta a ojo manda
+  perfumes a la página de categoría equivocada sin que nadie se entere.
+- **Lo obligatorio es lo que no se puede deducir**: nombre, marca,
+  concentración, género, familia y precio. El resto tiene comportamiento
+  definido y documentado en `catalogo/LEEME.md` — sin `mls`, un solo frasco de
+  100 ml, porque inventar un 30 y un 50 fabricaría precios que nadie fijó.
+- **`Semilla.precios` es nuevo**: precio explícito por presentación. Sin él, el
+  de los frascos chicos se deduce con la curva de `RATIO_ML`, que es una
+  aproximación; con una lista real, la cifra de la lista manda y **no** pasa por
+  `precioBonito`, porque redondear un precio que alguien tecleó a propósito lo
+  convierte en otro.
+- **Detalles que cuestan una tarde si se olvidan:** el lector detecta si Excel
+  guardó con coma o con punto y coma, y el escritor pone BOM —sin él «Héliotrope»
+  llega como «HÃ©liotrope»—; los precios se aceptan como `$ 1,290.00`; el slug se
+  exporta siempre porque es la dirección pública y cambiarlo rompe enlaces y
+  pierde posicionamiento.
+- **Verificado:** ida y vuelta comparando campo por campo contra `HEAD` — 52
+  productos y 12 marcas idénticos — y una fila rota a propósito que se detiene
+  señalando sus tres errores sin escribir nada.
+
+**Checkout de una sola página, ficha tipo SNKRS y compra exprés**
+
+- **Las cuatro secciones a la vez.** Antes era un paso por pantalla: comprobar la
+  dirección desde el paso de pago costaba retroceder dos veces y volver a
+  avanzar. Ahora la abierta se despliega y las resueltas se pliegan a un renglón
+  con «Cambiar».
+- **`maxPaso` y no `paso` decide qué está hecho.** Es lo que hace que «Cambiar»
+  sirva: al volver al primer bloque, entrega y pago siguen resueltos. Midiéndolo
+  contra la sección abierta, corregir una calle apagaba los tres bloques
+  siguientes y obligaba a recorrer el checkout entero — el paseo que esta
+  pantalla venía a quitar.
+- **La ficha: las fotos corren, el bloque de compra se queda.** Antes era al
+  revés y el precio con sus botones se iba hacia arriba al leer las notas. Las
+  cuatro fotos van en columna en escritorio; el panel lleva
+  `max-h-[calc(100vh-7rem)]` con scroll propio porque mide 1,070 px y sin tope
+  dejaba el botón de comprar colgando fuera de la pantalla en un portátil.
+- **Los puntos del carrusel móvil ahora siguen al dedo.** Estaban clavados en el
+  primero: se deslizaba a la cuarta foto y el indicador seguía diciendo uno.
+- **Presentaciones en rejilla**, como un selector de talla: todas las cajas del
+  mismo tamaño se comparan de un vistazo. Lo agotado se tacha en vez de solo
+  apagarse, que se lee como «no seleccionado».
+- **Compra exprés.** `DatosExpres` guarda dirección, envío y método de la última
+  compra —**nada de pago**, que no lo hay: Clip cobra en su pantalla— y la ficha
+  ofrece «Comprar en 1 toque». Se guarda al confirmar y no al teclear: unos datos
+  a medias, o los de un pedido abandonado, no son la dirección de esta persona.
+  **Salta los pasos, nunca la confirmación**: un botón que cobra sin enseñar el
+  total no es rapidez, es un cargo sorpresa, y menos con los $400 del contra
+  entrega dentro. Se borra con «Usar otros datos» y al cerrar sesión, para que
+  la siguiente persona en ese aparato no encuentre el domicilio de la anterior.
+- **La entrada exprés se lee en el primer render, no en un efecto.** De ella
+  dependen los valores iniciales de medio formulario: escribirlos después es un
+  parpadeo y además un `setState` dentro de un efecto, que la regla
+  `react-hooks/set-state-in-effect` marca como error. La bandera no se persiste y
+  se consume al montar, así que vale por una entrada.
+- **Verificado en el navegador:** compra completa por el checkout de una página
+  con los plegados apareciendo a su paso; «Cambiar» conservando entrega y pago y
+  el formulario reprellenado; compra exprés desde otra ficha llegando directa a
+  confirmar; «Usar otros datos» dejando `expres` en `null` y el formulario en
+  blanco; los puntos del carrusel pasando de «1 de 4» a «3 de 4» al desplazar; y
+  el panel fijo quedando en 788 px dentro de una ventana de 900 tras el tope.
+  `tsc`, `eslint`, `npm run build` y `grep -rlF '$RC(' out` en cero.
+
+### 2026-08-25 · Formas de pago reales, aviso de compra y pixel de Meta
+
+Encargo del documento «Funciones de la página». Toca solo la tienda; el panel de
+proveedores no se entera.
+
+- **Tres formas de pago y ninguna inventada.** El checkout ofrecía tarjeta con
+  formulario propio, meses, transferencia SPEI, OXXO y contra entrega por código
+  postal. De todo eso, lo único contratado son Clip, el depósito y el cobro en
+  destino. El formulario de tarjeta se retiró entero: pedía número, CVV y
+  vencimiento en una exportación estática, sin servidor que cobrara ni que
+  cifrara, para acabar diciendo en letra pequeña que no procesaba nada. Las
+  reglas viven ahora en `src/data/pagos.ts`, que es de donde las leen el
+  checkout, el FAQ y los términos.
+- **Contra entrega por monto, no por código postal.** Se ofrece por debajo de
+  $ 10,000.00 MXN y suma $ 400.00 de servicio de cobro en destino. El tope se
+  mide sobre el total **antes** de la comisión: al revés, un pedido de $ 9,700
+  quedaría fuera por culpa del propio servicio. Por encima del tope, la pestaña
+  se apaga en vez de dejar elegirlo y negarlo al confirmar. La lista
+  `CP_CONTRA_ENTREGA` se borró: prometía diez códigos postales inventados.
+- **La comisión se enseña como concepto en el resumen.** Sumarla callada al
+  total hace que el checkout cobre $ 400 más que el carrito sin que nadie sepa de
+  dónde salieron — el mismo error que costó descubrir con el 3x2 (§ «Lo que NO
+  hay que deshacer»). Vive en `ResumenCarrito.comision`, que el carrito deja
+  siempre en cero porque allí todavía no se ha elegido cómo se paga.
+- **Cuarto paso: revisar.** Antes se confirmaba desde la pestaña del método, sin
+  volver a ver la dirección ni el total. Ahora hay una pantalla de revisión con
+  los tres bloques y un enlace «Cambiar» a su paso. Es también donde se ve la
+  comisión antes de aceptarla.
+- **Aviso de compra por dos caminos** (`src/lib/aviso-pedido.ts`). La tienda es
+  estática: no hay servidor que mande un correo. (1) La pantalla de gracias abre
+  WhatsApp con el pedido ya redactado —folio, cliente, teléfono, dirección,
+  artículos y total— hacia el número de la tienda; siempre funciona y no depende
+  de contratar nada. (2) Si `NEXT_PUBLIC_WEBHOOK_PEDIDOS` está puesta, el pedido
+  sale solo en JSON al confirmarlo. Sale con `sendBeacon` porque el navegador se
+  va a la confirmación acto seguido y un `fetch` normal se cancelaría a mitad de
+  vuelo; el cuerpo viaja como `text/plain` a propósito, porque con
+  `application/json` haría falta un preflight CORS que un beacon no puede hacer.
+  Ninguno de los dos puede tumbar una compra ya hecha: fallan en silencio.
+- **`PedidoConfirmado` creció** con teléfono, calle, colonia, CP, referencias,
+  método y comisión — sin eso el aviso obliga a pedir los datos otra vez, que es
+  justo lo que la página tenía que ahorrar. El estado persistido subió a la
+  versión 2 **con `migrate`**: descarta solo el comprobante viejo y conserva
+  carrito, guardados y favoritos. Sin `migrate`, subir la versión tira el estado
+  entero y todo el mundo pierde su carrito.
+- **Pixel de Meta** (`src/lib/pixel.ts`, `components/comunes/pixel-meta.tsx`).
+  Se activa con `NEXT_PUBLIC_META_PIXEL` y **sin esa variable no carga nada**: ni
+  script, ni cookie, ni una petición a Facebook, para que el desarrollo no
+  ensucie las estadísticas de la campaña. El `PageView` se dispara a mano en cada
+  cambio de ruta —la tienda navega sin recargar y el snippet de Meta solo
+  contaría la primera— saltando la ruta de montaje, que ya cuenta el propio
+  snippet. Eventos estándar: `ViewContent`, `AddToCart`, `InitiateCheckout`,
+  `AddPaymentInfo` y `Purchase`.
+- **«COMPRAR AHORA» pasa a ser el botón principal de la ficha**, con «Agregar al
+  carrito» debajo, y la barra fija de móvil repite el principal. Suma al carrito
+  en vez de reemplazarlo: vaciar para «comprar solo esto» le subiría el precio a
+  las piezas que ya estaban, porque el descuento por volumen se calcula sobre el
+  pedido entero.
+- **Existencias de 15 a 30 piezas** mientras no haya inventario real. Las
+  marcadas «Últimas piezas» quedan en 15–19, y el umbral de escasez subió de 15 a
+  19 en la ficha y en la tarjeta: con el umbral en el mínimo del rango, el aviso
+  no se encendía nunca.
+- **Las tres variables nuevas** (`META_PIXEL`, `CLIP_LINK`, `WEBHOOK_PEDIDOS`)
+  entran por las *variables* del repositorio en GitHub y viajan por los dos
+  workflows y por `sst.config.ts`. No van en el código: cambian sin que cambie
+  nada de la nube.
+- **Verificado en el navegador** contra `npm run dev`, recorrido completo: ficha
+  → COMPRAR AHORA → contacto → envío → pago → revisar → confirmación, con contra
+  entrega (comisión sumada y desglosada), con Clip y con 5 piezas para
+  comprobar que la pestaña de contra entrega se apaga por encima del tope. Los
+  cinco eventos del pixel se comprobaron interceptando `fbq` con un
+  identificador de prueba, y que sin la variable no existe `window.fbq`. El
+  mensaje de WhatsApp se leyó decodificado. `tsc`, `eslint`, `npm run build` y
+  `grep -rlF '$RC(' out` en cero.
+- **Lo que no se hizo, y por qué:** el catálogo real y la tabla de descuentos
+  siguen pendientes de que lleguen los datos; las pasarelas quedan cableadas pero
+  sin credenciales; los correos de marketing y la IA son de la segunda tanda.
 
 ### 2026-08-20 · Las direcciones también viven en la cuenta
 

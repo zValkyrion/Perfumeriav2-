@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Contenedor } from "@/components/comunes/layout";
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio } from "@/components/comunes/precio";
-import { MARCA } from "@/data/contenido";
+import { CLIP_LINK } from "@/data/pagos";
+import { enlaceWhatsAppPedido } from "@/lib/aviso-pedido";
 import { resumenCarrito } from "@/lib/carrito";
 import { formatoFechaLarga } from "@/lib/format";
 import { useTienda } from "@/store/tienda";
@@ -42,6 +43,25 @@ export function VistaConfirmacion() {
   // precios de menudeo junto a un total ya rebajado y no cuadraría.
   const { lineas } = resumenCarrito(pedido.items);
 
+  /**
+   * Qué falta para que este pedido se cobre, según cómo se paga.
+   *
+   * Ninguno de los tres métodos se cierra dentro de la tienda —no hay servidor
+   * que cobre—, así que la pantalla dice exactamente qué sigue en lugar de
+   * dejar al comprador esperando un correo que no va a llegar solo.
+   */
+  const siguientePaso = {
+    clip: CLIP_LINK
+      ? "Abrimos la pantalla de Clip en otra pestaña. Si se cerró, mándanos un WhatsApp y te reenviamos el enlace de cobro."
+      : "Mándanos tu pedido por WhatsApp y te devolvemos el enlace de cobro de Clip para pagar con tarjeta o en efectivo.",
+    transferencia:
+      "Mándanos tu pedido por WhatsApp y te pasamos la CLABE y el monto exacto. Apartamos las piezas 24 horas.",
+    contra:
+      "Pagas en efectivo al repartidor. Mándanos tu pedido por WhatsApp y acordamos el día de entrega.",
+  }[pedido.metodoId];
+
+  const whatsapp = enlaceWhatsAppPedido(pedido);
+
   return (
     <Contenedor className="py-10 lg:py-16">
       <div className="mx-auto max-w-2xl">
@@ -55,9 +75,33 @@ export function VistaConfirmacion() {
             ¡Gracias, {pedido.nombre.split(" ")[0]}!
           </h1>
           <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
-            Mandamos la confirmación a{" "}
+            Guardamos tu pedido a nombre de{" "}
             <span className="text-fg">{pedido.correo}</span>. En cuanto salga de
-            bodega te llega la guía de rastreo por correo y WhatsApp.
+            bodega te mandamos la guía de rastreo por WhatsApp.
+          </p>
+        </div>
+
+        {/* El paso que de verdad cierra la compra.
+            Va arriba del comprobante y en dorado porque es lo único que la
+            tienda necesita que ocurra: el cobro se acuerda por WhatsApp en los
+            tres métodos, y un botón perdido al final de la página deja pedidos
+            confirmados que nadie llega a cobrar. */}
+        <div className="border-gold/35 bg-gold-muted mt-8 rounded-lg border p-5">
+          <p className="mb-1.5 flex items-center gap-2 font-medium">
+            <MessageCircle size={17} className="text-gold" aria-hidden />
+            Falta un paso: mándanos tu pedido
+          </p>
+          <p className="text-fg-muted mb-4 text-sm leading-relaxed">
+            {siguientePaso}
+          </p>
+          <Button asChild variant="gold" size="touch-lg" className="w-full">
+            <a href={whatsapp} target="_blank" rel="noopener noreferrer">
+              Enviar mi pedido por WhatsApp
+            </a>
+          </Button>
+          <p className="text-fg-subtle mt-2.5 text-center text-[11px]">
+            Se abre el chat con el folio {pedido.folio}, tus datos y la dirección
+            ya escritos. Solo hay que darle enviar.
           </p>
         </div>
 
@@ -74,6 +118,15 @@ export function VistaConfirmacion() {
               etiqueta="Entrega en"
               valor={`${pedido.ciudad}, ${pedido.estado}`}
             />
+            {/* La comisión del cobro en destino se nombra en el comprobante:
+                es la única parte del total que no salió del carrito. */}
+            {pedido.comision > 0 ? (
+              <Dato
+                etiqueta="Cobro en destino"
+                valor=""
+                hijo={<Precio valor={pedido.comision} className="text-sm" />}
+              />
+            ) : null}
             <Dato
               etiqueta="Total"
               valor=""
@@ -125,7 +178,7 @@ export function VistaConfirmacion() {
             <Link href="/catalogo">Seguir comprando</Link>
           </Button>
           <Button asChild variant="outline" size="touch-lg" className="flex-1">
-            <a href={MARCA.whatsappLink} target="_blank" rel="noopener noreferrer">
+            <a href={whatsapp} target="_blank" rel="noopener noreferrer">
               <MessageCircle size={17} aria-hidden />
               Escribir por WhatsApp
             </a>

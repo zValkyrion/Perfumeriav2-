@@ -89,6 +89,18 @@ export function ResumenPedido({
           </dd>
         </div>
 
+        {/* La comisión del cobro en destino se enseña aparte y con su nombre.
+            Sumarla callada al total hace que el checkout cobre $400 más que el
+            carrito sin que nadie sepa de dónde salieron. */}
+        {resumen.comision > 0 ? (
+          <div className="flex justify-between">
+            <dt className="text-fg-muted">Servicio de cobro en destino</dt>
+            <dd>
+              <Precio valor={resumen.comision} />
+            </dd>
+          </div>
+        ) : null}
+
         <div className="border-border-soft flex items-baseline justify-between border-t pt-3 text-lg font-medium">
           <dt>Total</dt>
           <dd>
@@ -97,7 +109,11 @@ export function ResumenPedido({
         </div>
       </dl>
 
-      {msi ? (
+      {/* El gancho de meses sin intereses se calla cuando se paga contra
+          entrega: ese pedido se liquida en efectivo al repartidor, y ofrecer
+          mensualidades sobre una cifra que nadie va a diferir es prometer algo
+          que en ese camino no existe. La comisión es lo que distingue ese caso. */}
+      {msi && resumen.comision === 0 ? (
         <p className="text-fg-muted mt-2 text-[13px]">
           o {msi.plazo} pagos de{" "}
           <span className="text-gold-light">

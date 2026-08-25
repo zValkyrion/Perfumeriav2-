@@ -180,6 +180,14 @@ export default $config({
         NEXT_PUBLIC_API: api.url,
         NEXT_PUBLIC_COGNITO_CLIENTE: clienteWeb.id,
         NEXT_PUBLIC_COGNITO_REGION: "us-east-1",
+        // Ajustes de la tienda que no son infraestructura: el pixel de Meta, el
+        // enlace de cobro de Clip y el webhook que avisa de cada pedido. Llegan
+        // del entorno del despliegue —variables del repositorio en GitHub— y no
+        // se escriben aquí porque cambian sin que cambie la nube. Vacíos, la
+        // tienda funciona igual y simplemente no usa esa pieza.
+        NEXT_PUBLIC_META_PIXEL: process.env.NEXT_PUBLIC_META_PIXEL ?? "",
+        NEXT_PUBLIC_CLIP_LINK: process.env.NEXT_PUBLIC_CLIP_LINK ?? "",
+        NEXT_PUBLIC_WEBHOOK_PEDIDOS: process.env.NEXT_PUBLIC_WEBHOOK_PEDIDOS ?? "",
       },
     });
 

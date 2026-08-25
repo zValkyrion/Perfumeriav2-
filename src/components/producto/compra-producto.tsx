@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Heart, PackageCheck, RotateCcw, Truck } from "lucide-react";
+import { Eye, Heart, PackageCheck, RotateCcw, Truck, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { NumeroAnimado } from "@/components/comunes/numero-animado";
@@ -10,6 +10,7 @@ import { Precio, PrecioAnterior, Descuento } from "@/components/comunes/precio";
 import { Stepper } from "@/components/carrito/stepper";
 import { MARCA } from "@/data/contenido";
 import { precio as fmt, precioPorMl } from "@/lib/format";
+import { pixel } from "@/lib/pixel";
 import { ESCALONES, escalonPara, mejorPlazo, precioUnitario, siguienteEscalon } from "@/lib/volumen";
 import { useTienda } from "@/store/tienda";
 import type { Producto } from "@/types";
@@ -35,6 +36,13 @@ export function CompraProducto({ producto }: { producto: Producto }) {
   const modoMayoreo = useTienda((s) => s.modoMayoreo);
   const favorito = useTienda((s) => s.favoritos.includes(producto.id));
   const alternarFavorito = useTienda((s) => s.alternarFavorito);
+  const expres = useTienda((s) => s.expres);
+  const pedirExpres = useTienda((s) => s.pedirExpres);
+  const hidratado = useTienda((s) => s.hidratado);
+  // Hasta que `persist` no ha leído localStorage, el servidor y el cliente
+  // pintarían cosas distintas y React se queja. Sin esto, el botón exprés
+  // provoca un error de hidratación en cada ficha.
+  const hayExpres = hidratado && expres !== null;
 
   const elegible = producto.esMayoreoElegible;
   const escalon = elegible ? escalonPara(cantidad) : ESCALONES[0]!;
@@ -50,6 +58,23 @@ export function CompraProducto({ producto }: { producto: Producto }) {
     : 0;
   const msi = mejorPlazo(unitario * cantidad);
 
+  /**
+   * `ViewContent` para el pixel: quién miró qué ficha y por cuánto.
+   *
+   * Depende del producto y no de la presentación elegida: Meta agrupa por
+   * artículo, y mandar un evento por cada clic en «100 ml» inflaría las vistas
+   * de contenido hasta volver inútil el costo por resultado.
+   */
+  useEffect(() => {
+    pixel("ViewContent", {
+      content_ids: [producto.id],
+      content_name: producto.nombre,
+      content_type: "product",
+      currency: "MXN",
+      value: inicial.precio,
+    });
+  }, [producto.id, producto.nombre, inicial.precio]);
+
   // El CTA sticky de móvil aparece solo cuando el botón real sale de pantalla.
   useEffect(() => {
     const nodo = sentinela.current;
@@ -62,6 +87,50 @@ export function CompraProducto({ producto }: { producto: Producto }) {
     return () => obs.disconnect();
   }, []);
 
+  function avisarPixelCarrito() {
+    pixel("AddToCart", {
+      content_ids: [producto.id],
+      content_name: producto.nombre,
+      content_type: "product",
+      contents: [
+        { id: producto.id, quantity: cantidad, item_price: unitario },
+      ],
+      currency: "MXN",
+      value: unitario * cantidad,
+      num_items: cantidad,
+    });
+  }
+
+  /**
+   * Comprar ahora: al checkout sin pasar por el carrito.
+   *
+   * Suma la pieza al carrito igual que el otro botón —no lo sustituye— porque
+   * quien ya tenía frascos dentro no espera perderlos por pulsar aquí, y porque
+   * el descuento por volumen se calcula sobre el pedido entero: vaciar el
+   * carrito para «comprar solo esto» le subiría el precio a las demás piezas.
+   */
+  function comprarAhora() {
+    agregar(producto.id, presentacion.ml, cantidad);
+    avisarPixelCarrito();
+    router.push("/checkout");
+  }
+
+  /**
+   * Compra exprés: del frasco a revisar el pedido, en un toque.
+   *
+   * Solo aparece cuando ya hay una compra anterior en este navegador, porque lo
+   * que salta son los pasos cuya respuesta ya se conoce: dirección, entrega y
+   * forma de pago. **No salta la confirmación.** Un botón que cobra sin enseñar
+   * antes el total no es rapidez, es un cargo sorpresa — y menos aún cuando el
+   * contra entrega suma $400 al pedido.
+   */
+  function comprarExpres() {
+    agregar(producto.id, presentacion.ml, cantidad);
+    avisarPixelCarrito();
+    pedirExpres();
+    router.push("/checkout");
+  }
+
   function alCarrito() {
     const yaEnCarrito =
       useTienda
@@ -73,6 +142,7 @@ export function CompraProducto({ producto }: { producto: Producto }) {
 
     agregar(producto.id, presentacion.ml, cantidad);
     abrirDrawer();
+    avisarPixelCarrito();
 
     // Si el stock recorta lo que se pidió hay que decirlo. Un "agregado" que
     // añade menos de lo que dice se descubre al pagar, que es el peor momento.
@@ -109,13 +179,16 @@ export function CompraProducto({ producto }: { producto: Producto }) {
         </p>
       </div>
 
-      {/* 3 · Presentaciones */}
+      {/* 3 · Presentaciones, en rejilla de cajas iguales.
+          Es el selector de talla de una tienda de tenis, y funciona por lo
+          mismo: todas las opciones ocupan lo mismo y se comparan de un vistazo,
+          en vez de píldoras de anchos distintos donde el ojo salta. */}
       {producto.presentaciones.length > 1 ? (
         <fieldset className="mb-6">
           <legend className="text-fg-muted mb-2.5 text-sm">
             Elige tu presentación
           </legend>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {producto.presentaciones.map((p) => (
               <button
                 key={p.ml}
@@ -124,7 +197,10 @@ export function CompraProducto({ producto }: { producto: Producto }) {
                 aria-pressed={p.ml === ml}
                 disabled={p.stock === 0}
                 className={cn(
-                  "min-h-11 rounded-full border px-4 py-2 text-left transition-colors disabled:opacity-40",
+                  "min-h-14 rounded-md border px-2 py-2 text-center transition-colors",
+                  // Lo agotado se tacha en vez de solo apagarse: una caja
+                  // pálida se lee como «no seleccionada», no como «no hay».
+                  p.stock === 0 && "text-fg-subtle border-border-soft line-through",
                   p.ml === ml
                     ? "border-gold bg-gold-muted"
                     : "border-border-strong hover:border-fg-subtle",
@@ -323,35 +399,61 @@ export function CompraProducto({ producto }: { producto: Producto }) {
         >
           <Heart size={18} aria-hidden className={cn(favorito && "fill-gold text-gold")} />
         </button>
-        {presentacion.stock <= 15 ? (
+        {/* Mismo umbral que la tarjeta del catálogo: el aviso de escasez no
+            puede aparecer en un sitio y faltar en el otro para la misma pieza. */}
+        {presentacion.stock <= 19 ? (
           <p className="text-danger text-[13px]">
             Solo quedan {presentacion.stock}
           </p>
         ) : null}
       </div>
 
+      {/* Comprar ahora manda, agregar al carrito acompaña.
+          El orden importa: quien entra a una ficha desde un anuncio viene a
+          llevarse ese frasco, no a seguir paseando. Dejar el botón que lleva a
+          pagar en segundo plano añade un paso —carrito, revisar, seguir— entre
+          la decisión y la compra. */}
       <div className="mt-3 space-y-2.5">
+        {hayExpres ? (
+          <Button
+            variant="gold"
+            size="touch-lg"
+            className="w-full"
+            onClick={comprarExpres}
+            disabled={presentacion.stock === 0}
+          >
+            <Zap size={17} aria-hidden />
+            {presentacion.stock === 0
+              ? "Agotado"
+              : `Comprar en 1 toque · ${expres!.nombre.split(" ")[0]}`}
+          </Button>
+        ) : null}
+
         <Button
-          variant="gold"
+          variant={hayExpres ? "goldOutline" : "gold"}
           size="touch-lg"
+          className="w-full"
+          onClick={comprarAhora}
+          disabled={presentacion.stock === 0}
+        >
+          {presentacion.stock === 0 ? "Agotado" : "COMPRAR AHORA"}
+        </Button>
+        <Button
+          variant="outline"
+          size="touch"
           className="w-full"
           onClick={alCarrito}
           disabled={presentacion.stock === 0}
         >
-          {presentacion.stock === 0 ? "Agotado" : "Agregar al carrito"}
+          Agregar al carrito
         </Button>
-        <Button
-          variant="goldOutline"
-          size="touch"
-          className="w-full"
-          disabled={presentacion.stock === 0}
-          onClick={() => {
-            agregar(producto.id, presentacion.ml, cantidad);
-            router.push("/checkout");
-          }}
-        >
-          Comprar ahora
-        </Button>
+
+        {hayExpres ? (
+          <p className="text-fg-subtle text-center text-[11px]">
+            Un toque usa tu última dirección en {expres!.ciudad} y te lleva
+            directo a revisar. Nada se cobra sin que lo confirmes.
+          </p>
+        ) : null}
       </div>
 
       {/* 7 · Micro-garantías junto al CTA, no en el footer (§1.2.2) */}
@@ -390,13 +492,16 @@ export function CompraProducto({ producto }: { producto: Producto }) {
               <Precio valor={unitario} /> · {presentacion.ml} ml
             </p>
           </div>
+          {/* La barra fija repite el CTA principal, no el secundario: si al
+              hacer scroll ofreciera otra cosa que el botón de arriba, la
+              decisión cambiaría según dónde se pulse. */}
           <Button
             variant="gold"
             size="touch"
-            onClick={alCarrito}
+            onClick={comprarAhora}
             disabled={presentacion.stock === 0}
           >
-            Agregar
+            Comprar
           </Button>
         </div>
       </div>

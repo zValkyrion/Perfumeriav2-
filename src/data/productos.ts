@@ -39,7 +39,10 @@ function presentaciones(semilla: Semilla): Presentacion[] {
   const agotandose = semilla.badges.includes("Últimas piezas");
 
   return semilla.mls.map((ml) => {
-    const precio = precioBonito(semilla.base * (RATIO_ML[ml] ?? 1));
+    // El precio de la lista real manda sobre la curva deducida. `precioBonito`
+    // no se le aplica: redondear una cifra que alguien tecleó a propósito la
+    // convertiría en otra, y el frasco se vende al precio que dice la lista.
+    const precio = semilla.precios?.[ml] ?? precioBonito(semilla.base * (RATIO_ML[ml] ?? 1));
     const precioAnterior = semilla.rebaja
       ? precioBonito(precio / (1 - semilla.rebaja))
       : undefined;
@@ -48,9 +51,14 @@ function presentaciones(semilla: Semilla): Presentacion[] {
       ml,
       precio,
       precioAnterior,
+      // Existencias de 15 a 30 piezas mientras no haya inventario real: es lo
+      // que hay hoy en bodega y basta para que el catálogo se vea surtido sin
+      // prometer cantidades que no se pueden servir. Las marcadas como «Últimas
+      // piezas» se quedan en la parte baja de ese mismo rango, porque una
+      // etiqueta de escasez sobre 30 frascos es simplemente falsa.
       stock: agotandose
-        ? randEntero(`${semilla.slug}-${ml}-stock`, 3, 9)
-        : randEntero(`${semilla.slug}-${ml}-stock`, 6, 90),
+        ? randEntero(`${semilla.slug}-${ml}-stock`, 15, 19)
+        : randEntero(`${semilla.slug}-${ml}-stock`, 15, 30),
       sku: sku(semilla, ml),
     };
   });

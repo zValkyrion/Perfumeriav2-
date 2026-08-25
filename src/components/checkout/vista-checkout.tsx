@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Banknote,
   Building2,
   Check,
   ChevronLeft,
   CreditCard,
   HandCoins,
-  Lock,
-  Store,
+  MessageCircle,
+  Zap,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,28 +24,73 @@ import { Contenedor } from "@/components/comunes/layout";
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio } from "@/components/comunes/precio";
 import { ResumenPedido } from "@/components/carrito/resumen-pedido";
-import { CP_CONOCIDOS, CP_CONTRA_ENTREGA, OPCIONES_ENVIO } from "@/data/contenido";
+import { CP_CONOCIDOS, OPCIONES_ENVIO } from "@/data/contenido";
+import {
+  CLIP_LINK,
+  COMISION_CONTRA_ENTREGA,
+  DATOS_BANCARIOS,
+  HAY_DATOS_BANCARIOS,
+  METODOS,
+  TOPE_CONTRA_ENTREGA,
+  comisionDe,
+  hayContraEntrega,
+  type IdPago,
+} from "@/data/pagos";
 import { resumenCarrito } from "@/lib/carrito";
 import {
   guardarPedidoRemoto,
   haySincronizacion,
   leerDireccionesRemotas,
 } from "@/lib/cuenta-remota";
+import { avisarPedido } from "@/lib/aviso-pedido";
+import { pixel } from "@/lib/pixel";
 import { useSesion } from "@/lib/sesion";
 import { precio as fmt } from "@/lib/format";
 import { mensualidad, plazosDisponibles, type PlazoMSI } from "@/lib/volumen";
-import { useTienda } from "@/store/tienda";
 import {
-  esquemaContacto,
-  esquemaTarjeta,
-  formatearTarjeta,
-  formatearTelefono,
-  formatearVencimiento,
-  type DatosContacto,
-} from "./esquemas";
+  useTienda,
+  type DatosExpres,
+  type PedidoConfirmado,
+} from "@/store/tienda";
+import { esquemaContacto, formatearTelefono, type DatosContacto } from "./esquemas";
 import { cn } from "@/lib/utils";
 
-const PASOS = ["Contacto y envío", "Envío", "Pago"] as const;
+/**
+ * En qué punto está cada sección del checkout.
+ *
+ * Las cuatro se pintan siempre: la que toca abierta, las resueltas plegadas a
+ * un renglón con enlace para volver, y las que faltan apagadas. Es lo que
+ * permite confirmar mirando el pedido entero —dirección, entrega, forma de pago
+ * y total con la comisión dentro— en vez de recordar lo que se eligió tres
+ * pantallas atrás.
+ */
+type EstadoSeccion = "abierta" | "hecha" | "pendiente";
+
+/**
+ * Los datos guardados de la compra exprés, quitando lo que no es del formulario
+ * de contacto: la opción de envío y la forma de pago viven en sus propios pasos.
+ */
+function contactoDe(datos: DatosExpres): DatosContacto {
+  return {
+    correo: datos.correo,
+    nombre: datos.nombre,
+    telefono: datos.telefono,
+    calle: datos.calle,
+    colonia: datos.colonia,
+    cp: datos.cp,
+    ciudad: datos.ciudad,
+    estado: datos.estado,
+    referencias: datos.referencias,
+  };
+}
+
+/** El icono de cada forma de pago vive aquí y no en `pagos.ts`: ese archivo es
+ *  datos, y meterle componentes lo ataría a React sin necesidad. */
+const ICONO_PAGO: Record<IdPago, typeof CreditCard> = {
+  clip: CreditCard,
+  transferencia: Building2,
+  contra: HandCoins,
+};
 
 export function VistaCheckout() {
   const router = useRouter();
@@ -56,12 +101,49 @@ export function VistaCheckout() {
 
   const sesion = useSesion();
 
-  const [paso, setPaso] = useState(0);
-  const [contacto, setContacto] = useState<DatosContacto | null>(null);
-  const [envio, setEnvio] = useState<string>("estandar");
-  const [metodo, setMetodo] = useState("tarjeta");
+  const consumirExpres = useTienda((s) => s.consumirExpres);
+  const guardarExpres = useTienda((s) => s.guardarExpres);
+  const olvidarExpres = useTienda((s) => s.olvidarExpres);
+
+  /**
+   * Entrada exprés: se viene de «Comprar en 1 toque».
+   *
+   * Se lee **en el primer render** y no en un efecto, porque de esto dependen
+   * los valores iniciales de medio formulario: escribirlos después obligaría a
+   * pintar el paso de contacto vacío y sustituirlo enseguida, que es un parpadeo
+   * y además un `setState` dentro de un efecto.
+   *
+   * Se puede leer aquí sin suscribirse porque cuando esta pantalla monta, la
+   * ficha de producto ya puso la bandera: se llega navegando, sin recargar. Si
+   * alguien entra directo a `/checkout/`, la bandera no existe —no se guarda— y
+   * el checkout arranca normal, que es justo lo que debe pasar.
+   */
+  const [inicioExpres] = useState(() => {
+    const s = useTienda.getState();
+    return s.entradaExpres && s.expres ? s.expres : null;
+  });
+
+  const [paso, setPaso] = useState(inicioExpres ? 3 : 0);
+  const [maxPaso, setMaxPaso] = useState(inicioExpres ? 3 : 0);
+  const [contacto, setContacto] = useState<DatosContacto | null>(() =>
+    inicioExpres ? contactoDe(inicioExpres) : null,
+  );
+  const [envio, setEnvio] = useState<string>(inicioExpres?.envio ?? "estandar");
+  const [metodo, setMetodo] = useState<IdPago>(inicioExpres?.metodo ?? "clip");
   const [plazo, setPlazo] = useState<PlazoMSI | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [modoExpres, setModoExpres] = useState(inicioExpres !== null);
+
+  /**
+   * La bandera vale por una sola entrada.
+   *
+   * Sin apagarla, volver atrás desde la confirmación o recargar saltaría el
+   * formulario otra vez — incluso cuando lo que la persona quiere es justamente
+   * cambiar la dirección.
+   */
+  useEffect(() => {
+    consumirExpres();
+  }, [consumirExpres]);
 
   /**
    * Trae la dirección predeterminada de la cuenta y rellena el primer paso.
@@ -74,6 +156,7 @@ export function VistaCheckout() {
    * dónde se manda el paquete y el correo es a dónde va la guía de rastreo.
    */
   useEffect(() => {
+    if (modoExpres) return;
     if (!haySincronizacion() || !sesion.perfil) return;
     const perfil = sesion.perfil;
     let vivo = true;
@@ -102,7 +185,7 @@ export function VistaCheckout() {
     return () => {
       vivo = false;
     };
-  }, [sesion.perfil]);
+  }, [sesion.perfil, modoExpres]);
 
   const resumenBase = resumenCarrito(carrito, cupon);
   const opcion = OPCIONES_ENVIO.find((o) => o.id === envio) ?? OPCIONES_ENVIO[0];
@@ -111,14 +194,71 @@ export function VistaCheckout() {
   // del carrito. Todo lo que descuenta tiene que restarse igual que allá: si
   // aquí falta un concepto, el checkout cobra más que el carrito y nadie lo ve
   // hasta que llega el cargo.
-  const total =
+  const totalSinComision =
     resumenBase.subtotal -
     resumenBase.descuento3x2 -
     resumenBase.descuentoCupon +
     costoEnvio;
 
-  const resumen = { ...resumenBase, envio: costoEnvio, total };
-  const contraEntregaOk = contacto ? CP_CONTRA_ENTREGA.has(contacto.cp) : false;
+  // El contra entrega se ofrece por debajo del tope, y se mide sobre el total
+  // *antes* de la comisión: lo que decide es cuánto vale el envío, no cuánto
+  // cuesta ir a cobrarlo.
+  const contraEntregaOk = hayContraEntrega(totalSinComision);
+  const metodoEfectivo: IdPago = metodo === "contra" && !contraEntregaOk ? "clip" : metodo;
+  const comision = comisionDe(metodoEfectivo);
+  const total = totalSinComision + comision;
+
+  const resumen = { ...resumenBase, envio: costoEnvio, comision, total };
+
+  /**
+   * Una sección es «hecha» si ya se respondió alguna vez, no solo si queda por
+   * encima de la abierta.
+   *
+   * Es lo que hace que «Cambiar» sirva de algo: al volver al primer bloque para
+   * corregir una calle, la entrega y el pago siguen resueltos y a la vista, y se
+   * salta directo a confirmar. Midiéndolo contra la sección abierta, corregir un
+   * dato apagaba los tres bloques siguientes y obligaba a recorrer el checkout
+   * entero otra vez — que es justo el paseo que la página de una sola pantalla
+   * venía a quitar.
+   */
+  const estadoDe = (i: number): EstadoSeccion =>
+    paso === i ? "abierta" : i <= maxPaso ? "hecha" : "pendiente";
+
+  /** Abre una sección y recuerda hasta dónde se ha llegado. */
+  function irA(n: number) {
+    setPaso(n);
+    setMaxPaso((m) => Math.max(m, n));
+  }
+
+  const elegido = METODOS.find((m) => m.id === metodoEfectivo) ?? METODOS[0]!;
+  // El plazo entra en la etiqueta porque a la hora de cobrar cambia lo que hay
+  // que hacer: no es lo mismo un cargo único que doce mensualidades.
+  const etiquetaPago =
+    metodoEfectivo === "clip" && plazo
+      ? `Clip · ${plazo} meses sin intereses`
+      : elegido.etiqueta;
+
+  /**
+   * `InitiateCheckout` para el pixel de Meta: el evento con el que la campaña
+   * aprende a quién le sirve enseñarle anuncios. Se manda una sola vez por
+   * visita a esta pantalla, cuando el carrito ya se leyó de `localStorage` —
+   * antes de eso el valor sería cero y ensuciaría la señal.
+   */
+  const avisado = useRef(false);
+  useEffect(() => {
+    if (!hidratado || avisado.current || carrito.length === 0) return;
+    avisado.current = true;
+    pixel("InitiateCheckout", {
+      currency: "MXN",
+      value: totalSinComision,
+      num_items: resumenBase.piezasTotales,
+      content_ids: carrito.map((i) => i.productoId),
+      content_type: "product",
+    });
+    // Solo depende de la hidratación: es un disparo único, no un seguimiento
+    // del total mientras la persona cambia de envío.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hidratado]);
 
   if (!hidratado) {
     return (
@@ -151,6 +291,28 @@ export function VistaCheckout() {
     ).padStart(5, "0")}`;
     const fecha = new Date().toISOString().slice(0, 10);
 
+    const pedido: PedidoConfirmado = {
+      folio,
+      fecha,
+      correo: contacto.correo,
+      nombre: contacto.nombre,
+      telefono: contacto.telefono,
+      calle: contacto.calle,
+      colonia: contacto.colonia,
+      cp: contacto.cp,
+      ciudad: contacto.ciudad,
+      estado: contacto.estado,
+      referencias: contacto.referencias,
+      envio: opcion.nombre,
+      diasEntrega: opcion.tiempo,
+      metodoPago,
+      metodoId: metodoEfectivo,
+      comision,
+      total,
+      piezas: resumenBase.piezasTotales,
+      items: carrito,
+    };
+
     // Queda en la cuenta para que aparezca en /cuenta desde cualquier aparato.
     // Sin sesión —o sin red— falla en silencio y el pedido sigue existiendo en
     // esta pestaña: cortar la confirmación por no haber podido guardar la copia
@@ -164,20 +326,45 @@ export function VistaCheckout() {
       items: carrito,
     }).catch(() => {});
 
-    confirmarPedido({
-      folio,
-      fecha,
+    // El aviso a la tienda: si hay webhook configurado, sale ahora mismo con
+    // los datos de contacto. Si no, queda el WhatsApp de la pantalla de
+    // gracias, que es el camino que siempre funciona.
+    avisarPedido(pedido);
+
+    // Y queda listo el «Comprar en 1 toque» de la próxima visita. Se guarda al
+    // confirmar y no al escribir el formulario: unos datos a medio teclear, o
+    // los de un pedido que se abandonó, no son la dirección a la que esta
+    // persona quiere que le llegue lo siguiente.
+    guardarExpres({
       correo: contacto.correo,
       nombre: contacto.nombre,
+      telefono: contacto.telefono,
+      calle: contacto.calle,
+      colonia: contacto.colonia,
+      cp: contacto.cp,
       ciudad: contacto.ciudad,
       estado: contacto.estado,
-      envio: opcion.nombre,
-      diasEntrega: opcion.tiempo,
-      metodoPago,
-      total,
-      piezas: resumenBase.piezasTotales,
-      items: carrito,
+      referencias: contacto.referencias,
+      envio,
+      metodo: metodoEfectivo,
     });
+
+    pixel("Purchase", {
+      currency: "MXN",
+      value: total,
+      num_items: resumenBase.piezasTotales,
+      content_ids: carrito.map((i) => i.productoId),
+      content_type: "product",
+    });
+
+    confirmarPedido(pedido);
+
+    // El cobro con Clip vive fuera de la tienda. Se abre en otra pestaña —no se
+    // sustituye esta— para que el comprador vuelva a su comprobante en cuanto
+    // termine de pagar, en vez de perderlo al usar el botón de atrás.
+    if (metodoEfectivo === "clip" && CLIP_LINK) {
+      window.open(CLIP_LINK, "_blank", "noopener,noreferrer");
+    }
 
     router.push("/checkout/confirmacion");
   }
@@ -197,58 +384,64 @@ export function VistaCheckout() {
         </Link>
       </div>
 
-      {/* Stepper visual */}
-      <ol className="mb-8 flex items-center gap-2 lg:gap-4">
-        {PASOS.map((nombre, i) => {
-          const hecho = i < paso;
-          const activo = i === paso;
-          return (
-            <li key={nombre} className="flex flex-1 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => i < paso && setPaso(i)}
-                disabled={i > paso}
-                className={cn(
-                  "flex items-center gap-2 text-left",
-                  i < paso && "cursor-pointer",
-                )}
-              >
-                <span
-                  className={cn(
-                    "grid size-8 shrink-0 place-items-center rounded-full border text-xs font-medium transition-colors",
-                    hecho && "bg-gold-gradient text-bg border-transparent",
-                    activo && "border-gold text-gold-light",
-                    !hecho && !activo && "border-border-strong text-fg-subtle",
-                  )}
-                >
-                  {hecho ? <Check size={14} aria-hidden /> : i + 1}
-                </span>
-                <span
-                  className={cn(
-                    "hidden text-sm sm:block",
-                    activo ? "text-fg" : "text-fg-subtle",
-                  )}
-                >
-                  {nombre}
-                </span>
-              </button>
-              {i < PASOS.length - 1 ? (
-                <span
-                  aria-hidden
-                  className={cn(
-                    "h-px flex-1",
-                    hecho ? "bg-gold/50" : "bg-border-soft",
-                  )}
-                />
-              ) : null}
-            </li>
-          );
-        })}
-      </ol>
+      {/* Aviso de la compra exprés, con su salida.
+          Saltarse tres formularios está muy bien hasta el día que el pedido va
+          a otra dirección. Sin una forma visible de decir «estos datos no», la
+          rapidez se convierte en una trampa: el enlace lo borra todo y devuelve
+          al formulario en blanco. */}
+      {modoExpres ? (
+        <div className="border-gold/35 bg-gold-muted mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md border px-4 py-3">
+          <p className="flex items-center gap-2 text-sm">
+            <Zap size={15} className="text-gold shrink-0" aria-hidden />
+            Compra exprés: usamos los datos de tu última compra.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              olvidarExpres();
+              setModoExpres(false);
+              setContacto(null);
+              setPaso(0);
+              // También el recorrido: si no, las secciones de entrega y pago
+              // seguirían plegadas «como hechas» enseñando los datos de la
+              // compra anterior, que es justo lo que se acaba de descartar.
+              setMaxPaso(0);
+            }}
+            className="text-gold-light text-xs underline underline-offset-4"
+          >
+            Usar otros datos
+          </button>
+        </div>
+      ) : null}
 
+      {/* Las cuatro secciones a la vez, la que toca abierta y las hechas
+          plegadas en un renglón.
+          Antes era un paso por pantalla: para comprobar la dirección desde el
+          paso de pago había que retroceder dos veces y volver a avanzar. Aquí el
+          pedido entero se lee de arriba abajo y cada bloque se abre donde está,
+          que es como se revisa una compra en la práctica. */}
       <div className="lg:grid lg:grid-cols-[1fr_380px] lg:items-start lg:gap-10">
-        <div className="min-w-0">
-          {paso === 0 ? (
+        <div className="min-w-0 space-y-3">
+          <Seccion
+            n={1}
+            titulo="Contacto y envío"
+            estado={estadoDe(0)}
+            onEditar={() => setPaso(0)}
+            resumen={
+              contacto ? (
+                <>
+                  <p className="text-fg">{contacto.nombre}</p>
+                  <p>
+                    {contacto.telefono} · {contacto.correo}
+                  </p>
+                  <p>
+                    {contacto.calle}, {contacto.colonia}, {contacto.cp}{" "}
+                    {contacto.ciudad}
+                  </p>
+                </>
+              ) : null
+            }
+          >
             <PasoContacto
               // Remonta una sola vez cuando llega la dirección guardada: el
               // formulario lee sus valores iniciales al montarse, así que sin
@@ -257,34 +450,79 @@ export function VistaCheckout() {
               inicial={contacto}
               onListo={(datos) => {
                 setContacto(datos);
-                setPaso(1);
+                irA(1);
               }}
             />
-          ) : null}
+          </Seccion>
 
-          {paso === 1 ? (
+          <Seccion
+            n={2}
+            titulo="Entrega"
+            estado={estadoDe(1)}
+            onEditar={() => setPaso(1)}
+            resumen={
+              <p>
+                <span className="text-fg">{opcion.nombre}</span> · {opcion.tiempo}{" "}
+                ·{" "}
+                {costoEnvio === 0 ? (
+                  <span className="text-success">gratis</span>
+                ) : (
+                  fmt(costoEnvio)
+                )}
+              </p>
+            }
+          >
             <PasoEnvio
               valor={envio}
               onCambio={setEnvio}
               envioGratis={resumenBase.envioGratis}
               onAtras={() => setPaso(0)}
-              onSiguiente={() => setPaso(2)}
+              onSiguiente={() => irA(2)}
             />
-          ) : null}
+          </Seccion>
 
-          {paso === 2 ? (
+          <Seccion
+            n={3}
+            titulo="Pago"
+            estado={estadoDe(2)}
+            onEditar={() => setPaso(2)}
+            resumen={
+              <p>
+                <span className="text-fg">{etiquetaPago}</span>
+                {comision > 0 ? ` · incluye ${fmt(comision)} de cobro en destino` : ""}
+              </p>
+            }
+          >
             <PasoPago
-              metodo={metodo}
+              metodo={metodoEfectivo}
               onMetodo={setMetodo}
               plazo={plazo}
               onPlazo={setPlazo}
-              total={total}
+              total={totalSinComision}
               contraEntregaOk={contraEntregaOk}
-              enviando={enviando}
               onAtras={() => setPaso(1)}
-              onFinalizar={finalizar}
+              onSiguiente={() => {
+                pixel("AddPaymentInfo", { currency: "MXN", value: total });
+                irA(3);
+              }}
             />
-          ) : null}
+          </Seccion>
+
+          <Seccion n={4} titulo="Revisar y confirmar" estado={estadoDe(3)}>
+            {contacto ? (
+              <PasoConfirmar
+                telefono={contacto.telefono}
+                metodo={metodoEfectivo}
+                etiqueta={etiquetaPago}
+                plazo={plazo}
+                comision={comision}
+                total={total}
+                enviando={enviando}
+                onAtras={() => setPaso(2)}
+                onFinalizar={finalizar}
+              />
+            ) : null}
+          </Seccion>
         </div>
 
         <div className="mt-8 lg:sticky lg:top-24 lg:mt-0">
@@ -295,6 +533,84 @@ export function VistaCheckout() {
         </div>
       </div>
     </Contenedor>
+  );
+}
+
+/**
+ * Una sección del checkout: abierta, ya resuelta o todavía por llegar.
+ *
+ * Las resueltas se pliegan a su resumen con un enlace para volver. Las que
+ * faltan se enseñan apagadas y sin contenido: saber cuánto queda es la mitad de
+ * lo que un formulario largo tiene que comunicar, y una sección que aparece de
+ * la nada al terminar la anterior no lo dice.
+ */
+function Seccion({
+  n,
+  titulo,
+  estado,
+  resumen,
+  onEditar,
+  children,
+}: {
+  n: number;
+  titulo: string;
+  estado: EstadoSeccion;
+  resumen?: React.ReactNode;
+  onEditar?: () => void;
+  children: React.ReactNode;
+}) {
+  const abierta = estado === "abierta";
+  const hecha = estado === "hecha";
+
+  return (
+    <section
+      aria-current={abierta ? "step" : undefined}
+      className={cn(
+        "rounded-lg border transition-colors",
+        abierta
+          ? "border-border-strong bg-surface"
+          : "border-border-soft",
+        estado === "pendiente" && "opacity-55",
+      )}
+    >
+      <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+        <span
+          className={cn(
+            "grid size-7 shrink-0 place-items-center rounded-full border text-xs font-medium",
+            hecha && "bg-gold-gradient text-bg border-transparent",
+            abierta && "border-gold text-gold-light",
+            estado === "pendiente" && "border-border-strong text-fg-subtle",
+          )}
+        >
+          {hecha ? <Check size={13} aria-hidden /> : n}
+        </span>
+
+        <h2 className={cn("flex-1 text-[15px]", abierta ? "text-fg" : "text-fg-muted")}>
+          {titulo}
+        </h2>
+
+        {hecha && onEditar ? (
+          <button
+            type="button"
+            onClick={onEditar}
+            className="text-gold-light inline-flex items-center gap-1 text-xs underline underline-offset-4"
+          >
+            <Pencil size={12} aria-hidden />
+            Cambiar
+          </button>
+        ) : null}
+      </div>
+
+      {hecha && resumen ? (
+        <div className="text-fg-muted border-border-soft border-t px-4 py-3 text-[13px] leading-relaxed sm:px-5">
+          {resumen}
+        </div>
+      ) : null}
+
+      {abierta ? (
+        <div className="border-border-soft border-t px-4 py-5 sm:px-5">{children}</div>
+      ) : null}
+    </section>
   );
 }
 
@@ -565,255 +881,262 @@ function PasoPago({
   onPlazo,
   total,
   contraEntregaOk,
-  enviando,
   onAtras,
-  onFinalizar,
+  onSiguiente,
 }: {
-  metodo: string;
-  onMetodo: (v: string) => void;
+  metodo: IdPago;
+  onMetodo: (v: IdPago) => void;
   plazo: PlazoMSI | null;
   onPlazo: (p: PlazoMSI | null) => void;
+  /** Total **sin** la comisión: es el valor del pedido lo que abre los meses. */
   total: number;
   contraEntregaOk: boolean;
-  enviando: boolean;
   onAtras: () => void;
-  onFinalizar: (metodoPago: string) => void;
+  onSiguiente: () => void;
 }) {
   const plazos = plazosDisponibles(total);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(esquemaTarjeta),
-    mode: "onBlur",
-  });
 
   return (
     <section>
       <h2 className="font-display mb-4 text-xl">¿Cómo quieres pagar?</h2>
 
-      <Tabs value={metodo} onValueChange={onMetodo}>
-        <TabsList className="mb-5 grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-5">
-          <TabsTrigger value="tarjeta" className="flex-col gap-1 py-2.5 text-xs">
-            <CreditCard size={16} aria-hidden />
-            Tarjeta
-          </TabsTrigger>
-          <TabsTrigger value="msi" className="flex-col gap-1 py-2.5 text-xs">
-            <Banknote size={16} aria-hidden />
-            Meses
-          </TabsTrigger>
-          <TabsTrigger value="transferencia" className="flex-col gap-1 py-2.5 text-xs">
-            <Building2 size={16} aria-hidden />
-            Transfer.
-          </TabsTrigger>
-          <TabsTrigger value="oxxo" className="flex-col gap-1 py-2.5 text-xs">
-            <Store size={16} aria-hidden />
-            OXXO
-          </TabsTrigger>
-          <TabsTrigger value="contra" className="flex-col gap-1 py-2.5 text-xs">
-            <HandCoins size={16} aria-hidden />
-            Contra entrega
-          </TabsTrigger>
+      <Tabs value={metodo} onValueChange={(v) => onMetodo(v as IdPago)}>
+        <TabsList className="mb-5 grid h-auto w-full grid-cols-3 gap-1">
+          {METODOS.map((m) => {
+            const Icono = ICONO_PAGO[m.id];
+            // El contra entrega no se ofrece por encima del tope, y la pestaña
+            // se apaga en vez de dejar elegirlo y negarlo después: enseñar una
+            // opción que al pulsarla dice que no es peor que no enseñarla.
+            const apagada = m.id === "contra" && !contraEntregaOk;
+            return (
+              <TabsTrigger
+                key={m.id}
+                value={m.id}
+                disabled={apagada}
+                className="flex-col gap-1 py-2.5 text-xs"
+              >
+                <Icono size={16} aria-hidden />
+                {m.nombre}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
-        <TabsContent value="tarjeta">
-          <form
-            onSubmit={handleSubmit(() => onFinalizar("Tarjeta de crédito/débito"))}
-            className="space-y-4"
-            noValidate
-          >
-            <Campo label="Número de tarjeta" id="numero" error={errors.numero?.message}>
-              <Input
-                id="numero"
-                inputMode="numeric"
-                autoComplete="cc-number"
-                placeholder="4242 4242 4242 4242"
-                className="h-12"
-                aria-invalid={Boolean(errors.numero)}
-                {...register("numero", {
-                  onChange: (e) => {
-                    e.target.value = formatearTarjeta(e.target.value);
-                  },
-                })}
-              />
-            </Campo>
+        <TabsContent value="clip">
+          <InfoPago
+            titulo="Clip · crédito, débito y efectivo"
+            texto={
+              CLIP_LINK
+                ? "Al confirmar te llevamos a la pantalla segura de Clip. Puedes pagar con tarjeta de crédito o débito, o en efectivo en tiendas afiliadas. Tu pedido queda apartado mientras completas el pago."
+                : "Aceptamos crédito, débito y efectivo a través de Clip. Al confirmar tu pedido te mandamos el enlace de cobro por WhatsApp al número que dejaste, y lo apartamos mientras tanto."
+            }
+          />
 
-            <Campo label="Nombre del titular" id="titular" error={errors.titular?.message}>
-              <Input
-                id="titular"
-                autoComplete="cc-name"
-                placeholder="Como aparece en la tarjeta"
-                className="h-12"
-                aria-invalid={Boolean(errors.titular)}
-                {...register("titular")}
-              />
-            </Campo>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Campo
-                label="Vencimiento"
-                id="vencimiento"
-                error={errors.vencimiento?.message}
-              >
-                <Input
-                  id="vencimiento"
-                  inputMode="numeric"
-                  autoComplete="cc-exp"
-                  placeholder="MM/AA"
-                  maxLength={5}
-                  className="h-12"
-                  aria-invalid={Boolean(errors.vencimiento)}
-                  {...register("vencimiento", {
-                    onChange: (e) => {
-                      e.target.value = formatearVencimiento(e.target.value);
-                    },
-                  })}
-                />
-              </Campo>
-
-              <Campo label="CVV" id="cvv" error={errors.cvv?.message}>
-                <Input
-                  id="cvv"
-                  inputMode="numeric"
-                  autoComplete="cc-csc"
-                  placeholder="123"
-                  maxLength={4}
-                  className="h-12"
-                  aria-invalid={Boolean(errors.cvv)}
-                  {...register("cvv")}
-                />
-              </Campo>
-            </div>
-
-            <p className="text-fg-subtle flex items-center gap-1.5 text-[11px]">
-              <Lock size={12} aria-hidden />
-              Demostración: no se procesa ningún cobro ni se guarda ningún dato.
-            </p>
-
-            <BotonesPago
-              enviando={enviando}
-              onAtras={onAtras}
-              etiqueta={`Pagar ${fmt(total)} MXN`}
-              tipo="submit"
-            />
-          </form>
-        </TabsContent>
-
-        <TabsContent value="msi">
-          {plazos.length === 0 ? (
-            <p className="border-border-soft text-fg-muted rounded-md border px-4 py-5 text-sm">
-              Los meses sin intereses arrancan desde $ 1,200.00 MXN. Agrega una
-              pieza más y se activan.
-            </p>
-          ) : (
+          {plazos.length > 0 ? (
             <>
               <p className="text-fg-muted mb-3 text-sm">
-                Elige tu plazo. Sin intereses con tarjetas participantes.
+                Tu compra alcanza meses sin intereses con tarjetas participantes.
+                Elige un plazo si quieres diferirla.
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
-                {plazos.map((p) => {
-                  const pago = mensualidad(total, p)!;
-                  return (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => onPlazo(p)}
-                      aria-pressed={plazo === p}
-                      className={cn(
-                        "rounded-md border px-4 py-3 text-left transition-colors",
-                        plazo === p
-                          ? "border-gold bg-gold-muted"
-                          : "border-border-soft hover:border-border-strong",
-                      )}
-                    >
-                      <span className="block text-sm font-medium">
-                        {p} meses sin intereses
-                      </span>
-                      <span
-                        data-precio
-                        className="text-gold-light block text-lg"
-                      >
-                        {fmt(pago)}
-                        <span className="text-fg-subtle text-xs"> / mes</span>
-                      </span>
-                    </button>
-                  );
-                })}
+                <BotonPlazo
+                  activo={plazo === null}
+                  titulo="Un solo pago"
+                  cifra={fmt(total)}
+                  nota="Hoy"
+                  onClick={() => onPlazo(null)}
+                />
+                {plazos.map((p) => (
+                  <BotonPlazo
+                    key={p}
+                    activo={plazo === p}
+                    titulo={`${p} meses sin intereses`}
+                    cifra={fmt(mensualidad(total, p)!)}
+                    nota="/ mes"
+                    onClick={() => onPlazo(p)}
+                  />
+                ))}
               </div>
             </>
+          ) : (
+            <p className="text-fg-subtle text-[13px]">
+              Los meses sin intereses arrancan desde {fmt(1200)} MXN.
+            </p>
           )}
-
-          <div className="mt-6">
-            <BotonesPago
-              enviando={enviando}
-              onAtras={onAtras}
-              deshabilitado={plazos.length > 0 && plazo === null}
-              etiqueta={
-                plazo
-                  ? `Pagar en ${plazo} meses de ${fmt(mensualidad(total, plazo)!)}`
-                  : "Elige un plazo"
-              }
-              onClick={() => onFinalizar(`${plazo} meses sin intereses`)}
-            />
-          </div>
         </TabsContent>
 
         <TabsContent value="transferencia">
           <InfoPago
-            titulo="Transferencia SPEI"
-            texto="Al confirmar te mandamos por correo y WhatsApp la CLABE y el monto exacto. Apartamos tu pedido 24 horas y lo enviamos en cuanto entra el pago."
+            titulo="Depósito o transferencia"
+            texto={
+              HAY_DATOS_BANCARIOS
+                ? `Transfiere por SPEI o deposita en ventanilla a la cuenta de ${DATOS_BANCARIOS.titular} en ${DATOS_BANCARIOS.banco}. Al confirmar te mandamos la CLABE y el monto exacto por WhatsApp, y apartamos tu pedido 24 horas.`
+                : "Al confirmar te mandamos por WhatsApp la CLABE, el nombre del titular y el monto exacto. Apartamos tu pedido 24 horas y lo enviamos en cuanto entra el pago; solo hay que mandarnos el comprobante por el mismo chat."
+            }
           />
-          <BotonesPago
-            enviando={enviando}
-            onAtras={onAtras}
-            etiqueta="Confirmar pedido"
-            onClick={() => onFinalizar("Transferencia SPEI")}
-          />
-        </TabsContent>
-
-        <TabsContent value="oxxo">
-          <InfoPago
-            titulo="Efectivo en OXXO"
-            texto="Te generamos un código de barras con vigencia de 48 horas. Puedes pagarlo en cualquier OXXO del país; el pedido sale al día hábil siguiente de tu pago."
-          />
-          <BotonesPago
-            enviando={enviando}
-            onAtras={onAtras}
-            etiqueta="Generar código OXXO"
-            onClick={() => onFinalizar("Efectivo en OXXO")}
-          />
+          {HAY_DATOS_BANCARIOS ? (
+            <dl className="border-border-soft mb-5 grid gap-2 rounded-md border px-4 py-4 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-fg-muted">Banco</dt>
+                <dd>{DATOS_BANCARIOS.banco}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-fg-muted">Titular</dt>
+                <dd className="text-right">{DATOS_BANCARIOS.titular}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-fg-muted">CLABE</dt>
+                <dd data-precio className="text-gold-light">
+                  {DATOS_BANCARIOS.clabe}
+                </dd>
+              </div>
+            </dl>
+          ) : null}
         </TabsContent>
 
         <TabsContent value="contra">
-          {contraEntregaOk ? (
-            <InfoPago
-              titulo="Pago contra entrega disponible en tu zona"
-              texto="Pagas en efectivo al repartidor cuando recibas el paquete. Disponible para pedidos de hasta $ 3,000.00 MXN en tu código postal."
-            />
-          ) : (
-            <div className="border-border-soft mb-5 rounded-md border px-4 py-4">
-              <p className="mb-1 text-sm font-medium">
-                No disponible en tu código postal
-              </p>
-              <p className="text-fg-muted text-sm leading-relaxed">
-                El pago contra entrega opera en zonas metropolitanas de León,
-                Guadalajara, CDMX, Monterrey, Puebla y Querétaro. Elige otro
-                método para continuar.
-              </p>
-            </div>
-          )}
-          <BotonesPago
-            enviando={enviando}
-            onAtras={onAtras}
-            deshabilitado={!contraEntregaOk}
-            etiqueta="Confirmar pedido"
-            onClick={() => onFinalizar("Pago contra entrega")}
+          <InfoPago
+            titulo="Pago contra entrega"
+            texto={`Pagas en efectivo al repartidor cuando recibas el paquete. El servicio de cobro en destino cuesta ${fmt(
+              COMISION_CONTRA_ENTREGA,
+            )} y se suma al total; disponible en pedidos menores a ${fmt(
+              TOPE_CONTRA_ENTREGA,
+            )} MXN.`}
           />
+          <p className="text-fg-subtle mb-5 text-[13px]">
+            Te confirmamos por WhatsApp el día de entrega para que alguien pueda
+            recibir y pagar.
+          </p>
         </TabsContent>
       </Tabs>
+
+      {!contraEntregaOk ? (
+        <p className="text-fg-subtle mb-1 text-[12px]">
+          El pago contra entrega se ofrece en pedidos menores a{" "}
+          {fmt(TOPE_CONTRA_ENTREGA)} MXN. Para montos mayores lo acordamos por
+          WhatsApp.
+        </p>
+      ) : null}
+
+      <BotonesPago
+        enviando={false}
+        onAtras={onAtras}
+        etiqueta="Revisar el pedido"
+        onClick={onSiguiente}
+      />
     </section>
+  );
+}
+
+/* ── Paso 4 ───────────────────────────────────────────────────────────── */
+
+/**
+ * El botón que cierra la compra.
+ *
+ * No repite la dirección ni el método: las tres secciones de arriba ya están
+ * plegadas a la vista con lo que se eligió. Repetirlo aquí obligaría a leer dos
+ * veces lo mismo y a mantener dos sitios donde el mismo dato puede quedar
+ * desfasado. Lo que sí vive aquí es el total —con la comisión ya dentro— y qué
+ * va a pasar en cuanto se pulse.
+ */
+function PasoConfirmar({
+  telefono,
+  metodo,
+  etiqueta,
+  plazo,
+  comision,
+  total,
+  enviando,
+  onAtras,
+  onFinalizar,
+}: {
+  telefono: string;
+  metodo: IdPago;
+  etiqueta: string;
+  plazo: PlazoMSI | null;
+  comision: number;
+  total: number;
+  enviando: boolean;
+  onAtras: () => void;
+  onFinalizar: (metodoPago: string) => void;
+}) {
+  const cta =
+    metodo === "clip" && CLIP_LINK
+      ? `Pagar ${fmt(total)} con Clip`
+      : metodo === "transferencia"
+        ? "Confirmar y recibir la CLABE"
+        : `Confirmar pedido · ${fmt(total)}`;
+
+  return (
+    <div>
+      <div className="border-gold/35 bg-gold-muted flex items-baseline justify-between rounded-md border px-4 py-3.5">
+        <span className="font-medium">Total a pagar</span>
+        <Precio valor={total} moneda className="text-gold-light text-lg" />
+      </div>
+
+      {comision > 0 ? (
+        <p className="text-fg-muted mt-2 text-[13px]">
+          Incluye {fmt(comision)} del servicio de cobro en destino.
+        </p>
+      ) : null}
+
+      {metodo === "clip" && plazo ? (
+        <p className="text-fg-muted mt-2 text-[13px]">
+          {plazo} pagos de{" "}
+          <span className="text-gold-light">
+            {fmt(mensualidad(total, plazo) ?? total / plazo)}
+          </span>{" "}
+          sin intereses, con tarjetas participantes.
+        </p>
+      ) : null}
+
+      <p className="text-fg-subtle mt-3 flex items-start gap-1.5 text-[12px]">
+        <MessageCircle size={13} aria-hidden className="mt-0.5 shrink-0" />
+        Al confirmar te escribimos por WhatsApp al {telefono} para cerrar el pago
+        y darte el día de entrega.
+      </p>
+
+      <BotonesPago
+        enviando={enviando}
+        onAtras={onAtras}
+        etiqueta={cta}
+        onClick={() => onFinalizar(etiqueta)}
+      />
+    </div>
+  );
+}
+
+function BotonPlazo({
+  activo,
+  titulo,
+  cifra,
+  nota,
+  onClick,
+}: {
+  activo: boolean;
+  titulo: string;
+  cifra: string;
+  nota: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={activo}
+      className={cn(
+        "rounded-md border px-4 py-3 text-left transition-colors",
+        activo
+          ? "border-gold bg-gold-muted"
+          : "border-border-soft hover:border-border-strong",
+      )}
+    >
+      <span className="block text-sm font-medium">{titulo}</span>
+      <span data-precio className="text-gold-light block text-lg">
+        {cifra}
+        <span className="text-fg-subtle text-xs"> {nota}</span>
+      </span>
+    </button>
   );
 }
 

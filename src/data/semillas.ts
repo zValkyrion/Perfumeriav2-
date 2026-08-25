@@ -1,3 +1,11 @@
+/**
+ * ARCHIVO GENERADO — no lo edites a mano.
+ *
+ * Sale de `catalogo/productos.csv` a través de `npm run catalogo`, y la siguiente
+ * carga se lleva por delante cualquier cambio hecho aquí. Para modificar el
+ * catálogo, edita el CSV. Si lo que hay aquí es más nuevo que el CSV, recupéralo
+ * primero con `npm run catalogo:exportar`.
+ */
 import type {
   Badge,
   Concentracion,
@@ -9,8 +17,9 @@ import type {
 
 /**
  * Semilla de producto: solo el contenido de autor. Todo lo derivable
- * —precios por presentación, stock, SKU, rating, espectadores— lo calcula
- * `construirProducto` de forma determinista a partir del slug (ver productos.ts).
+ * —stock, SKU, rating, espectadores, y el precio de las presentaciones que no
+ * traigan el suyo— lo calcula `construirProducto` de forma determinista a
+ * partir del slug (ver productos.ts).
  */
 export interface Semilla {
   slug: string;
@@ -30,6 +39,17 @@ export interface Semilla {
   /** Rebaja vigente: 0.25 pinta el precio anterior tachado y el -25%. */
   rebaja?: number;
   mls: number[];
+  /**
+   * Precio de menudeo por presentación, cuando lo hay.
+   *
+   * Sin esto, el precio de cada tamaño se deduce del de 100 ml con la curva de
+   * `RATIO_ML` — que es una aproximación razonable, pero solo eso. Una lista de
+   * precios real trae la cifra exacta de cada frasco, y esa manda: deducirla
+   * cuando existe cambiaría el precio al que se vende.
+   *
+   * Las presentaciones que no aparezcan aquí siguen deduciéndose.
+   */
+  precios?: Record<number, number>;
   badges: Badge[];
   duracion: Intensidad;
   estela: Intensidad;
@@ -40,7 +60,6 @@ export interface Semilla {
 }
 
 export const SEMILLAS: readonly Semilla[] = [
-  // ── Maison Lumière ──────────────────────────────────────────────────────
   {
     slug: "noir-absolu",
     nombre: "Noir Absolu",
@@ -53,8 +72,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Iris de Florencia", "Violeta"],
     fondo: ["Sándalo de Mysore", "Vetiver", "Almizcle blanco"],
     corta: "Iris y sándalo en su versión más seria",
-    larga:
-      "Noir Absolu es el perfume que Maison Lumière presenta cuando quiere recordar de dónde viene. Abre seco, casi severo, con pimienta negra sobre una bergamota que dura lo justo, y a los diez minutos aparece el iris: pulverulento, frío, con esa textura de raíz que solo dan los absolutos caros.\n\nEl fondo es donde se gana el nombre. Sándalo de Mysore y vetiver se sostienen sobre almizcle blanco durante ocho o nueve horas sin volverse dulces en ningún momento. Es un perfume de invierno y de noche, aunque quien lo lleva a la oficina en enero suele terminar comprando el frasco de 100 ml.",
+    larga: "Noir Absolu es el perfume que Maison Lumière presenta cuando quiere recordar de dónde viene. Abre seco, casi severo, con pimienta negra sobre una bergamota que dura lo justo, y a los diez minutos aparece el iris: pulverulento, frío, con esa textura de raíz que solo dan los absolutos caros.\n\nEl fondo es donde se gana el nombre. Sándalo de Mysore y vetiver se sostienen sobre almizcle blanco durante ocho o nueve horas sin volverse dulces en ningún momento. Es un perfume de invierno y de noche, aunque quien lo lleva a la oficina en enero suele terminar comprando el frasco de 100 ml.",
     base: 2890,
     rebaja: 0.25,
     mls: [50, 100],
@@ -78,8 +96,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Rosa de mayo", "Peonía"],
     fondo: ["Pachulí", "Ámbar gris", "Cedro"],
     corta: "Una rosa con ceniza encima, nunca dulce",
-    larga:
-      "La idea detrás de Rose Cendrée era hacer una rosa que no pidiera permiso. El litchi y la pimienta rosa de la salida engañan durante dos minutos —parece que va a ser una fragancia frutal— y enseguida entra la rosa de mayo, ancha y algo áspera, sostenida por peonía.\n\nLo que la vuelve distinta es el pachulí del fondo, dosificado con mano dura, que le da ese carácter terroso del que viene el nombre. Funciona igual de bien a las diez de la mañana que a las diez de la noche, y es de los pocos florales que aguantan el calor de mayo sin volverse empalagosos.",
+    larga: "La idea detrás de Rose Cendrée era hacer una rosa que no pidiera permiso. El litchi y la pimienta rosa de la salida engañan durante dos minutos —parece que va a ser una fragancia frutal— y enseguida entra la rosa de mayo, ancha y algo áspera, sostenida por peonía.\n\nLo que la vuelve distinta es el pachulí del fondo, dosificado con mano dura, que le da ese carácter terroso del que viene el nombre. Funciona igual de bien a las diez de la mañana que a las diez de la noche, y es de los pocos florales que aguantan el calor de mayo sin volverse empalagosos.",
     base: 2390,
     rebaja: 0.2,
     mls: [30, 50, 100],
@@ -102,8 +119,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Iris", "Lirio del valle"],
     fondo: ["Musgo de roble", "Haba tonka"],
     corta: "El iris más silencioso del catálogo",
-    larga:
-      "Iris Pâle es un ejercicio de contención. No hay salida espectacular ni estela que anuncie tu llegada: hay una mandarina verde muy corta, una nota de zanahoria que suena rara en el papel y funciona en la piel, y después iris durante horas.\n\nEs un chipre moderno, con el musgo de roble apenas insinuado y una haba tonka que redondea sin endulzar. Quien busca un perfume que lo acompañe ocho horas en una oficina sin molestar a nadie, encuentra aquí exactamente eso. Quien busca cumplidos, debería mirar Noir Absolu.",
+    larga: "Iris Pâle es un ejercicio de contención. No hay salida espectacular ni estela que anuncie tu llegada: hay una mandarina verde muy corta, una nota de zanahoria que suena rara en el papel y funciona en la piel, y después iris durante horas.\n\nEs un chipre moderno, con el musgo de roble apenas insinuado y una haba tonka que redondea sin endulzar. Quien busca un perfume que lo acompañe ocho horas en una oficina sin molestar a nadie, encuentra aquí exactamente eso. Quien busca cumplidos, debería mirar Noir Absolu.",
     base: 2190,
     mls: [50, 100],
     badges: ["Importado"],
@@ -124,8 +140,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Heliotropo", "Mimosa"],
     fondo: ["Vainilla bourbon", "Haba tonka", "Cedro"],
     corta: "Almendra y polvo de arroz: piel limpia y cara",
-    larga:
-      "Héliotrope 7 huele a piel recién lavada y a polvo de arroz. La almendra de la salida no es de mazapán sino amarga, y el heliotropo que la sigue aporta ese carácter harinoso, casi de cosmético antiguo, que divide opiniones y crea adicciones.\n\nEl fondo es un gourmand discreto: vainilla bourbon y haba tonka anclados en cedro para que no se desborden. Dura toda una jornada y proyecta poco, lo que lo convierte en el perfume que muchas clientas terminan usando a diario después de haberlo comprado para ocasiones especiales.",
+    larga: "Héliotrope 7 huele a piel recién lavada y a polvo de arroz. La almendra de la salida no es de mazapán sino amarga, y el heliotropo que la sigue aporta ese carácter harinoso, casi de cosmético antiguo, que divide opiniones y crea adicciones.\n\nEl fondo es un gourmand discreto: vainilla bourbon y haba tonka anclados en cedro para que no se desborden. Dura toda una jornada y proyecta poco, lo que lo convierte en el perfume que muchas clientas terminan usando a diario después de haberlo comprado para ocasiones especiales.",
     base: 1990,
     rebaja: 0.15,
     mls: [30, 50, 100],
@@ -136,8 +151,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2024,
     origen: "Francia",
   },
-
-  // ── Orfèvre ─────────────────────────────────────────────────────────────
   {
     slug: "cuir-fauve",
     nombre: "Cuir Fauve",
@@ -149,8 +162,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Cuero", "Ciprés"],
     fondo: ["Abedul ahumado", "Castóreo", "Vetiver"],
     corta: "Cuero curtido con humo de abedul",
-    larga:
-      "Cuir Fauve no simula el cuero: lo reconstruye. Azafrán y enebro abren con una aspereza deliberada, y en menos de cinco minutos ya estás dentro de un taller de guantería, con el abedul ahumado haciendo el trabajo pesado.\n\nEs un perfume de carácter, no de consenso. Proyecta con fuerza durante las primeras dos horas y luego se asienta en un fondo de vetiver y castóreo que aguanta hasta la noche. Recomendado para invierno y para quien ya sabe lo que quiere oler; en clima cálido conviene aplicar la mitad.",
+    larga: "Cuir Fauve no simula el cuero: lo reconstruye. Azafrán y enebro abren con una aspereza deliberada, y en menos de cinco minutos ya estás dentro de un taller de guantería, con el abedul ahumado haciendo el trabajo pesado.\n\nEs un perfume de carácter, no de consenso. Proyecta con fuerza durante las primeras dos horas y luego se asienta en un fondo de vetiver y castóreo que aguanta hasta la noche. Recomendado para invierno y para quien ya sabe lo que quiere oler; en clima cálido conviene aplicar la mitad.",
     base: 2690,
     rebaja: 0.2,
     mls: [50, 100],
@@ -173,8 +185,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Incienso", "Cuero suave"],
     fondo: ["Vetiver ahumado", "Ámbar", "Papiro"],
     corta: "Incienso y cardamomo sobre cuero suave",
-    larga:
-      "Atelier Fumé es la lectura tibia del cuero de la casa. El cardamomo y la pimienta de Sichuan de la apertura le dan un brillo especiado que Cuir Fauve no tiene, y el cuero del corazón es de gamuza, no de curtiduría.\n\nEl incienso lo recorre entero sin dominarlo y el fondo de vetiver ahumado con papiro deja una estela seca, mineral, que sobrevive a una cena larga. Es el perfume de Orfèvre que más se regala, porque gusta a casi todo el mundo sin parecer complaciente.",
+    larga: "Atelier Fumé es la lectura tibia del cuero de la casa. El cardamomo y la pimienta de Sichuan de la apertura le dan un brillo especiado que Cuir Fauve no tiene, y el cuero del corazón es de gamuza, no de curtiduría.\n\nEl incienso lo recorre entero sin dominarlo y el fondo de vetiver ahumado con papiro deja una estela seca, mineral, que sobrevive a una cena larga. Es el perfume de Orfèvre que más se regala, porque gusta a casi todo el mundo sin parecer complaciente.",
     base: 2290,
     mls: [50, 100],
     badges: ["3x2"],
@@ -195,8 +206,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Violeta", "Cuero blanco"],
     fondo: ["Musgo", "Almizcle", "Sándalo"],
     corta: "Cuero blanco y violeta, elegancia sin ruido",
-    larga:
-      "Gante Blanco recupera una tradición que Orfèvre conoce de primera mano: perfumar la piel del guante para quitarle el olor del curtido. De ahí la violeta y el neroli, que aquí no son decorativos sino funcionales.\n\nEl resultado es un chipre luminoso, con un cuero pálido que se percibe más como textura que como aroma. Dura una jornada completa, proyecta con discreción y envejece muy bien en la ropa. Es el más femenino de la casa sin renunciar a su firma.",
+    larga: "Gante Blanco recupera una tradición que Orfèvre conoce de primera mano: perfumar la piel del guante para quitarle el olor del curtido. De ahí la violeta y el neroli, que aquí no son decorativos sino funcionales.\n\nEl resultado es un chipre luminoso, con un cuero pálido que se percibe más como textura que como aroma. Dura una jornada completa, proyecta con discreción y envejece muy bien en la ropa. Es el más femenino de la casa sin renunciar a su firma.",
     base: 2090,
     rebaja: 0.15,
     mls: [30, 50, 100],
@@ -219,8 +229,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Cedro quemado", "Guayaco"],
     fondo: ["Oud ligero", "Ámbar", "Cuero"],
     corta: "Madera quemada, ámbar y una gota de oud",
-    larga:
-      "Bois Brûlé nació de un accidente de laboratorio: un lote de cedro sobrecalentado que en vez de tirarse acabó destilado. El resultado es una madera con carácter de brasa, seca y ligeramente dulce en los bordes.\n\nEl oud aparece en dosis pequeña, más como sombra que como protagonista, y el ámbar redondea el conjunto. Edición limitada y una de las piezas que más rápido rota en el catálogo; el 50 ml se agota antes que el 100 ml casi siempre.",
+    larga: "Bois Brûlé nació de un accidente de laboratorio: un lote de cedro sobrecalentado que en vez de tirarse acabó destilado. El resultado es una madera con carácter de brasa, seca y ligeramente dulce en los bordes.\n\nEl oud aparece en dosis pequeña, más como sombra que como protagonista, y el ámbar redondea el conjunto. Edición limitada y una de las piezas que más rápido rota en el catálogo; el 50 ml se agota antes que el 100 ml casi siempre.",
     base: 3190,
     mls: [50, 100],
     badges: ["Edición limitada", "Últimas piezas"],
@@ -230,8 +239,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2023,
     origen: "Francia",
   },
-
-  // ── Casa Solano ─────────────────────────────────────────────────────────
   {
     slug: "azahar-de-marzo",
     nombre: "Azahar de Marzo",
@@ -243,8 +250,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Neroli", "Petitgrain"],
     fondo: ["Almizcle blanco", "Cedro"],
     corta: "Azahar recién abierto, fresco todo el día",
-    larga:
-      "Azahar de Marzo huele exactamente a lo que promete: a finca alicantina cuando el naranjo florece. El limón de Murcia abre chispeante y el azahar entra casi de inmediato, con esa mezcla de dulzor y verde amargo que tiene la flor real.\n\nEl mérito está en el fondo. En vez de dejarlo evaporarse a los veinte minutos como hacen casi todos los cítricos baratos, Casa Solano lo ancla en petitgrain y almizcle blanco para que siga ahí cinco o seis horas después. Es su producto más vendido y el que mejor funciona en clima cálido.",
+    larga: "Azahar de Marzo huele exactamente a lo que promete: a finca alicantina cuando el naranjo florece. El limón de Murcia abre chispeante y el azahar entra casi de inmediato, con esa mezcla de dulzor y verde amargo que tiene la flor real.\n\nEl mérito está en el fondo. En vez de dejarlo evaporarse a los veinte minutos como hacen casi todos los cítricos baratos, Casa Solano lo ancla en petitgrain y almizcle blanco para que siga ahí cinco o seis horas después. Es su producto más vendido y el que mejor funciona en clima cálido.",
     base: 1290,
     rebaja: 0.2,
     mls: [50, 100, 200],
@@ -267,8 +273,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Sal marina", "Romero"],
     fondo: ["Ámbar gris", "Madera flotada"],
     corta: "Cítrico con sal: fresco sin ser genérico",
-    larga:
-      "Bergamota Salina es la respuesta de Casa Solano al acuático de supermercado. Comparte el arranque cítrico —bergamota y pomelo, generosos— pero enseguida se desvía hacia una nota salina seca, con romero, que le da un aire de costa de verdad y no de gel de baño.\n\nEl fondo de ámbar gris y madera flotada le da dos o tres horas extra de vida respecto a sus competidores directos. Es el perfume que más se recomienda para diario en zonas calurosas y el que más rota en formato de 200 ml.",
+    larga: "Bergamota Salina es la respuesta de Casa Solano al acuático de supermercado. Comparte el arranque cítrico —bergamota y pomelo, generosos— pero enseguida se desvía hacia una nota salina seca, con romero, que le da un aire de costa de verdad y no de gel de baño.\n\nEl fondo de ámbar gris y madera flotada le da dos o tres horas extra de vida respecto a sus competidores directos. Es el perfume que más se recomienda para diario en zonas calurosas y el que más rota en formato de 200 ml.",
     base: 1190,
     mls: [100, 200],
     badges: ["3x2"],
@@ -290,8 +295,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Neroli absoluto", "Jazmín"],
     fondo: ["Haba tonka", "Almizcle", "Sándalo"],
     corta: "Neroli absoluto en concentración de Eau de Parfum",
-    larga:
-      "Neroli Antiguo usa el absoluto de la propia finca, destilado en frío y madurado dos años antes de entrar en fórmula. Se nota: donde un neroli común es agudo y volátil, este es denso, casi meloso, con un jazmín detrás que le añade cuerpo.\n\nAl ser Eau de Parfum y no colonia, aguanta una jornada entera. Es el más caro de Casa Solano y el que la casa presenta cuando quiere que la tomen en serio como perfumería de autor, no solo como fabricante de cítricos accesibles.",
+    larga: "Neroli Antiguo usa el absoluto de la propia finca, destilado en frío y madurado dos años antes de entrar en fórmula. Se nota: donde un neroli común es agudo y volátil, este es denso, casi meloso, con un jazmín detrás que le añade cuerpo.\n\nAl ser Eau de Parfum y no colonia, aguanta una jornada entera. Es el más caro de Casa Solano y el que la casa presenta cuando quiere que la tomen en serio como perfumería de autor, no solo como fabricante de cítricos accesibles.",
     base: 1890,
     rebaja: 0.15,
     mls: [50, 100],
@@ -313,8 +317,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Verbena", "Albahaca"],
     fondo: ["Almizcle", "Cedro blanco"],
     corta: "Colonia de limón para los días de 35 grados",
-    larga:
-      "Limonero no pretende ser sofisticado. Es una colonia de limón, verbena y menta pensada para el calor bruto: se aplica sin miedo, refresca de verdad y se puede repetir tres veces al día sin cansar a nadie.\n\nDentro de su categoría está muy por encima del promedio, porque la albahaca del corazón le da un giro herbal que evita el efecto limpiador. Se vende sobre todo en 200 ml y es la puerta de entrada más común al catálogo de Casa Solano.",
+    larga: "Limonero no pretende ser sofisticado. Es una colonia de limón, verbena y menta pensada para el calor bruto: se aplica sin miedo, refresca de verdad y se puede repetir tres veces al día sin cansar a nadie.\n\nDentro de su categoría está muy por encima del promedio, porque la albahaca del corazón le da un giro herbal que evita el efecto limpiador. Se vende sobre todo en 200 ml y es la puerta de entrada más común al catálogo de Casa Solano.",
     base: 790,
     rebaja: 0.25,
     mls: [100, 200],
@@ -325,8 +328,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2008,
     origen: "España",
   },
-
-  // ── Atelier Nord ────────────────────────────────────────────────────────
   {
     slug: "papel-humedo",
     nombre: "Papel Húmedo",
@@ -338,8 +339,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Papel", "Iris"],
     fondo: ["Madera clara", "Almizcle", "Musgo blanco"],
     corta: "Libro abierto en una habitación fría",
-    larga:
-      "Papel Húmedo es el perfume más conceptual del catálogo y, contra todo pronóstico, uno de los que más se repiten. Los aldehídos de la salida dan esa sensación de aire limpio y frío; la pera verde apenas se asoma.\n\nEl corazón reconstruye el olor del papel —seco, ligeramente polvoso, con iris de por medio— y el fondo lo sostiene en madera clara y musgo blanco. Proyecta muy poco a propósito: es una fragancia de cercanía, para quien no quiere que su perfume entre a la sala antes que él.",
+    larga: "Papel Húmedo es el perfume más conceptual del catálogo y, contra todo pronóstico, uno de los que más se repiten. Los aldehídos de la salida dan esa sensación de aire limpio y frío; la pera verde apenas se asoma.\n\nEl corazón reconstruye el olor del papel —seco, ligeramente polvoso, con iris de por medio— y el fondo lo sostiene en madera clara y musgo blanco. Proyecta muy poco a propósito: es una fragancia de cercanía, para quien no quiere que su perfume entre a la sala antes que él.",
     base: 2490,
     mls: [50, 100],
     badges: ["Nuevo", "Exclusivo"],
@@ -360,8 +360,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Alga", "Lirio de agua"],
     fondo: ["Ámbar gris", "Almizcle", "Cedro"],
     corta: "Niebla sobre agua fría, sin dulzor",
-    larga:
-      "Bruma Báltica trabaja el acuático desde el frío, no desde el trópico. No hay coco, no hay melón, no hay ninguna de las notas que volvieron predecible a esta familia: hay aire marino, un alga apenas amarga y un lirio de agua que aporta la única suavidad de la fórmula.\n\nEl ámbar gris del fondo es lo que la separa del resto. Le da una persistencia mineral que se percibe sobre todo en la ropa, horas después. Es el acuático que se compra cuando ya se probaron todos los demás.",
+    larga: "Bruma Báltica trabaja el acuático desde el frío, no desde el trópico. No hay coco, no hay melón, no hay ninguna de las notas que volvieron predecible a esta familia: hay aire marino, un alga apenas amarga y un lirio de agua que aporta la única suavidad de la fórmula.\n\nEl ámbar gris del fondo es lo que la separa del resto. Le da una persistencia mineral que se percibe sobre todo en la ropa, horas después. Es el acuático que se compra cuando ya se probaron todos los demás.",
     base: 2290,
     rebaja: 0.15,
     mls: [50, 100],
@@ -383,8 +382,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Abedul", "Cipré blanco"],
     fondo: ["Cedro", "Almizcle", "Vetiver"],
     corta: "Madera clara escandinava, seca y limpia",
-    larga:
-      "Madera Pálida es lo que pasa cuando una casa nórdica hace un amaderado: nada de resinas oscuras ni ámbar dulce, solo madera clara, seca, con enebro arriba y vetiver abajo.\n\nEs de esos perfumes que no llaman la atención en la tienda y que se vuelven imprescindibles a las tres semanas. Funciona todo el año, combina con cualquier cosa y es la recomendación estándar de la casa para quien compra su primer perfume de nicho.",
+    larga: "Madera Pálida es lo que pasa cuando una casa nórdica hace un amaderado: nada de resinas oscuras ni ámbar dulce, solo madera clara, seca, con enebro arriba y vetiver abajo.\n\nEs de esos perfumes que no llaman la atención en la tienda y que se vuelven imprescindibles a las tres semanas. Funciona todo el año, combina con cualquier cosa y es la recomendación estándar de la casa para quien compra su primer perfume de nicho.",
     base: 2190,
     mls: [50, 100],
     badges: ["Más vendido"],
@@ -407,8 +405,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Iris", "Haba tonka"],
     fondo: ["Sándalo", "Ambroxan"],
     corta: "Cinco materias primas, cero ruido",
-    larga:
-      "Silencio 04 es la fórmula más corta de todo el catálogo: cinco materias primas y ninguna concesión. Almizcle blanco arriba, iris y haba tonka en el corazón, sándalo y ambroxan abajo. No hay salida espectacular porque no la busca.\n\nLo que consigue es una segunda piel: un aroma que a un metro de distancia casi no se identifica como perfume y que sin embargo permanece doce horas. Es la pieza favorita de los clientes que trabajan en espacios cerrados y de quienes odian los perfumes que anuncian.",
+    larga: "Silencio 04 es la fórmula más corta de todo el catálogo: cinco materias primas y ninguna concesión. Almizcle blanco arriba, iris y haba tonka en el corazón, sándalo y ambroxan abajo. No hay salida espectacular porque no la busca.\n\nLo que consigue es una segunda piel: un aroma que a un metro de distancia casi no se identifica como perfume y que sin embargo permanece doce horas. Es la pieza favorita de los clientes que trabajan en espacios cerrados y de quienes odian los perfumes que anuncian.",
     base: 2990,
     mls: [30, 50],
     badges: ["Exclusivo", "Últimas piezas"],
@@ -418,8 +415,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2021,
     origen: "Dinamarca",
   },
-
-  // ── Nuit Royale ─────────────────────────────────────────────────────────
   {
     slug: "minuit-ambre",
     nombre: "Minuit Ambré",
@@ -431,8 +426,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Ámbar", "Rosa negra"],
     fondo: ["Vainilla negra", "Benjuí", "Labdanum"],
     corta: "Ámbar denso para después de las nueve",
-    larga:
-      "Minuit Ambré es la definición de la casa. Ciruela y canela abren cálidas, casi licorosas, y a los pocos minutos entra el ámbar: espeso, resinoso, con una rosa negra que le da profundidad sin volverlo floral.\n\nEl fondo de vainilla negra, benjuí y labdanum es de los que dejan rastro en la bufanda hasta la semana siguiente. Dos toques bastan. Es el perfume que Nuit Royale vende más en noviembre y diciembre y el que más devoluciones evita, porque quien lo compra ya sabe a qué va.",
+    larga: "Minuit Ambré es la definición de la casa. Ciruela y canela abren cálidas, casi licorosas, y a los pocos minutos entra el ámbar: espeso, resinoso, con una rosa negra que le da profundidad sin volverlo floral.\n\nEl fondo de vainilla negra, benjuí y labdanum es de los que dejan rastro en la bufanda hasta la semana siguiente. Dos toques bastan. Es el perfume que Nuit Royale vende más en noviembre y diciembre y el que más devoluciones evita, porque quien lo compra ya sabe a qué va.",
     base: 2790,
     rebaja: 0.25,
     mls: [50, 100],
@@ -455,8 +449,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Tuberosa", "Jazmín sambac"],
     fondo: ["Pachulí", "Vainilla", "Ámbar"],
     corta: "Flores narcóticas sobre vainilla oscura",
-    larga:
-      "Velours Noir arranca con una frambuesa negra y azafrán que suenan a postre caro, y luego se abre en tuberosa y jazmín sambac a una concentración que la mayoría de las casas no se atrevería a firmar.\n\nEl pachulí y la vainilla del fondo lo aterrizan y le dan esa textura aterciopelada del nombre. Es un perfume de cita, de vestido negro y de invierno; en un despacho a mediodía resulta excesivo, y la casa lo advierte sin rodeos en su propia ficha.",
+    larga: "Velours Noir arranca con una frambuesa negra y azafrán que suenan a postre caro, y luego se abre en tuberosa y jazmín sambac a una concentración que la mayoría de las casas no se atrevería a firmar.\n\nEl pachulí y la vainilla del fondo lo aterrizan y le dan esa textura aterciopelada del nombre. Es un perfume de cita, de vestido negro y de invierno; en un despacho a mediodía resulta excesivo, y la casa lo advierte sin rodeos en su propia ficha.",
     base: 2590,
     rebaja: 0.2,
     mls: [30, 50, 100],
@@ -479,8 +472,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Mirra", "Cuero"],
     fondo: ["Oud", "Ámbar", "Sándalo"],
     corta: "Incienso de iglesia con oud detrás",
-    larga:
-      "Encens Royal huele a nave de catedral: incienso frío, mirra y una pimienta negra que le da filo. No es un perfume amable ni pretende serlo, y durante la primera media hora puede resultar austero.\n\nDespués se calienta. El oud y el ámbar del fondo van ganando terreno hasta convertirlo en algo casi carnal, y ahí es donde se entiende la fórmula. Doce horas de duración fácilmente. Es la pieza que la casa recomienda a quien viene del catálogo árabe y quiere algo de escuela francesa.",
+    larga: "Encens Royal huele a nave de catedral: incienso frío, mirra y una pimienta negra que le da filo. No es un perfume amable ni pretende serlo, y durante la primera media hora puede resultar austero.\n\nDespués se calienta. El oud y el ámbar del fondo van ganando terreno hasta convertirlo en algo casi carnal, y ahí es donde se entiende la fórmula. Doce horas de duración fácilmente. Es la pieza que la casa recomienda a quien viene del catálogo árabe y quiere algo de escuela francesa.",
     base: 3290,
     mls: [50, 100],
     badges: ["Exclusivo", "Importado"],
@@ -501,8 +493,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Vainilla de Madagascar", "Haba tonka"],
     fondo: ["Sándalo", "Benjuí", "Almizcle"],
     corta: "Vainilla con ron: dulce, no infantil",
-    larga:
-      "Vainilla Obscure resuelve el problema de casi todas las vainillas comerciales: el exceso de azúcar. Aquí el ron de la salida y el benjuí del fondo le dan un amargor licoroso que sostiene el dulzor y lo vuelve adulto.\n\nLa vainilla de Madagascar es la protagonista de principio a fin, envuelta en haba tonka y sándalo. Proyecta bien las primeras horas y luego se queda pegada a la piel hasta el día siguiente. Es el regalo más seguro del catálogo para quien no conoce los gustos de la otra persona.",
+    larga: "Vainilla Obscure resuelve el problema de casi todas las vainillas comerciales: el exceso de azúcar. Aquí el ron de la salida y el benjuí del fondo le dan un amargor licoroso que sostiene el dulzor y lo vuelve adulto.\n\nLa vainilla de Madagascar es la protagonista de principio a fin, envuelta en haba tonka y sándalo. Proyecta bien las primeras horas y luego se queda pegada a la piel hasta el día siguiente. Es el regalo más seguro del catálogo para quien no conoce los gustos de la otra persona.",
     base: 2190,
     rebaja: 0.2,
     mls: [30, 50, 100],
@@ -513,8 +504,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2017,
     origen: "Francia",
   },
-
-  // ── Ámbar & Co. ─────────────────────────────────────────────────────────
   {
     slug: "copal",
     nombre: "Copal",
@@ -526,8 +515,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Incienso", "Cacao"],
     fondo: ["Vainilla de Papantla", "Cedro", "Ámbar"],
     corta: "Resina de copal y cacao: identidad mexicana",
-    larga:
-      "Copal es el perfume que puso a Ámbar & Co. en el mapa. Usa resina de copal blanco de Oaxaca, la misma que se quema en ceremonia, tratada con técnica de perfumería francesa para quitarle el humo y dejarle el dulzor resinoso.\n\nEl cacao del corazón y la vainilla de Papantla del fondo completan un retrato que no se parece a nada europeo. Dura una jornada larga, proyecta con moderación y es, con diferencia, el más regalado a clientes en el extranjero.",
+    larga: "Copal es el perfume que puso a Ámbar & Co. en el mapa. Usa resina de copal blanco de Oaxaca, la misma que se quema en ceremonia, tratada con técnica de perfumería francesa para quitarle el humo y dejarle el dulzor resinoso.\n\nEl cacao del corazón y la vainilla de Papantla del fondo completan un retrato que no se parece a nada europeo. Dura una jornada larga, proyecta con moderación y es, con diferencia, el más regalado a clientes en el extranjero.",
     base: 1790,
     rebaja: 0.2,
     mls: [50, 100],
@@ -550,8 +538,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Benjuí", "Canela"],
     fondo: ["Ámbar", "Vainilla", "Almizcle"],
     corta: "Resina cálida y especia dulce para el frío",
-    larga:
-      "Benjuí de Enero se formuló para los tres meses del año en que hace frío de verdad en el altiplano. La mandarina y el clavo de la salida son casi navideños, y el benjuí del corazón aporta ese dulzor balsámico que abriga sin empalagar.\n\nEs un perfume sencillo y muy bien ejecutado, de los que se terminan rápido porque se usan sin pensarlo. El formato de 100 ml es el que más rota y el que mejor precio por mililitro ofrece de toda la casa.",
+    larga: "Benjuí de Enero se formuló para los tres meses del año en que hace frío de verdad en el altiplano. La mandarina y el clavo de la salida son casi navideños, y el benjuí del corazón aporta ese dulzor balsámico que abriga sin empalagar.\n\nEs un perfume sencillo y muy bien ejecutado, de los que se terminan rápido porque se usan sin pensarlo. El formato de 100 ml es el que más rota y el que mejor precio por mililitro ofrece de toda la casa.",
     base: 1490,
     mls: [50, 100],
     badges: ["3x2"],
@@ -573,8 +560,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Vainilla absoluta", "Heliotropo"],
     fondo: ["Haba tonka", "Sándalo", "Almizcle"],
     corta: "La vainilla mexicana, sin intermediarios",
-    larga:
-      "Vainilla de Papantla usa absoluto de vaina veracruzana comprado directamente al productor. La diferencia con una vainilla sintética se percibe en los primeros segundos: hay una nota verde, casi de hoja, que las réplicas nunca reproducen.\n\nEl heliotropo le da cuerpo polvoso y el sándalo evita que se convierta en postre. Es la pieza más cara de Ámbar & Co. y la que la casa presenta en ferias internacionales. Duración de doce horas y estela media, alta las primeras dos.",
+    larga: "Vainilla de Papantla usa absoluto de vaina veracruzana comprado directamente al productor. La diferencia con una vainilla sintética se percibe en los primeros segundos: hay una nota verde, casi de hoja, que las réplicas nunca reproducen.\n\nEl heliotropo le da cuerpo polvoso y el sándalo evita que se convierta en postre. Es la pieza más cara de Ámbar & Co. y la que la casa presenta en ferias internacionales. Duración de doce horas y estela media, alta las primeras dos.",
     base: 2290,
     rebaja: 0.15,
     mls: [30, 50, 100],
@@ -596,8 +582,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Copal negro", "Cuero"],
     fondo: ["Mezquite", "Vetiver", "Ámbar"],
     corta: "Copal negro, mezquite y cuero seco",
-    larga:
-      "Resina 1901 es la versión masculina y más áspera de Copal. El elemí y la pimienta abren resinosos, el copal negro del corazón es más ahumado que el blanco, y el mezquite del fondo aporta una nota de leña que en México se reconoce de inmediato.\n\nNo es un perfume fácil ni de oficina. Funciona de noche, en clima fresco y en cantidades moderadas. Los clientes que lo compran suelen repetir, aunque casi nunca es su primera adquisición de la casa.",
+    larga: "Resina 1901 es la versión masculina y más áspera de Copal. El elemí y la pimienta abren resinosos, el copal negro del corazón es más ahumado que el blanco, y el mezquite del fondo aporta una nota de leña que en México se reconoce de inmediato.\n\nNo es un perfume fácil ni de oficina. Funciona de noche, en clima fresco y en cantidades moderadas. Los clientes que lo compran suelen repetir, aunque casi nunca es su primera adquisición de la casa.",
     base: 1690,
     mls: [50, 100],
     badges: ["Nuevo"],
@@ -607,8 +592,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2024,
     origen: "México",
   },
-
-  // ── Séptimo Cielo ───────────────────────────────────────────────────────
   {
     slug: "praline",
     nombre: "Praliné",
@@ -620,8 +603,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Praliné", "Jazmín"],
     fondo: ["Vainilla", "Cedro", "Almizcle"],
     corta: "Almendra caramelizada con fondo amaderado",
-    larga:
-      "Praliné es el gourmand con el que Séptimo Cielo se hizo conocida entre revendedoras. La almendra caramelizada de la salida es reconocible al instante y la pera le quita el peso justo para que no arranque empalagoso.\n\nEl acierto está en el cedro del fondo, que corta el azúcar y le da una estructura que la mayoría de los gourmands de su rango de precio no tiene. Ocho horas de duración y una estela que se nota sin invadir. Es el número uno en ventas de la casa desde hace cuatro años.",
+    larga: "Praliné es el gourmand con el que Séptimo Cielo se hizo conocida entre revendedoras. La almendra caramelizada de la salida es reconocible al instante y la pera le quita el peso justo para que no arranque empalagoso.\n\nEl acierto está en el cedro del fondo, que corta el azúcar y le da una estructura que la mayoría de los gourmands de su rango de precio no tiene. Ocho horas de duración y una estela que se nota sin invadir. Es el número uno en ventas de la casa desde hace cuatro años.",
     base: 1190,
     rebaja: 0.25,
     mls: [30, 50, 100],
@@ -644,8 +626,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Piloncillo", "Cacao"],
     fondo: ["Vainilla", "Sándalo", "Haba tonka"],
     corta: "Café con piloncillo y canela, en perfume",
-    larga:
-      "Café de Olla es exactamente lo que su nombre anuncia y está resuelto con una fidelidad que sorprende: café tostado, canela y piloncillo, sin el toque químico que suele arruinar las notas de café en perfumería.\n\nEl sándalo y la haba tonka del fondo lo alejan del terreno de la bebida y lo convierten en fragancia. Es unisex de verdad —se vende casi por igual a hombres y mujeres— y uno de los favoritos para regalar en diciembre.",
+    larga: "Café de Olla es exactamente lo que su nombre anuncia y está resuelto con una fidelidad que sorprende: café tostado, canela y piloncillo, sin el toque químico que suele arruinar las notas de café en perfumería.\n\nEl sándalo y la haba tonka del fondo lo alejan del terreno de la bebida y lo convierten en fragancia. Es unisex de verdad —se vende casi por igual a hombres y mujeres— y uno de los favoritos para regalar en diciembre.",
     base: 1290,
     rebaja: 0.2,
     mls: [50, 100],
@@ -667,8 +648,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Peonía", "Rosa"],
     fondo: ["Almizcle", "Cedro", "Vainilla"],
     corta: "Frutos rojos y peonía, ligero para diario",
-    larga:
-      "Frutos del Séptimo es la puerta de entrada de la casa: fácil, alegre y muy difícil de rechazar. Frambuesa, grosella y litchi arriba, peonía y rosa en el corazón, y un fondo de almizcle que lo deja limpio.\n\nAl ser Eau de Toilette dura menos que el resto del catálogo —cinco horas largas— pero también cuesta bastante menos, lo que lo vuelve el producto estrella para revendedoras que arrancan. Es el que más se pide en lotes de 24 y 50 piezas.",
+    larga: "Frutos del Séptimo es la puerta de entrada de la casa: fácil, alegre y muy difícil de rechazar. Frambuesa, grosella y litchi arriba, peonía y rosa en el corazón, y un fondo de almizcle que lo deja limpio.\n\nAl ser Eau de Toilette dura menos que el resto del catálogo —cinco horas largas— pero también cuesta bastante menos, lo que lo vuelve el producto estrella para revendedoras que arrancan. Es el que más se pide en lotes de 24 y 50 piezas.",
     base: 890,
     rebaja: 0.25,
     mls: [50, 100],
@@ -691,8 +671,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Flor de azahar", "Coco"],
     fondo: ["Vainilla", "Benjuí", "Almizcle"],
     corta: "Caramelo tostado con azahar y coco",
-    larga:
-      "Azúcar Quemada juega en el filo del exceso y se detiene justo a tiempo. El caramelo de la salida está tostado, no fresco, y esa nota ligeramente amarga es la que sostiene toda la fórmula.\n\nEl azahar y el coco del corazón la vuelven más tropical que el resto de la línea, y el benjuí del fondo le da la persistencia que a un caramelo puro le faltaría. Es la elección habitual para noche de quien usa Praliné de día.",
+    larga: "Azúcar Quemada juega en el filo del exceso y se detiene justo a tiempo. El caramelo de la salida está tostado, no fresco, y esa nota ligeramente amarga es la que sostiene toda la fórmula.\n\nEl azahar y el coco del corazón la vuelven más tropical que el resto de la línea, y el benjuí del fondo le da la persistencia que a un caramelo puro le faltaría. Es la elección habitual para noche de quien usa Praliné de día.",
     base: 1090,
     mls: [30, 50, 100],
     badges: ["Nuevo"],
@@ -702,8 +681,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2025,
     origen: "México",
   },
-
-  // ── Kairo Parfums ───────────────────────────────────────────────────────
   {
     slug: "azafran-real",
     nombre: "Azafrán Real",
@@ -715,8 +692,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Rosa", "Cuero"],
     fondo: ["Oud", "Ámbar gris", "Sándalo"],
     corta: "Azafrán y cuero: la escuela árabe clásica",
-    larga:
-      "Azafrán Real es el planteamiento árabe sin concesiones: azafrán auténtico en la salida —esa nota metálica, casi medicinal, que reconoce quien la ha probado— sobre un corazón de rosa y cuero.\n\nEl oud del fondo es moderado para los estándares de la casa, lo que lo vuelve el más accesible de su catálogo para alguien que viene de la perfumería occidental. Doce horas en piel y bastante más en la ropa. Media pulverización es suficiente.",
+    larga: "Azafrán Real es el planteamiento árabe sin concesiones: azafrán auténtico en la salida —esa nota metálica, casi medicinal, que reconoce quien la ha probado— sobre un corazón de rosa y cuero.\n\nEl oud del fondo es moderado para los estándares de la casa, lo que lo vuelve el más accesible de su catálogo para alguien que viene de la perfumería occidental. Doce horas en piel y bastante más en la ropa. Media pulverización es suficiente.",
     base: 2990,
     rebaja: 0.2,
     mls: [50, 100],
@@ -740,8 +716,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Rosa damascena", "Azafrán"],
     fondo: ["Oud", "Ámbar", "Almizcle"],
     corta: "Rosa de Taif en concentración de parfum",
-    larga:
-      "La rosa de Taif se cosecha unas pocas semanas al año y su absoluto está entre los más caros de la perfumería. Kairo lo usa sin diluirlo en notas de relleno: aquí la rosa es enorme, mielada y ligeramente especiada por el azafrán.\n\nEl oud del fondo la ancla y le da esa dimensión oriental que la distingue de cualquier rosa francesa. Es la pieza más femenina de la casa y también la más cara. Quien la prueba en tienda rara vez sale sin ella.",
+    larga: "La rosa de Taif se cosecha unas pocas semanas al año y su absoluto está entre los más caros de la perfumería. Kairo lo usa sin diluirlo en notas de relleno: aquí la rosa es enorme, mielada y ligeramente especiada por el azafrán.\n\nEl oud del fondo la ancla y le da esa dimensión oriental que la distingue de cualquier rosa francesa. Es la pieza más femenina de la casa y también la más cara. Quien la prueba en tienda rara vez sale sin ella.",
     base: 3490,
     mls: [30, 50],
     badges: ["Exclusivo", "Importado", "Últimas piezas"],
@@ -762,8 +737,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Ámbar gris", "Incienso"],
     fondo: ["Almizcle", "Sándalo", "Vainilla"],
     corta: "Ámbar gris salino, cálido y muy persistente",
-    larga:
-      "Ámbar Gris trabaja la nota más difícil de explicar de la perfumería: ese carácter entre salino, animal y dulce que aporta el ámbar gris. Kairo lo rodea de incienso y almizcle para hacerlo legible.\n\nEl resultado es un perfume envolvente, de piel más que de aire, que casi no proyecta pero que permanece un día entero. Es el que la casa recomienda para clima cálido, porque no se vuelve pesado con el calor como sí lo hacen sus oud.",
+    larga: "Ámbar Gris trabaja la nota más difícil de explicar de la perfumería: ese carácter entre salino, animal y dulce que aporta el ámbar gris. Kairo lo rodea de incienso y almizcle para hacerlo legible.\n\nEl resultado es un perfume envolvente, de piel más que de aire, que casi no proyecta pero que permanece un día entero. Es el que la casa recomienda para clima cálido, porque no se vuelve pesado con el calor como sí lo hacen sus oud.",
     base: 2490,
     rebaja: 0.15,
     mls: [50, 100],
@@ -785,8 +759,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Tabaco", "Miel"],
     fondo: ["Oud", "Labdanum", "Cuero"],
     corta: "Tabaco y miel sobre oud, potencia máxima",
-    larga:
-      "Kairo Noche es el más contundente del catálogo entero de EL REY DE LOS PERFUMES. Canela y nuez moscada abren dulces y densas, el tabaco y la miel del corazón lo vuelven casi licoroso, y el oud del fondo se queda durante todo el día siguiente.\n\nLa casa lo etiqueta como fragancia de invierno y noche, y con razón: en un clima cálido resulta abrumador. Un toque en el cuello y otro en la muñeca es la dosis correcta; más de eso es un error que solo se comete una vez.",
+    larga: "Kairo Noche es el más contundente del catálogo entero de EL REY DE LOS PERFUMES. Canela y nuez moscada abren dulces y densas, el tabaco y la miel del corazón lo vuelven casi licoroso, y el oud del fondo se queda durante todo el día siguiente.\n\nLa casa lo etiqueta como fragancia de invierno y noche, y con razón: en un clima cálido resulta abrumador. Un toque en el cuello y otro en la muñeca es la dosis correcta; más de eso es un error que solo se comete una vez.",
     base: 3190,
     rebaja: 0.2,
     mls: [50, 100],
@@ -797,8 +770,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2016,
     origen: "Emiratos Árabes Unidos",
   },
-
-  // ── Vetiver House ───────────────────────────────────────────────────────
   {
     slug: "vetiver-haiti",
     nombre: "Vetiver Haití",
@@ -810,8 +781,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Vetiver de Haití", "Salvia"],
     fondo: ["Cedro", "Almizcle", "Musgo de roble"],
     corta: "La raíz haitiana en su lectura más limpia",
-    larga:
-      "Vetiver Haití es el patrón de la casa y la referencia contra la que se miden todos sus demás lanzamientos. Pomelo y bergamota abren nítidos, y a los cinco minutos la raíz ya está instalada: terrosa, verde, con ese amargor característico.\n\nLa salvia del corazón le añade un giro aromático y el musgo de roble del fondo lo emparenta con los fougères clásicos. Funciona los doce meses del año y es probablemente el perfume más versátil de todo el catálogo de EL REY DE LOS PERFUMES.",
+    larga: "Vetiver Haití es el patrón de la casa y la referencia contra la que se miden todos sus demás lanzamientos. Pomelo y bergamota abren nítidos, y a los cinco minutos la raíz ya está instalada: terrosa, verde, con ese amargor característico.\n\nLa salvia del corazón le añade un giro aromático y el musgo de roble del fondo lo emparenta con los fougères clásicos. Funciona los doce meses del año y es probablemente el perfume más versátil de todo el catálogo de EL REY DE LOS PERFUMES.",
     base: 1890,
     rebaja: 0.15,
     mls: [50, 100],
@@ -834,8 +804,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Vetiver ahumado", "Cuero"],
     fondo: ["Abedul", "Ámbar", "Musgo"],
     corta: "Vetiver pasado por fuego, seco y mineral",
-    larga:
-      "Raíz Ahumada toma el mismo vetiver haitiano y lo lleva al extremo opuesto: en vez de limpiarlo, lo ahúma. El abedul del fondo aporta el humo y la pimienta de la salida el filo.\n\nEs el perfume de la casa con más carácter y el que menos gusta a la primera. Casi todos los clientes que lo compran lo hacen en la segunda visita, después de haber usado Vetiver Haití una temporada. Duración muy alta y estela seca que no se confunde con nada.",
+    larga: "Raíz Ahumada toma el mismo vetiver haitiano y lo lleva al extremo opuesto: en vez de limpiarlo, lo ahúma. El abedul del fondo aporta el humo y la pimienta de la salida el filo.\n\nEs el perfume de la casa con más carácter y el que menos gusta a la primera. Casi todos los clientes que lo compran lo hacen en la segunda visita, después de haber usado Vetiver Haití una temporada. Duración muy alta y estela seca que no se confunde con nada.",
     base: 2390,
     mls: [50, 100],
     badges: ["Exclusivo"],
@@ -856,8 +825,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Lavanda", "Geranio"],
     fondo: ["Vetiver", "Haba tonka", "Musgo"],
     corta: "Fougère clásico: lavanda, menta y musgo",
-    larga:
-      "Verde Inglés es un fougère de manual, y eso es un elogio. Menta y galbano abren cortantes, la lavanda y el geranio construyen el corazón aromático de toda la vida, y el musgo con haba tonka cierra la figura.\n\nNo intenta ser moderno. Es el perfume que compran quienes crecieron oliendo esta familia y no encuentran nada parecido en el mercado actual. Precio accesible, formato de 200 ml disponible y rotación muy alta en mayoreo.",
+    larga: "Verde Inglés es un fougère de manual, y eso es un elogio. Menta y galbano abren cortantes, la lavanda y el geranio construyen el corazón aromático de toda la vida, y el musgo con haba tonka cierra la figura.\n\nNo intenta ser moderno. Es el perfume que compran quienes crecieron oliendo esta familia y no encuentran nada parecido en el mercado actual. Precio accesible, formato de 200 ml disponible y rotación muy alta en mayoreo.",
     base: 990,
     rebaja: 0.2,
     mls: [100, 200],
@@ -879,8 +847,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Vetiver joven", "Té verde"],
     fondo: ["Almizcle", "Cedro blanco"],
     corta: "Vetiver en clave ligera, para calor",
-    larga:
-      "Vetiver Cítrico es la versión de verano del clásico de la casa. El yuzu de la salida es agudo y luminoso, y el vetiver que aparece detrás está tratado en su forma más joven y menos terrosa.\n\nEl té verde del corazón lo mantiene transparente y el fondo de almizcle apenas se percibe. Dura menos que el resto de la casa —cuatro o cinco horas— pero es justo lo que se busca en clima húmedo. Muy vendido en la costa.",
+    larga: "Vetiver Cítrico es la versión de verano del clásico de la casa. El yuzu de la salida es agudo y luminoso, y el vetiver que aparece detrás está tratado en su forma más joven y menos terrosa.\n\nEl té verde del corazón lo mantiene transparente y el fondo de almizcle apenas se percibe. Dura menos que el resto de la casa —cuatro o cinco horas— pero es justo lo que se busca en clima húmedo. Muy vendido en la costa.",
     base: 1090,
     mls: [100, 200],
     badges: ["Nuevo", "3x2"],
@@ -890,8 +857,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2024,
     origen: "Reino Unido",
   },
-
-  // ── Lys Blanc ───────────────────────────────────────────────────────────
   {
     slug: "tuberosa-blanca",
     nombre: "Tuberosa Blanca",
@@ -903,8 +868,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Tuberosa", "Gardenia"],
     fondo: ["Sándalo", "Almizcle", "Vainilla"],
     corta: "Tuberosa en su punto exacto, ni un gramo más",
-    larga:
-      "La tuberosa es la flor más difícil de la perfumería: un poco de más y se vuelve mantecosa, un poco de menos y desaparece. Tuberosa Blanca acierta el punto, y esa es toda la propuesta de la casa.\n\nLa hoja verde de la salida le da frescura los primeros minutos y la gardenia del corazón la acompaña sin competir. El fondo de sándalo y vainilla la sostiene diez horas. Es un perfume de flor blanca clásico, sin trucos modernos, y no tiene sustituto fácil en el catálogo.",
+    larga: "La tuberosa es la flor más difícil de la perfumería: un poco de más y se vuelve mantecosa, un poco de menos y desaparece. Tuberosa Blanca acierta el punto, y esa es toda la propuesta de la casa.\n\nLa hoja verde de la salida le da frescura los primeros minutos y la gardenia del corazón la acompaña sin competir. El fondo de sándalo y vainilla la sostiene diez horas. Es un perfume de flor blanca clásico, sin trucos modernos, y no tiene sustituto fácil en el catálogo.",
     base: 2690,
     rebaja: 0.15,
     mls: [30, 50, 100],
@@ -927,8 +891,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Jazmín sambac", "Ylang-ylang"],
     fondo: ["Ámbar", "Almizcle", "Pachulí"],
     corta: "Jazmín sambac denso con fondo ambarino",
-    larga:
-      "Jazmín de Medianoche recoge el jazmín sambac en su versión más indolente, esa que huele casi a fruta pasada y que define a los grandes florales nocturnos. El ylang-ylang le suma cremosidad.\n\nEl pachulí y el ámbar del fondo lo empujan hacia lo oriental y le dan una persistencia que sorprende para un floral. Es el perfume que más se vende en pares con Tuberosa Blanca, y las clientas suelen alternarlos por temporada.",
+    larga: "Jazmín de Medianoche recoge el jazmín sambac en su versión más indolente, esa que huele casi a fruta pasada y que define a los grandes florales nocturnos. El ylang-ylang le suma cremosidad.\n\nEl pachulí y el ámbar del fondo lo empujan hacia lo oriental y le dan una persistencia que sorprende para un floral. Es el perfume que más se vende en pares con Tuberosa Blanca, y las clientas suelen alternarlos por temporada.",
     base: 2290,
     rebaja: 0.2,
     mls: [30, 50, 100],
@@ -950,8 +913,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Gardenia", "Rosa blanca"],
     fondo: ["Almizcle blanco", "Cedro", "Iris"],
     corta: "Gardenia limpia con aldehídos, muy elegante",
-    larga:
-      "Gardenia 21 mira a la perfumería de los años cincuenta sin quedarse en la nostalgia. Los aldehídos de la salida dan ese brillo jabonoso y algo abstracto que caracteriza a los grandes clásicos, y la gardenia entra enseguida, nítida y sin peso.\n\nEl iris del fondo aporta un acabado polvoso y el almizcle blanco lo deja limpio hasta el final. Es el floral más discreto de Lys Blanc y el que mejor funciona en horario de oficina.",
+    larga: "Gardenia 21 mira a la perfumería de los años cincuenta sin quedarse en la nostalgia. Los aldehídos de la salida dan ese brillo jabonoso y algo abstracto que caracteriza a los grandes clásicos, y la gardenia entra enseguida, nítida y sin peso.\n\nEl iris del fondo aporta un acabado polvoso y el almizcle blanco lo deja limpio hasta el final. Es el floral más discreto de Lys Blanc y el que mejor funciona en horario de oficina.",
     base: 1990,
     mls: [50, 100],
     badges: ["Nuevo"],
@@ -973,8 +935,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Nardo absoluto", "Tuberosa"],
     fondo: ["Sándalo", "Benjuí", "Almizcle"],
     corta: "Nardo absoluto, flor blanca en estado puro",
-    larga:
-      "Nardo es la pieza más concentrada de Lys Blanc y una de las más caras del catálogo. Usa absoluto de nardo, una materia prima cuyo precio por kilo explica por sí solo el precio del frasco.\n\nLa flor aparece completa, con su lado verde y su lado casi carnoso, sostenida por tuberosa y cerrada con benjuí. Edición limitada de producción anual. Se agota todos los años, generalmente antes de que termine el primer trimestre.",
+    larga: "Nardo es la pieza más concentrada de Lys Blanc y una de las más caras del catálogo. Usa absoluto de nardo, una materia prima cuyo precio por kilo explica por sí solo el precio del frasco.\n\nLa flor aparece completa, con su lado verde y su lado casi carnoso, sostenida por tuberosa y cerrada con benjuí. Edición limitada de producción anual. Se agota todos los años, generalmente antes de que termine el primer trimestre.",
     base: 3390,
     mls: [30, 50],
     badges: ["Edición limitada", "Últimas piezas", "Exclusivo"],
@@ -984,8 +945,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2022,
     origen: "Francia",
   },
-
-  // ── Oud Imperial ────────────────────────────────────────────────────────
   {
     slug: "oud-real",
     nombre: "Oud Real",
@@ -998,8 +957,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Oud de Assam", "Rosa"],
     fondo: ["Sándalo", "Ámbar gris", "Almizcle"],
     corta: "Oud de Assam madurado, la pieza insignia",
-    larga:
-      "Oud Real usa madera de agar de Assam madurada cuatro años antes de destilarse, y el resultado no se parece a los oud sintéticos que dominan el mercado: hay una dimensión animal y balsámica que solo da la materia auténtica.\n\nEl azafrán de la salida y la rosa del corazón cumplen la función clásica de hacer accesible una nota difícil. El fondo se queda en la piel más de un día y en la ropa varios. Es el producto más caro del catálogo y el que la casa nunca pone en promoción.",
+    larga: "Oud Real usa madera de agar de Assam madurada cuatro años antes de destilarse, y el resultado no se parece a los oud sintéticos que dominan el mercado: hay una dimensión animal y balsámica que solo da la materia auténtica.\n\nEl azafrán de la salida y la rosa del corazón cumplen la función clásica de hacer accesible una nota difícil. El fondo se queda en la piel más de un día y en la ropa varios. Es el producto más caro del catálogo y el que la casa nunca pone en promoción.",
     base: 4290,
     mls: [30, 50],
     badges: ["Exclusivo", "Importado"],
@@ -1021,8 +979,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Oud", "Cuero ahumado"],
     fondo: ["Vetiver", "Labdanum", "Musgo"],
     corta: "Oud ahumado y cuero, sin nada dulce",
-    larga:
-      "Agar Negro es la cara austera de la casa: un oud sin rosa, sin ámbar y sin vainilla que lo suavicen. Pimienta negra y elemí arriba, cuero ahumado en el corazón, y un fondo mineral de vetiver y musgo.\n\nEs difícil, y la casa no lo esconde. Quien busca cumplidos no debería empezar por aquí; quien busca un oud que huela a madera de verdad y no a caramelo amaderado, encuentra pocas alternativas mejores en este rango de precio.",
+    larga: "Agar Negro es la cara austera de la casa: un oud sin rosa, sin ámbar y sin vainilla que lo suavicen. Pimienta negra y elemí arriba, cuero ahumado en el corazón, y un fondo mineral de vetiver y musgo.\n\nEs difícil, y la casa no lo esconde. Quien busca cumplidos no debería empezar por aquí; quien busca un oud que huela a madera de verdad y no a caramelo amaderado, encuentra pocas alternativas mejores en este rango de precio.",
     base: 3690,
     rebaja: 0.15,
     mls: [50, 100],
@@ -1044,8 +1001,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Oud", "Rosa damascena"],
     fondo: ["Ámbar", "Vainilla", "Sándalo"],
     corta: "El dúo oud-rosa, equilibrado y accesible",
-    larga:
-      "Oud & Rosa es la fórmula más repetida de la perfumería oriental y también la más difícil de equilibrar. Aquí la rosa lleva la voz cantante las primeras horas y el oud va ganando terreno conforme pasa el día.\n\nEl ámbar y la vainilla del fondo lo vuelven más amable que el resto de la casa, y por eso es el que se recomienda como primer oud. Buen rendimiento en mayoreo: es de los pocos productos premium que rotan bien en lotes.",
+    larga: "Oud & Rosa es la fórmula más repetida de la perfumería oriental y también la más difícil de equilibrar. Aquí la rosa lleva la voz cantante las primeras horas y el oud va ganando terreno conforme pasa el día.\n\nEl ámbar y la vainilla del fondo lo vuelven más amable que el resto de la casa, y por eso es el que se recomienda como primer oud. Buen rendimiento en mayoreo: es de los pocos productos premium que rotan bien en lotes.",
     base: 2790,
     rebaja: 0.2,
     mls: [50, 100],
@@ -1068,8 +1024,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Oud", "Incienso", "Miel"],
     fondo: ["Ámbar gris", "Sándalo", "Benjuí"],
     corta: "Oud, incienso y miel: opulencia contenida",
-    larga:
-      "Imperial Privé es la interpretación más lujosa de la casa y la más redonda. El cardamomo abre brillante, el incienso y la miel del corazón envuelven el oud, y el ámbar gris del fondo lo estira durante horas.\n\nA diferencia de Agar Negro, aquí todo está pulido: no hay aristas ni notas incómodas. Es el que más se regala de la casa y el que mejor funciona para quien quiere entrar al mundo del oud por la puerta grande.",
+    larga: "Imperial Privé es la interpretación más lujosa de la casa y la más redonda. El cardamomo abre brillante, el incienso y la miel del corazón envuelven el oud, y el ámbar gris del fondo lo estira durante horas.\n\nA diferencia de Agar Negro, aquí todo está pulido: no hay aristas ni notas incómodas. Es el que más se regala de la casa y el que mejor funciona para quien quiere entrar al mundo del oud por la puerta grande.",
     base: 3890,
     mls: [30, 50],
     badges: ["Exclusivo", "Edición limitada"],
@@ -1079,8 +1034,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2021,
     origen: "Emiratos Árabes Unidos",
   },
-
-  // ── Solaris ─────────────────────────────────────────────────────────────
   {
     slug: "sal-y-higuera",
     nombre: "Sal y Higuera",
@@ -1092,8 +1045,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Higo verde", "Sal marina"],
     fondo: ["Cedro", "Almizcle", "Coco seco"],
     corta: "Higuera al sol con sal en la piel",
-    larga:
-      "Sal y Higuera reconstruye una escena muy concreta: la sombra de una higuera a las cuatro de la tarde, con el mar cerca. La hoja verde de la salida es amarga y láctea a la vez, exactamente como la planta real.\n\nEl higo del corazón aporta dulzor vegetal y la sal marina la frescura. El coco seco del fondo no es tropical sino discreto, casi de aceite bronceador ya evaporado. Es el más vendido de Solaris entre marzo y septiembre.",
+    larga: "Sal y Higuera reconstruye una escena muy concreta: la sombra de una higuera a las cuatro de la tarde, con el mar cerca. La hoja verde de la salida es amarga y láctea a la vez, exactamente como la planta real.\n\nEl higo del corazón aporta dulzor vegetal y la sal marina la frescura. El coco seco del fondo no es tropical sino discreto, casi de aceite bronceador ya evaporado. Es el más vendido de Solaris entre marzo y septiembre.",
     base: 1690,
     rebaja: 0.2,
     mls: [50, 100],
@@ -1116,8 +1068,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Monoi", "Ylang-ylang"],
     fondo: ["Vainilla", "Almizcle", "Sándalo"],
     corta: "Flor de tiaré y aceite de monoi, verano puro",
-    larga:
-      "Monoi es el perfume solar por excelencia del catálogo: tiaré, ylang-ylang y ese acorde de aceite de coco macerado que define al monoi auténtico de Polinesia.\n\nEs dulce, cremoso y sin ninguna pretensión intelectual, y funciona exactamente donde debe: playa, calor y piel bronceada. Al ser Eau de Toilette se puede reaplicar sin culpa. Rotación altísima en costa y uno de los infaltables en lotes de verano.",
+    larga: "Monoi es el perfume solar por excelencia del catálogo: tiaré, ylang-ylang y ese acorde de aceite de coco macerado que define al monoi auténtico de Polinesia.\n\nEs dulce, cremoso y sin ninguna pretensión intelectual, y funciona exactamente donde debe: playa, calor y piel bronceada. Al ser Eau de Toilette se puede reaplicar sin culpa. Rotación altísima en costa y uno de los infaltables en lotes de verano.",
     base: 990,
     rebaja: 0.25,
     mls: [100, 200],
@@ -1139,8 +1090,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Petitgrain", "Menta"],
     fondo: ["Almizcle", "Madera clara", "Ámbar"],
     corta: "Limón de Amalfi con menta, fresco y solar",
-    larga:
-      "Costa Amalfi es el cítrico masculino más directo del catálogo. Limón de Amalfi y naranja sanguina abren con una nitidez casi agresiva, y la menta del corazón alarga esa sensación de frescura más de lo habitual.\n\nEl fondo es mínimo —almizcle y madera clara— porque la propuesta no es durar doce horas sino refrescar cinco. Precio accesible, formato grande disponible y uno de los productos que mejor se venden en lotes mixtos de verano.",
+    larga: "Costa Amalfi es el cítrico masculino más directo del catálogo. Limón de Amalfi y naranja sanguina abren con una nitidez casi agresiva, y la menta del corazón alarga esa sensación de frescura más de lo habitual.\n\nEl fondo es mínimo —almizcle y madera clara— porque la propuesta no es durar doce horas sino refrescar cinco. Precio accesible, formato grande disponible y uno de los productos que mejor se venden en lotes mixtos de verano.",
     base: 1190,
     mls: [100, 200],
     badges: ["3x2"],
@@ -1161,8 +1111,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Notas marinas", "Salvia"],
     fondo: ["Ambroxan", "Cedro", "Almizcle"],
     corta: "Acuático moderno con ambroxan, alto rendimiento",
-    larga:
-      "Solaris Azul es la propuesta más contemporánea de la casa y la que compite de frente con los grandes acuáticos comerciales. Pomelo y menta acuática arriba, notas marinas y salvia en el corazón.\n\nLo que lo diferencia es la dosis de ambroxan del fondo, generosa, que le da una proyección notable y una duración de ocho horas poco común en esta familia. Es el perfume que más se recomienda a hombres jóvenes que compran su primer Eau de Parfum.",
+    larga: "Solaris Azul es la propuesta más contemporánea de la casa y la que compite de frente con los grandes acuáticos comerciales. Pomelo y menta acuática arriba, notas marinas y salvia en el corazón.\n\nLo que lo diferencia es la dosis de ambroxan del fondo, generosa, que le da una proyección notable y una duración de ocho horas poco común en esta familia. Es el perfume que más se recomienda a hombres jóvenes que compran su primer Eau de Parfum.",
     base: 1490,
     rebaja: 0.2,
     mls: [50, 100, 200],
@@ -1174,8 +1123,6 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2023,
     origen: "Italia",
   },
-
-  // ── Body Mist ───────────────────────────────────────────────────────────
   {
     slug: "bruma-de-coco",
     nombre: "Bruma de Coco",
@@ -1188,8 +1135,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Leche de almendra", "Tiaré"],
     fondo: ["Vainilla", "Almizcle"],
     corta: "Bruma corporal de coco, ligera y refrescante",
-    larga:
-      "Bruma de Coco es una bruma corporal, no un perfume, y conviene entenderlo así: baja concentración, mucho volumen y un precio pensado para usarla sin contar los disparos. Coco y piña arriba, leche de almendra en el corazón.\n\nDura entre dos y tres horas, lo que en su categoría es correcto. Se aplica sobre el cuerpo después de la ducha o encima de un perfume de la misma familia para reforzarlo. Es uno de los artículos de mayor rotación en lotes de mayoreo por su margen.",
+    larga: "Bruma de Coco es una bruma corporal, no un perfume, y conviene entenderlo así: baja concentración, mucho volumen y un precio pensado para usarla sin contar los disparos. Coco y piña arriba, leche de almendra en el corazón.\n\nDura entre dos y tres horas, lo que en su categoría es correcto. Se aplica sobre el cuerpo después de la ducha o encima de un perfume de la misma familia para reforzarlo. Es uno de los artículos de mayor rotación en lotes de mayoreo por su margen.",
     base: 240,
     rebaja: 0.25,
     mls: [200],
@@ -1212,8 +1158,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Peonía", "Rosa"],
     fondo: ["Almizcle", "Vainilla"],
     corta: "Bruma de frutos rojos para todos los días",
-    larga:
-      "Bruma de Frambuesa toma la estructura de Frutos del Séptimo y la lleva al formato de bruma corporal: más ligera, más barata y pensada para reaplicar a media jornada.\n\nFrambuesa y manzana verde abren muy frescas, la peonía redondea y el almizcle deja la piel limpia. Dos o tres horas de duración. Es el producto de entrada más económico del catálogo y el que más se incluye en lotes para revendedoras que están empezando.",
+    larga: "Bruma de Frambuesa toma la estructura de Frutos del Séptimo y la lleva al formato de bruma corporal: más ligera, más barata y pensada para reaplicar a media jornada.\n\nFrambuesa y manzana verde abren muy frescas, la peonía redondea y el almizcle deja la piel limpia. Dos o tres horas de duración. Es el producto de entrada más económico del catálogo y el que más se incluye en lotes para revendedoras que están empezando.",
     base: 215,
     rebaja: 0.2,
     mls: [200],
@@ -1236,8 +1181,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Haba tonka", "Praliné"],
     fondo: ["Almizcle", "Sándalo"],
     corta: "Bruma de vainilla cálida, cómoda y barata",
-    larga:
-      "Bruma de Vainilla es la versión ligera y accesible de la vainilla de la casa. No compite con Vainilla de Papantla ni lo pretende: cumple otra función, la de perfumar el cuerpo entero por muy poco dinero.\n\nEl praliné del corazón le da un matiz de postre y el sándalo evita que resulte plana. Dos horas y media de duración aproximada. Se vende sobre todo en paquetes de tres y es habitual verla en los lotes de temporada fría.",
+    larga: "Bruma de Vainilla es la versión ligera y accesible de la vainilla de la casa. No compite con Vainilla de Papantla ni lo pretende: cumple otra función, la de perfumar el cuerpo entero por muy poco dinero.\n\nEl praliné del corazón le da un matiz de postre y el sándalo evita que resulte plana. Dos horas y media de duración aproximada. Se vende sobre todo en paquetes de tres y es habitual verla en los lotes de temporada fría.",
     base: 230,
     mls: [200],
     badges: ["3x2", "Nuevo"],
@@ -1259,8 +1203,7 @@ export const SEMILLAS: readonly Semilla[] = [
     corazon: ["Azahar", "Verbena"],
     fondo: ["Almizcle blanco", "Cedro"],
     corta: "Bruma cítrica unisex para el calor",
-    larga:
-      "Bruma Cítrica traslada el azahar de Casa Solano a un formato de bruma corporal unisex. Limón y naranja abren muy vivos, el azahar del corazón le da identidad y la verbena lo mantiene herbal.\n\nEs de las pocas brumas del mercado que no huele a dulce, lo que la vuelve apta para hombres. Refresca de verdad en días de calor y se puede reaplicar tantas veces como haga falta. Formato único de 200 ml.",
+    larga: "Bruma Cítrica traslada el azahar de Casa Solano a un formato de bruma corporal unisex. Limón y naranja abren muy vivos, el azahar del corazón le da identidad y la verbena lo mantiene herbal.\n\nEs de las pocas brumas del mercado que no huele a dulce, lo que la vuelve apta para hombres. Refresca de verdad en días de calor y se puede reaplicar tantas veces como haga falta. Formato único de 200 ml.",
     base: 220,
     rebaja: 0.2,
     mls: [200],
@@ -1271,4 +1214,4 @@ export const SEMILLAS: readonly Semilla[] = [
     anio: 2023,
     origen: "México",
   },
-];
+] as const;

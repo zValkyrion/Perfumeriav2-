@@ -4,19 +4,59 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ML_PAQUETE, stockDisponible } from "@/lib/carrito";
 import { CUPONES } from "@/lib/volumen";
+import type { IdPago } from "@/data/pagos";
 import type { ItemCarrito } from "@/types";
 
-/** Pedido recién confirmado, para poder pintar la pantalla de gracias. */
+/**
+ * Pedido recién confirmado, para poder pintar la pantalla de gracias.
+ *
+ * Lleva la dirección y el teléfono completos, y no solo ciudad y estado, porque
+ * de aquí sale el aviso de compra: el mensaje con el que la tienda contacta al
+ * comprador por WhatsApp (`src/lib/aviso-pedido.ts`). Un aviso sin calle ni
+ * teléfono obliga a pedir los datos otra vez, que es justo lo que la página
+ * tenía que ahorrar.
+ */
+/**
+ * Lo que hace falta para volver a comprar sin teclear nada.
+ *
+ * Es la dirección de la última compra más la forma de pago elegida: justo lo
+ * que el checkout pediría otra vez y la persona volvería a escribir igual.
+ */
+export interface DatosExpres {
+  correo: string;
+  nombre: string;
+  telefono: string;
+  calle: string;
+  colonia: string;
+  cp: string;
+  ciudad: string;
+  estado: string;
+  referencias?: string;
+  /** `id` de `OPCIONES_ENVIO`. */
+  envio: string;
+  metodo: IdPago;
+}
+
 export interface PedidoConfirmado {
   folio: string;
   fecha: string;
   correo: string;
   nombre: string;
+  telefono: string;
+  calle: string;
+  colonia: string;
+  cp: string;
   ciudad: string;
   estado: string;
+  referencias?: string;
   envio: string;
   diasEntrega: string;
+  /** Cómo se paga, en el texto que lee el comprador. */
   metodoPago: string;
+  /** Cuál de los tres métodos, para saber qué instrucciones tocan. */
+  metodoId: IdPago;
+  /** Comisión del cobro en destino. Cero salvo en contra entrega. */
+  comision: number;
   total: number;
   piezas: number;
   items: ItemCarrito[];
@@ -30,6 +70,34 @@ interface Estado {
   modoMayoreo: boolean;
   cupon: string | null;
   ultimoPedido: PedidoConfirmado | null;
+
+  /**
+   * Con qué datos se compró la última vez, para la compra exprés.
+   *
+   * Vive en este navegador y en ningún otro sitio: son los mismos datos que la
+   * persona acaba de teclear en su propio aparato, no un perfil que la tienda
+   * guarde por su cuenta. Se borra con «usar otros datos» y al cerrar sesión.
+   *
+   * No incluye nada de pago —Clip cobra en su pantalla, la transferencia y el
+   * contra entrega se acuerdan por WhatsApp—, así que aquí no hay ningún dato
+   * bancario que guardar. Solo a dónde va el paquete y cómo se prefiere pagar.
+   */
+  expres: DatosExpres | null;
+  guardarExpres: (datos: DatosExpres) => void;
+  olvidarExpres: () => void;
+
+  /**
+   * Bandera de un solo uso: «vengo de Comprar en 1 toque».
+   *
+   * No se persiste. Es lo que le dice al checkout que abra directo la pantalla
+   * de revisión en vez del formulario. Va por el estado y no por la URL porque
+   * la tienda es una exportación estática: leer parámetros de consulta obliga a
+   * envolver la página en un límite de Suspense, y eso es exactamente lo que
+   * dejó 66 páginas en blanco la última vez.
+   */
+  entradaExpres: boolean;
+  pedirExpres: () => void;
+  consumirExpres: () => void;
 
   /**
    * Falso hasta que `persist` termina de leer localStorage. `persist` rehidrata
@@ -117,6 +185,8 @@ export const useTienda = create<Estado>()(
       modoMayoreo: false,
       cupon: null,
       ultimoPedido: null,
+      expres: null,
+      entradaExpres: false,
       sincronizado: null,
       hidratado: false,
       setHidratado: () => set({ hidratado: true }),
@@ -234,6 +304,12 @@ export const useTienda = create<Estado>()(
       confirmarPedido: (pedido) =>
         set({ ultimoPedido: pedido, carrito: [], cupon: null }),
 
+      guardarExpres: (datos) => set({ expres: datos }),
+      olvidarExpres: () => set({ expres: null, entradaExpres: false }),
+
+      pedirExpres: () => set({ entradaExpres: true }),
+      consumirExpres: () => set({ entradaExpres: false }),
+
       adoptarRemoto: ({ carrito, guardados, favoritos }, marca) =>
         set({ carrito, guardados, favoritos, sincronizado: marca }),
 
@@ -252,6 +328,10 @@ export const useTienda = create<Estado>()(
                 favoritos: [],
                 cupon: null,
                 sincronizado: null,
+                // La dirección de la compra exprés se va con su dueño: la
+                // siguiente persona que use este aparato no puede encontrarse
+                // el domicilio y el teléfono de la anterior ya escritos.
+                expres: null,
               },
         ),
 
@@ -261,7 +341,21 @@ export const useTienda = create<Estado>()(
     }),
     {
       name: "aura-tienda",
-      version: 1,
+      version: 2,
+      /**
+       * La versión 2 añadió teléfono, dirección y método al comprobante. Un
+       * `ultimoPedido` guardado antes no los tiene, así que se descarta: un
+       * recibo viejo no vale nada y pintarlo a medias rompería la pantalla de
+       * gracias. Todo lo demás —carrito, guardados, favoritos— pasa intacto,
+       * que es lo que de verdad dolería perder.
+       */
+      migrate: (guardado, version) => {
+        const estado = guardado as Partial<Estado> | undefined;
+        if (estado && version < 2) {
+          return { ...estado, ultimoPedido: null } as Estado;
+        }
+        return estado as Estado;
+      },
       // El estado de UI no se persiste: nadie quiere que el drawer del carrito
       // esté abierto al volver a entrar a la tienda.
       partialize: (s) => ({
@@ -271,6 +365,7 @@ export const useTienda = create<Estado>()(
         modoMayoreo: s.modoMayoreo,
         cupon: s.cupon,
         ultimoPedido: s.ultimoPedido,
+        expres: s.expres,
         sincronizado: s.sincronizado,
       }),
       onRehydrateStorage: () => (estado) => {

@@ -144,8 +144,14 @@ export default async function ProductoPage({
           </BreadcrumbList>
         </Breadcrumb>
 
+        {/* Las fotos corren y el bloque de compra se queda.
+            Antes era al revés: la galería quedaba fija y el precio con sus
+            botones se iba hacia arriba al bajar por la ficha, de modo que quien
+            leía las notas o la descripción tenía que volver al principio para
+            comprar. Con las cuatro fotos en columna, la decisión —presentación,
+            precio, comprar— acompaña todo el recorrido. */}
         <div className="lg:grid lg:grid-cols-[55fr_45fr] lg:items-start lg:gap-12">
-          <div className="lg:sticky lg:top-24">
+          <div>
             <Galeria
               imagenes={producto.imagenes}
               nombre={producto.nombre}
@@ -153,7 +159,12 @@ export default async function ProductoPage({
             />
           </div>
 
-          <div className="mt-7 lg:mt-0">
+          {/* Acotado a la altura de la pantalla y con su propio scroll.
+              El bloque mide 1,070 px con la tabla de mayoreo dentro; fijarlo sin
+              tope dejaba las garantías —y el botón de comprar en pantallas de
+              portátil— colgando por debajo del borde, sin forma de alcanzarlas
+              porque lo fijo no se mueve. */}
+          <div className="mt-7 lg:sticky lg:top-24 lg:mt-0 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
             <Link
               href={`/marca/${producto.marca}`}
               className="text-fg-subtle hover:text-gold-light text-[11px] tracking-[0.18em] uppercase"

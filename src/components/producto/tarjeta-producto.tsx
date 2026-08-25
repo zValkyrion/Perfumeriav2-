@@ -16,8 +16,14 @@ import { useTienda } from "@/store/tienda";
 import type { Producto } from "@/types";
 import { cn } from "@/lib/utils";
 
-/** Umbral a partir del cual mostramos escasez. Es stock real del dataset. */
-const STOCK_BAJO = 15;
+/**
+ * Umbral a partir del cual mostramos escasez. Es stock real del dataset.
+ *
+ * Va en 19 porque las existencias se generan entre 15 y 30 piezas y las fichas
+ * marcadas como «Últimas piezas» caen en 15–19. Con el umbral en 15 —el mínimo
+ * del rango— el aviso de escasez no se encendía prácticamente nunca.
+ */
+const STOCK_BAJO = 19;
 
 export function TarjetaProducto({
   producto,
