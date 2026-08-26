@@ -46,15 +46,10 @@ export default function EnviosPage() {
                   </td>
                   <td className="px-4 py-3.5">{o.tiempo}</td>
                   <td data-precio className="px-4 py-3.5 text-right">
+                    {/* La tarifa, a secas. Que el estándar salga gratis depende
+                        del pedido y no del servicio, y ya lo dice el detalle de
+                        esta misma fila: repetirlo aquí lo decía dos veces. */}
                     {precio(o.precio)}
-                    {/* La tabla es de tarifas, así que enseña lo que cuesta cada
-                        servicio. Que el estándar salga gratis depende del pedido
-                        —desde 3 piezas— y eso lo dice su propia fila. */}
-                    {o.id === "estandar" ? (
-                      <span className="text-success block text-xs font-medium">
-                        gratis desde {PIEZAS_ENVIO_GRATIS} piezas
-                      </span>
-                    ) : null}
                   </td>
                 </tr>
               ))}
