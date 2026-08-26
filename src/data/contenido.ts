@@ -1,3 +1,5 @@
+import { COSTO_ENVIO_ESTANDAR, PIEZAS_ENVIO_GRATIS } from "@/lib/volumen";
+
 /** Datos de marca, copy institucional y contenido editorial de la tienda. */
 
 export const MARCA = {
@@ -312,8 +314,12 @@ export const OPCIONES_ENVIO = [
     id: "estandar",
     nombre: "Estándar",
     tiempo: "3 a 5 días hábiles",
-    precio: 0,
-    detalle: "Estafeta o DHL · gratis en pedidos de 3 piezas o más",
+    // La tarifa sale de `volumen.ts`, que es donde vive la regla completa junto
+    // al mínimo de piezas que la vuelve gratis. Escrita aquí a mano se quedó en
+    // cero mientras el carrito cobraba $149, y el checkout —que rehace el total
+    // con esta cifra— acababa cobrando menos de lo anunciado.
+    precio: COSTO_ENVIO_ESTANDAR,
+    detalle: `Estafeta o DHL · gratis desde ${PIEZAS_ENVIO_GRATIS} piezas`,
   },
   {
     id: "express",

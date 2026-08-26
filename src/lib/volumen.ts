@@ -51,6 +51,18 @@ export const ESCALONES: readonly Escalon[] = [
 /** Piezas mínimas para envío gratis (§3.2). */
 export const PIEZAS_ENVIO_GRATIS = 3;
 
+/**
+ * Lo que cuesta el envío estándar cuando no alcanza el envío gratis.
+ *
+ * Vive aquí, junto al mínimo que lo hace gratis, porque las dos cifras son la
+ * misma regla y hasta ahora estaban en archivos distintos: el carrito cobraba
+ * $149 con este número escrito a mano y el checkout rehacía el total con la
+ * tarifa de `OPCIONES_ENVIO`, que era cero. Un pedido de una pieza se anunciaba
+ * $149 más caro de lo que se acababa cobrando, y nadie lo veía porque los dos
+ * totales nunca aparecen juntos en la misma pantalla.
+ */
+export const COSTO_ENVIO_ESTANDAR = 149;
+
 /** Devuelve el escalón que aplica a un número de piezas. */
 export function escalonPara(piezas: number): Escalon {
   const n = Math.max(1, Math.floor(piezas));

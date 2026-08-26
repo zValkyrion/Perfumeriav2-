@@ -355,6 +355,25 @@ del módulo.
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
 
+### 2026-08-25 · El envío estándar cobra lo mismo en el carrito y en el checkout
+
+- **Por qué:** el carrito cobraba $149 cuando el pedido no llegaba a 3 piezas y
+  el checkout rehacía el total con la tarifa de `OPCIONES_ENVIO`, que estaba en
+  cero. Un pedido de una pieza se anunciaba $149 más caro de lo que se acababa
+  cobrando. No lo veía nadie porque los dos totales nunca aparecen juntos en la
+  misma pantalla — es la misma forma de fallar que el 3x2.
+- **Regla confirmada por el dueño:** gratis desde 3 piezas, $149 por debajo.
+- **Implementación:** `COSTO_ENVIO_ESTANDAR` en `src/lib/volumen.ts`, al lado de
+  `PIEZAS_ENVIO_GRATIS`, porque las dos cifras son la misma regla. De ahí la leen
+  `resumenCarrito`, `OPCIONES_ENVIO` y la página de envíos, que también tenía el
+  149 escrito a mano en su texto.
+- **«Gratis» pasa a decidirlo el pedido, no la tarifa.** Dos pantallas pintaban
+  «GRATIS» al ver `precio === 0`; ahora ninguna opción cuesta cero por sí sola y
+  TypeScript marcó los dos sitios al cambiar el tipo. La tabla de `/envios`
+  enseña la tarifa real y anota aparte desde cuándo sale gratis.
+- **Verificado en el navegador:** con 1 pieza, carrito y checkout dicen los dos
+  $149 y total $3,039; con 3 piezas, «GRATIS» y el 10% de volumen aplicado.
+
 ### 2026-08-25 · Carga del catálogo por CSV y checkout de una sola página
 
 Puntos 4 y 5 del documento «Funciones de la página». Solo tienda.

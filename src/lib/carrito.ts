@@ -2,7 +2,14 @@ import { getLote } from "@/data/lotes";
 import { getPresentacion, getProductoPorId } from "@/data/productos";
 import { getSet } from "@/data/sets";
 import type { Escalon, ItemCarrito, Presentacion, Producto } from "@/types";
-import { CUPONES, PIEZAS_ENVIO_GRATIS, escalonPara, siguienteEscalon, type SiguienteEscalon } from "./volumen";
+import {
+  COSTO_ENVIO_ESTANDAR,
+  CUPONES,
+  PIEZAS_ENVIO_GRATIS,
+  escalonPara,
+  siguienteEscalon,
+  type SiguienteEscalon,
+} from "./volumen";
 
 /**
  * El §4 fija `ItemCarrito` con tres campos, así que los paquetes (lotes y sets)
@@ -241,7 +248,7 @@ export function resumenCarrito(
     : 0;
 
   const envioGratis = piezasTotales >= PIEZAS_ENVIO_GRATIS;
-  const envio = lineas.length === 0 || envioGratis ? 0 : 149;
+  const envio = lineas.length === 0 || envioGratis ? 0 : COSTO_ENVIO_ESTANDAR;
 
   // Base sobre la que se mide "cuánto más ahorro si subo una pieza".
   const baseSueltos = redondear(

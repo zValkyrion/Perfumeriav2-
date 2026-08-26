@@ -257,12 +257,11 @@ por WhatsApp —que es lo que dice el documento—, no la pongas y déjalo como 
 
 ### Deudas que este trabajo dejó a la vista
 
-- **El envío estándar cuesta $ 149.00 en el carrito y $ 0.00 en el checkout.**
-  `resumenCarrito` cobra 149 cuando no hay envío gratis, pero la opción
-  «Estándar» de `OPCIONES_ENVIO` tiene precio 0 y el checkout rehace el total con
-  ella. Un pedido de una pieza se anuncia a $ 149 más caro de lo que se cobra.
-  Es anterior a este trabajo y no lo toqué porque hay que decidir cuál de las dos
-  cifras es la buena.
+- ~~El envío estándar cuesta $ 149.00 en el carrito y $ 0.00 en el checkout.~~
+  ✅ Resuelto el 2026-08-25. La regla confirmada es: **gratis desde 3 piezas,
+  $ 149.00 por debajo**. La tarifa vive ahora en `COSTO_ENVIO_ESTANDAR`
+  (`src/lib/volumen.ts`), junto al mínimo que la vuelve gratis, y de ahí la leen
+  el carrito, el checkout y la página de envíos.
 - **El pedido no cambia de estatus** ni hay panel donde verlos (§5). Con el aviso
   por WhatsApp y el webhook eso duele menos, pero sigue ahí.
 

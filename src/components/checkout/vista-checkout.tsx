@@ -840,7 +840,9 @@ function PasoEnvio({
                     data-precio
                     className={gratis ? "text-success font-medium" : ""}
                   >
-                    {gratis ? "GRATIS" : o.precio === 0 ? "GRATIS" : fmt(o.precio)}
+                    {/* «Gratis» lo decide el pedido, no la tarifa: ninguna de
+                        las tres opciones cuesta cero por sí sola. */}
+                    {gratis ? "GRATIS" : fmt(o.precio)}
                   </span>
                 </span>
                 <span className="text-fg-muted mt-0.5 block text-sm">

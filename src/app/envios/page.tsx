@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bloque, PaginaInfo } from "@/components/comunes/pagina-info";
 import { OPCIONES_ENVIO, PAQUETERIAS } from "@/data/contenido";
 import { precio } from "@/lib/format";
+import { COSTO_ENVIO_ESTANDAR, PIEZAS_ENVIO_GRATIS } from "@/lib/volumen";
 
 export const metadata: Metadata = {
   title: "Envíos",
@@ -45,11 +46,15 @@ export default function EnviosPage() {
                   </td>
                   <td className="px-4 py-3.5">{o.tiempo}</td>
                   <td data-precio className="px-4 py-3.5 text-right">
-                    {o.precio === 0 ? (
-                      <span className="text-success font-medium">GRATIS</span>
-                    ) : (
-                      precio(o.precio)
-                    )}
+                    {precio(o.precio)}
+                    {/* La tabla es de tarifas, así que enseña lo que cuesta cada
+                        servicio. Que el estándar salga gratis depende del pedido
+                        —desde 3 piezas— y eso lo dice su propia fila. */}
+                    {o.id === "estandar" ? (
+                      <span className="text-success block text-xs font-medium">
+                        gratis desde {PIEZAS_ENVIO_GRATIS} piezas
+                      </span>
+                    ) : null}
                   </td>
                 </tr>
               ))}
@@ -57,8 +62,9 @@ export default function EnviosPage() {
           </table>
         </div>
         <p>
-          El envío estándar es gratis en pedidos de 3 piezas o más. Por debajo de
-          esa cantidad cuesta {precio(149)} MXN.
+          El envío estándar es gratis en pedidos de {PIEZAS_ENVIO_GRATIS} piezas
+          o más. Por debajo de esa cantidad cuesta{" "}
+          {precio(COSTO_ENVIO_ESTANDAR)} MXN.
         </p>
       </Bloque>
 
