@@ -392,7 +392,20 @@ export function CompraProducto({ producto }: { producto: Producto }) {
         />
         <button
           type="button"
-          onClick={() => alternarFavorito(producto.id)}
+          onClick={() => {
+            alternarFavorito(producto.id);
+            // Igual que en la tarjeta del catálogo: solo cuenta el guardado,
+            // no el clic que lo deshace.
+            if (!favorito) {
+              pixel("AddToWishlist", {
+                content_ids: [producto.id],
+                content_name: producto.nombre,
+                content_type: "product",
+                currency: "MXN",
+                value: presentacion.precio,
+              });
+            }
+          }}
           aria-pressed={favorito}
           aria-label={favorito ? "Quitar de favoritos" : "Guardar en favoritos"}
           className="border-border-strong hover:border-gold text-fg-muted hover:text-gold-light grid size-11 shrink-0 place-items-center rounded-full border transition-colors"

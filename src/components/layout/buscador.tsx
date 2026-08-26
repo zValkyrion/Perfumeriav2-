@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio } from "@/components/comunes/precio";
 import { normalizar, puntuar } from "@/lib/coincidencia";
+import { pixel } from "@/lib/pixel";
 import type { EntradaIndice } from "@/data/productos";
 import { MARCAS } from "@/data/marcas";
 import { PlaceholderAnimado } from "./placeholder-animado";
@@ -56,6 +57,16 @@ export function Buscador({
   function enviar(consulta: string) {
     const limpio = consulta.trim();
     if (!limpio) return;
+    /**
+     * `Search` con el término escrito. Es lo que permite después anunciarle a
+     * quien buscó «oud» y se fue sin comprar.
+     *
+     * Va aquí y no en el `onChange` del campo a propósito: el evento cuenta
+     * búsquedas, no pulsaciones. Dispararlo en cada tecla mandaría siete
+     * eventos por «vainilla» y dejaría el público de retargeting lleno de
+     * términos a medio escribir.
+     */
+    pixel("Search", { search_string: limpio });
     setAbierto(false);
     router.push(`/buscar?q=${encodeURIComponent(limpio)}`);
   }

@@ -11,6 +11,7 @@ import { Sticker } from "@/components/comunes/sticker";
 import { MARCAS_POR_SLUG } from "@/data/marcas";
 import { presentacionPrincipal } from "@/data/productos";
 import { precio as fmt } from "@/lib/format";
+import { pixel } from "@/lib/pixel";
 import { mejorPlazo, precioUnitario } from "@/lib/volumen";
 import { useTienda } from "@/store/tienda";
 import type { Producto } from "@/types";
@@ -145,6 +146,18 @@ export function TarjetaProducto({
           type="button"
           onClick={() => {
             alternarFavorito(producto.id);
+            // Solo al guardar, nunca al quitar: `AddToWishlist` mide intención
+            // de compra, y contar también el clic que la deshace convertiría un
+            // arrepentimiento en señal positiva.
+            if (!favorito) {
+              pixel("AddToWishlist", {
+                content_ids: [producto.id],
+                content_name: producto.nombre,
+                content_type: "product",
+                currency: "MXN",
+                value: presentacion.precio,
+              });
+            }
             toast(favorito ? "Quitado de favoritos" : "Guardado en favoritos");
           }}
           aria-pressed={favorito}

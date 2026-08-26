@@ -8,6 +8,7 @@ import { BotonWhatsApp } from "@/components/layout/whatsapp";
 import { DrawerCarrito } from "@/components/carrito/drawer-carrito";
 import { SincronizarCuenta } from "@/components/cuenta/sincronizar-cuenta";
 import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
+import { ContactoWhatsApp } from "@/components/comunes/contacto-whatsapp";
 import { PixelMeta } from "@/components/comunes/pixel-meta";
 import { TransicionRuta } from "@/components/comunes/transicion-ruta";
 import { MAS_VENDIDOS, indiceCompacto } from "@/data/productos";
@@ -97,6 +98,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Pixel de Meta. No pinta nada y no carga nada mientras
             `NEXT_PUBLIC_META_PIXEL` esté sin definir. */}
         <PixelMeta />
+
+        {/* `Contact` de cada enlace de WhatsApp. Vive aquí, y no en cada botón,
+            porque los enlaces están repartidos por todo el sitio. */}
+        <ContactoWhatsApp />
 
         <a
           href="#contenido"

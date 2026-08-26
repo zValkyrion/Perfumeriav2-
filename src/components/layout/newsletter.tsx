@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { toast } from "sonner";
+import { pixel } from "@/lib/pixel";
 
 /**
  * Captura de correo con el gancho del 10% (§1.2.2, punto 9). No hay backend:
@@ -22,6 +23,18 @@ export function Newsletter({ compacto = true }: { compacto?: boolean }) {
     }
     setError(null);
     setListo(true);
+    /**
+     * `Lead`: el correo entregado a cambio del cupón. Es el nombre estándar que
+     * el administrador de anuncios sabe optimizar; con un evento personalizado
+     * no se puede pujar por conversiones.
+     *
+     * Ojo con lo que este evento promete: hoy el formulario no tiene backend
+     * —solo valida y confirma— así que el correo no se guarda en ningún sitio.
+     * El evento mide la intención real de la persona, pero mientras no haya
+     * dónde recogerlo, optimizar campañas hacia `Lead` compra correos que nadie
+     * llega a usar.
+     */
+    pixel("Lead");
     toast.success("¡Listo! Tu cupón AURA10 va en camino", {
       description: "Revisa tu correo para el 10% de tu primera compra.",
     });

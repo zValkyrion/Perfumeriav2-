@@ -29,7 +29,9 @@ export type EventoPixel =
   | "AddPaymentInfo"
   | "Purchase"
   | "Search"
-  | "Lead";
+  | "Lead"
+  | "AddToWishlist"
+  | "Contact";
 
 export interface DatosPixel {
   content_ids?: string[];
