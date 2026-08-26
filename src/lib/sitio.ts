@@ -2,16 +2,22 @@
  * Origen canónico del sitio. Es el único lugar donde vive la URL pública:
  * de aquí salen `metadataBase`, los canonical, el sitemap y el JSON-LD.
  *
- * Hoy el sitio se sirve desde GitHub Pages, así que la URL incluye el
- * `basePath` del repositorio (ver `next.config.ts`). El valor es fijo a
- * propósito: el canonical debe apuntar a producción aunque el build corra en
- * local, donde `basePath` está vacío.
+ * Producción es la distribución de CloudFront y se sirve en la raíz del
+ * dominio: el workflow de AWS no define `PAGES`, así que ese build sale sin
+ * `basePath` (ver `next.config.ts`). El valor es fijo a propósito: el canonical
+ * debe apuntar a producción aunque el build corra en local o desde el workflow
+ * de Pages, que sí lleva `basePath`.
+ *
+ * GitHub Pages sigue publicando una copia bajo `/Perfumeriav2-`, y no es un
+ * descuido: al declarar aquí el origen de CloudFront, esa copia se canonicaliza
+ * hacia producción y le cede la autoridad en vez de competir con ella por las
+ * mismas búsquedas. Pages no permite redirecciones 301 propias, así que el
+ * canonical es el único traspaso posible mientras las dos sigan vivas.
  *
  * Cuando el dominio propio esté apuntando: cambia esta constante a
- * `https://elreydelosperfumes.mx`, crea `public/CNAME` con ese dominio y quita
- * el `basePath` del workflow. Nada más hay que tocar.
+ * `https://elreydelosperfumes.mx`. Nada más hay que tocar.
  */
-export const SITIO_URL = "https://zvalkyrion.github.io/Perfumeriav2-";
+export const SITIO_URL = "https://devfq5kjop78h.cloudfront.net";
 
 /**
  * Convierte una ruta interna en URL absoluta para sitemap y JSON-LD, que —a
