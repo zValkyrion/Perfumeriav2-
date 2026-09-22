@@ -1,6 +1,8 @@
-import { normalizar, puntuar } from "@/lib/coincidencia";
-import { randEntero } from "@/lib/rand";
-import type { Nota, Presentacion, Producto } from "@/types";
+// Rutas relativas y no `@/`: la Lambda de `radar/` también compila este
+// archivo para cobrar con los mismos precios, y allí `@/` apunta a otra carpeta.
+import { normalizar, puntuar } from "../lib/coincidencia";
+import { randEntero } from "../lib/rand";
+import type { Nota, Presentacion, Producto } from "../types";
 import { SEMILLAS, type Semilla } from "./semillas";
 
 /**

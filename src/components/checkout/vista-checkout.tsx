@@ -29,18 +29,18 @@ import {
   CLIP_LINK,
   COMISION_CONTRA_ENTREGA,
   DATOS_BANCARIOS,
+  DESCUENTO_TRANSFERENCIA,
   HAY_DATOS_BANCARIOS,
   METODOS,
   TOPE_CONTRA_ENTREGA,
-  comisionDe,
-  hayContraEntrega,
   type IdPago,
 } from "@/data/pagos";
+import { esIdEnvio, type IdEnvio } from "../../../compartido/reglas";
 import { resumenCarrito } from "@/lib/carrito";
 import {
-  guardarPedidoRemoto,
   haySincronizacion,
   leerDireccionesRemotas,
+  registrarPedido,
 } from "@/lib/cuenta-remota";
 import { avisarPedido } from "@/lib/aviso-pedido";
 import { pixel } from "@/lib/pixel";
@@ -187,28 +187,30 @@ export function VistaCheckout() {
     };
   }, [sesion.perfil, modoExpres]);
 
-  const resumenBase = resumenCarrito(carrito, cupon);
-  const opcion = OPCIONES_ENVIO.find((o) => o.id === envio) ?? OPCIONES_ENVIO[0];
-  const costoEnvio = resumenBase.envioGratis && envio === "estandar" ? 0 : opcion.precio;
-  // Se rehace el total porque el envío depende de la opción elegida aquí, no
-  // del carrito. Todo lo que descuenta tiene que restarse igual que allá: si
-  // aquí falta un concepto, el checkout cobra más que el carrito y nadie lo ve
-  // hasta que llega el cargo.
-  const totalSinComision =
-    resumenBase.subtotal -
-    resumenBase.descuento3x2 -
-    resumenBase.descuentoCupon +
-    costoEnvio;
+  const envioElegido: IdEnvio = esIdEnvio(envio) ? envio : "estandar";
+  const opcion = OPCIONES_ENVIO.find((o) => o.id === envioElegido) ?? OPCIONES_ENVIO[0];
 
-  // El contra entrega se ofrece por debajo del tope, y se mide sobre el total
-  // *antes* de la comisión: lo que decide es cuánto vale el envío, no cuánto
-  // cuesta ir a cobrarlo.
-  const contraEntregaOk = hayContraEntrega(totalSinComision);
-  const metodoEfectivo: IdPago = metodo === "contra" && !contraEntregaOk ? "clip" : metodo;
-  const comision = comisionDe(metodoEfectivo);
-  const total = totalSinComision + comision;
+  // Aquí no se suma ni se resta nada a mano: el total lo calcula `cotizar`, la
+  // misma función con la que el servidor cobra. Cuando el checkout rehacía la
+  // cuenta por su lado, bastaba con olvidar un concepto para anunciar una cifra
+  // y cobrar otra.
+  const resumen = resumenCarrito(carrito, cupon, { metodo, envio: envioElegido });
+  const { comision, total } = resumen;
+  const costoEnvio = resumen.envio;
+  // El contra entrega por encima del tope se cobra con Clip.
+  const metodoEfectivo: IdPago = resumen.metodo ?? metodo;
 
-  const resumen = { ...resumenBase, envio: costoEnvio, comision, total };
+  // Dos cotizaciones más, porque dependen de la forma de pago y la persona puede
+  // estar mirando otra: lo que costaría con Clip —la base de los meses sin
+  // intereses— y si el pedido cabe bajo el tope del contra entrega.
+  const comoClip = resumenCarrito(carrito, cupon, { metodo: "clip", envio: envioElegido });
+  const comoTransferencia = resumenCarrito(carrito, cupon, {
+    metodo: "transferencia",
+    envio: envioElegido,
+  });
+  const contraEntregaOk =
+    resumenCarrito(carrito, cupon, { metodo: "contra", envio: envioElegido }).metodo ===
+    "contra";
 
   /**
    * Una sección es «hecha» si ya se respondió alguna vez, no solo si queda por
@@ -250,8 +252,8 @@ export function VistaCheckout() {
     avisado.current = true;
     pixel("InitiateCheckout", {
       currency: "MXN",
-      value: totalSinComision,
-      num_items: resumenBase.piezasTotales,
+      value: total - comision,
+      num_items: resumen.piezasTotales,
       content_ids: carrito.map((i) => i.productoId),
       content_type: "product",
     });
@@ -268,7 +270,7 @@ export function VistaCheckout() {
     );
   }
 
-  if (resumenBase.vacio) {
+  if (resumen.vacio) {
     return (
       <Contenedor className="py-20 text-center">
         <h1 className="font-display mb-3 text-3xl">No hay nada que pagar</h1>
@@ -282,18 +284,49 @@ export function VistaCheckout() {
     );
   }
 
-  function finalizar(metodoPago: string) {
-    if (!contacto) return;
+  async function finalizar(metodoPago: string) {
+    if (!contacto || enviando) return;
     setEnviando(true);
 
-    const folio = `AUR-2026-${String(
-      847 + (carrito.reduce((n, i) => n + i.cantidad, 0) % 500),
-    ).padStart(5, "0")}`;
-    const fecha = new Date().toISOString().slice(0, 10);
+    // El cobro con Clip vive fuera de la tienda y se abre en otra pestaña —no se
+    // sustituye esta— para que el comprador vuelva a su comprobante al terminar.
+    // Se abre **antes** de esperar al servidor: los navegadores solo dejan abrir
+    // pestañas como respuesta directa a un clic, y después de un `await` ya no
+    // lo es. El enlace de cobro no depende del folio.
+    if (metodoEfectivo === "clip" && CLIP_LINK) {
+      window.open(CLIP_LINK, "_blank", "noopener,noreferrer");
+    }
 
+    // El servidor pone el folio —con un contador, así que no se repite— y el
+    // total, que recalcula con los precios del catálogo. También guarda la copia
+    // en «Mis pedidos» si hay sesión. Si no hay servidor o no contesta, el pedido
+    // sigue adelante con la cifra de este navegador y un folio local que se
+    // reconoce por la «L»: cortar la compra por un problema de red sería
+    // castigar al comprador, y el WhatsApp de la confirmación la recoge igual.
+    const registrado = await registrarPedido({
+      items: carrito,
+      cupon,
+      metodo: metodoEfectivo,
+      envio: envioElegido,
+      contacto: {
+        correo: contacto.correo,
+        nombre: contacto.nombre,
+        telefono: contacto.telefono,
+        calle: contacto.calle,
+        colonia: contacto.colonia,
+        cp: contacto.cp,
+        ciudad: contacto.ciudad,
+        estado: contacto.estado,
+        referencias: contacto.referencias ?? "",
+      },
+    }).catch(() => null);
+
+    const hoy = new Date();
     const pedido: PedidoConfirmado = {
-      folio,
-      fecha,
+      folio:
+        registrado?.folio ??
+        `AUR-${hoy.getFullYear()}-L${hoy.getTime().toString(36).toUpperCase()}`,
+      fecha: registrado?.fecha ?? hoy.toISOString().slice(0, 10),
       correo: contacto.correo,
       nombre: contacto.nombre,
       telefono: contacto.telefono,
@@ -306,25 +339,14 @@ export function VistaCheckout() {
       envio: opcion.nombre,
       diasEntrega: opcion.tiempo,
       metodoPago,
-      metodoId: metodoEfectivo,
-      comision,
-      total,
-      piezas: resumenBase.piezasTotales,
+      metodoId: registrado?.metodo ?? metodoEfectivo,
+      comision: registrado?.comision ?? comision,
+      descuentoTransferencia:
+        registrado?.descuentoTransferencia ?? resumen.descuentoTransferencia,
+      total: registrado?.total ?? total,
+      piezas: resumen.piezasTotales,
       items: carrito,
     };
-
-    // Queda en la cuenta para que aparezca en /cuenta desde cualquier aparato.
-    // Sin sesión —o sin red— falla en silencio y el pedido sigue existiendo en
-    // esta pestaña: cortar la confirmación por no haber podido guardar la copia
-    // sería castigar al comprador por un problema del servidor.
-    guardarPedidoRemoto({
-      folio,
-      fecha,
-      estatus: "Pendiente",
-      total,
-      piezas: resumenBase.piezasTotales,
-      items: carrito,
-    }).catch(() => {});
 
     // El aviso a la tienda: si hay webhook configurado, sale ahora mismo con
     // los datos de contacto. Si no, queda el WhatsApp de la pantalla de
@@ -351,21 +373,13 @@ export function VistaCheckout() {
 
     pixel("Purchase", {
       currency: "MXN",
-      value: total,
-      num_items: resumenBase.piezasTotales,
+      value: pedido.total,
+      num_items: resumen.piezasTotales,
       content_ids: carrito.map((i) => i.productoId),
       content_type: "product",
     });
 
     confirmarPedido(pedido);
-
-    // El cobro con Clip vive fuera de la tienda. Se abre en otra pestaña —no se
-    // sustituye esta— para que el comprador vuelva a su comprobante en cuanto
-    // termine de pagar, en vez de perderlo al usar el botón de atrás.
-    if (metodoEfectivo === "clip" && CLIP_LINK) {
-      window.open(CLIP_LINK, "_blank", "noopener,noreferrer");
-    }
-
     router.push("/checkout/confirmacion");
   }
 
@@ -475,7 +489,7 @@ export function VistaCheckout() {
             <PasoEnvio
               valor={envio}
               onCambio={setEnvio}
-              envioGratis={resumenBase.envioGratis}
+              envioGratis={resumen.envioGratis}
               onAtras={() => setPaso(0)}
               onSiguiente={() => irA(2)}
             />
@@ -498,7 +512,9 @@ export function VistaCheckout() {
               onMetodo={setMetodo}
               plazo={plazo}
               onPlazo={setPlazo}
-              total={totalSinComision}
+              total={comoClip.total}
+              totalTransferencia={comoTransferencia.total}
+              ahorroTransferencia={comoTransferencia.descuentoTransferencia}
               contraEntregaOk={contraEntregaOk}
               onAtras={() => setPaso(1)}
               onSiguiente={() => {
@@ -882,6 +898,8 @@ function PasoPago({
   plazo,
   onPlazo,
   total,
+  totalTransferencia,
+  ahorroTransferencia,
   contraEntregaOk,
   onAtras,
   onSiguiente,
@@ -890,8 +908,11 @@ function PasoPago({
   onMetodo: (v: IdPago) => void;
   plazo: PlazoMSI | null;
   onPlazo: (p: PlazoMSI | null) => void;
-  /** Total **sin** la comisión: es el valor del pedido lo que abre los meses. */
+  /** Total pagando con Clip: es el valor del pedido lo que abre los meses. */
   total: number;
+  /** Total y ahorro pagando por transferencia, para enseñarlos en su pestaña. */
+  totalTransferencia: number;
+  ahorroTransferencia: number;
   contraEntregaOk: boolean;
   onAtras: () => void;
   onSiguiente: () => void;
@@ -968,6 +989,16 @@ function PasoPago({
         </TabsContent>
 
         <TabsContent value="transferencia">
+          {ahorroTransferencia > 0 ? (
+            <p className="border-gold/30 bg-gold-muted mb-4 rounded-md border px-4 py-3 text-sm">
+              Pagando por depósito o transferencia te descontamos{" "}
+              {Math.round(DESCUENTO_TRANSFERENCIA * 100)}% más:{" "}
+              <span className="text-gold-light font-medium">
+                pagas {fmt(totalTransferencia)}
+              </span>{" "}
+              y ahorras {fmt(ahorroTransferencia)} extra.
+            </p>
+          ) : null}
           <InfoPago
             titulo="Depósito o transferencia"
             texto={

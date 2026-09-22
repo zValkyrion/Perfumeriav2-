@@ -104,6 +104,11 @@ export function textoPedido(pedido: PedidoConfirmado): string {
     "",
     `*Envío:* ${pedido.envio}`,
     `*Forma de pago:* ${pedido.metodoPago}`,
+    // Los artículos van a su precio por volumen; sin este renglón, la
+    // diferencia con el total parecería un error de cuentas.
+    (pedido.descuentoTransferencia ?? 0) > 0
+      ? `*Descuento por transferencia:* −${fmt(pedido.descuentoTransferencia!)}`
+      : null,
     pedido.comision > 0
       ? `*Servicio de cobro en destino:* ${fmt(pedido.comision)}`
       : null,

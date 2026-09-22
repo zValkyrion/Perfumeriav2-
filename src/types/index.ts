@@ -176,14 +176,8 @@ export interface Usuario {
   desde: string;
 }
 
-/** Escalón de precio por volumen (§3.1). */
-export interface Escalon {
-  min: number;
-  max: number | null;
-  descuento: number;
-  etiqueta: string;
-  nombre: string;
-}
+/** Escalón de precio por volumen (§3.1). Lo define la regla compartida con el servidor. */
+export type { Escalon } from "../../compartido/reglas";
 
 export interface CategoriaTienda {
   slug: string;

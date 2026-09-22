@@ -2,7 +2,14 @@ import {
   DynamoDBDocumentClient,
   PutCommand,
   QueryCommand,
+  UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
+// Con extensión `.ts`: `scripts/probar-tienda.ts` corre este archivo con Node
+// directo, sin empaquetador, y Node no adivina extensiones. Los `import type`
+// desaparecen al quitar los tipos, así que solo el de valores la necesita.
+import type { Cotizacion } from "../../compartido/cotizacion.ts";
+import type { ContactoPedido, SolicitudPedido } from "../../compartido/pedido.ts";
+import { esIdEnvio, esIdPago } from "../../compartido/reglas.ts";
 
 /**
  * Carrito y pedidos de cada cliente de la tienda.
@@ -12,13 +19,16 @@ import {
  * lo de este usuario", y una segunda tabla solo añadiría un recurso más que
  * desplegar y vigilar para el mismo resultado.
  *
- *   PK = USER#<sub>   SK = CARRITO         → el carrito, tal cual lo tiene la app
- *   PK = USER#<sub>   SK = DIRECCIONES     → la libreta de direcciones
- *   PK = USER#<sub>   SK = PEDIDO#<folio>  → un pedido cerrado
+ *   PK = USER#<sub>      SK = CARRITO         → el carrito, tal cual lo tiene la app
+ *   PK = USER#<sub>      SK = DIRECCIONES     → la libreta de direcciones
+ *   PK = USER#<sub>      SK = PEDIDO#<folio>  → copia del pedido en «Mis pedidos»
+ *   PK = PEDIDO#<folio>  SK = META            → el pedido de la tienda, con o sin cuenta
+ *   PK = CONTADOR        SK = PEDIDOS         → el último número de folio
  *
- * Estas filas **no llevan `GSI1PK`**, así que el índice `porFecha` —que es
- * disperso— no las ve y `GET /proveedores` sigue devolviendo solo fichas. Es lo
- * que mantiene separados los dos mundos dentro de la misma tabla.
+ * Las filas de usuario **no llevan `GSI1PK`**, así que el índice `porFecha`
+ * —que es disperso— no las ve y `GET /proveedores` sigue devolviendo solo
+ * fichas. Los pedidos sí lo llevan, pero en su propia partición del índice
+ * (`PEDIDOS`), que es la que leerá el panel de administración.
  */
 
 export type ItemCarrito = {
@@ -182,13 +192,12 @@ const ESTATUS = new Set([
 ]);
 
 /**
- * Sanea un pedido que manda la app.
+ * Sanea la copia de un pedido para «Mis pedidos».
  *
- * **El total llega del cliente y aquí se cree.** Hoy no hay cobro real: el
- * checkout es una demostración y el pedido es un comprobante, no un cargo. El
- * día que exista un pago de verdad, el precio tiene que calcularse en el
- * servidor a partir del catálogo — quien pueda editar su propio JavaScript
- * puede mandar un total de cero.
+ * Solo la usa el camino antiguo, el de las tiendas que siguen abiertas en algún
+ * navegador con el JavaScript de antes: mandaban su propio folio y su propio
+ * total. Los pedidos nuevos pasan por `sanearSolicitud`, donde el total ni
+ * siquiera se lee — lo calcula el servidor.
  */
 export function sanearPedido(cuerpo: unknown): Pedido | null {
   const p = (typeof cuerpo === "object" && cuerpo !== null ? cuerpo : {}) as Record<
@@ -216,6 +225,144 @@ export function sanearPedido(cuerpo: unknown): Pedido | null {
   if (guia) pedido.guia = guia;
   if (paqueteria) pedido.paqueteria = paqueteria;
   return pedido;
+}
+
+/**
+ * Sanea la solicitud de un pedido nuevo.
+ *
+ * Lo que no se acepta es tan deliberado como lo que sí: si el cuerpo trae
+ * `folio` o `total`, se ignoran. El folio sale del contador y el total de
+ * `cotizar`. Se exige nombre y teléfono porque sin ellos el pedido no se puede
+ * confirmar por WhatsApp, que es como se cierra el cobro.
+ */
+export function sanearSolicitud(cuerpo: unknown): SolicitudPedido | null {
+  const s = (typeof cuerpo === "object" && cuerpo !== null ? cuerpo : {}) as Record<
+    string,
+    unknown
+  >;
+  const items = sanearItems(s.items);
+  if (items.length === 0 || !esIdPago(s.metodo)) return null;
+
+  const c = (typeof s.contacto === "object" && s.contacto !== null
+    ? s.contacto
+    : {}) as Record<string, unknown>;
+  const contacto: ContactoPedido = {
+    correo: texto(c.correo, 160).trim(),
+    nombre: texto(c.nombre, 120).trim(),
+    telefono: texto(c.telefono, 40).trim(),
+    calle: texto(c.calle, 200),
+    colonia: texto(c.colonia, 120),
+    cp: texto(c.cp, 10),
+    ciudad: texto(c.ciudad, 120),
+    estado: texto(c.estado, 120),
+    referencias: texto(c.referencias, 300),
+  };
+  if (!contacto.nombre || !contacto.telefono) return null;
+
+  const cupon = texto(s.cupon, 30).trim().toUpperCase();
+  return {
+    items,
+    cupon: cupon || null,
+    metodo: s.metodo,
+    envio: esIdEnvio(s.envio) ? s.envio : "estandar",
+    contacto,
+  };
+}
+
+/**
+ * El siguiente folio, con un contador atómico en DynamoDB.
+ *
+ * El folio lo ponía el navegador con una fórmula sobre el número de piezas, y
+ * dos pedidos con las mismas piezas salían con el mismo folio. Aquí lo asigna un
+ * `ADD` que DynamoDB serializa: dos pedidos simultáneos nunca reciben el mismo.
+ *
+ * Arranca en 2000 para no chocar con los folios que ya repartió la fórmula
+ * vieja (del 847 al 1346) y que viven en «Mis pedidos» de algunas cuentas.
+ */
+export async function siguienteFolio(
+  dynamo: DynamoDBDocumentClient,
+  tabla: string,
+  /** El año del folio, en la hora de México y no en la del servidor. */
+  anio: string,
+): Promise<string> {
+  const salida = await dynamo.send(
+    new UpdateCommand({
+      TableName: tabla,
+      Key: { PK: "CONTADOR", SK: "PEDIDOS" },
+      UpdateExpression: "SET valor = if_not_exists(valor, :base) + :uno",
+      ExpressionAttributeValues: { ":base": 1999, ":uno": 1 },
+      ReturnValues: "UPDATED_NEW",
+    }),
+  );
+  const n = Number(salida.Attributes?.valor);
+  return `AUR-${anio}-${String(n).padStart(5, "0")}`;
+}
+
+export type PedidoTienda = {
+  folio: string;
+  fecha: string;
+  estatus: string;
+  solicitud: SolicitudPedido;
+  /** Las cifras tal como las calculó el servidor al recibirlo. */
+  cuenta: Omit<Cotizacion, "lineas" | "descartados" | "escalon"> & {
+    escalon: string;
+    /** Artículos que llegaron pero no existen en el catálogo: no se cobraron. */
+    descartados: number;
+    lineas: {
+      productoId: string;
+      ml: number;
+      cantidad: number;
+      unitario: number;
+      subtotal: number;
+    }[];
+  };
+};
+
+/** Lo que se guarda de la cotización: las cifras, sin estructuras de más. */
+export function cuentaDe(c: Cotizacion): PedidoTienda["cuenta"] {
+  const { lineas, descartados, escalon, ...cifras } = c;
+  return {
+    ...cifras,
+    escalon: escalon.nombre,
+    descartados: descartados.length,
+    lineas: lineas.map((l) => ({
+      productoId: l.item.productoId,
+      ml: l.item.ml,
+      cantidad: l.item.cantidad,
+      unitario: l.unitario,
+      subtotal: l.subtotal,
+    })),
+  };
+}
+
+/**
+ * Guarda el pedido de la tienda, con o sin cuenta.
+ *
+ * Va en su propia partición (`PEDIDO#<folio>`) y en la partición `PEDIDOS` del
+ * índice por fecha, que es la que listará el panel de administración. La
+ * condición impide pisar un pedido existente si algún día el contador se
+ * reiniciara por error.
+ */
+export async function guardarPedidoTienda(
+  dynamo: DynamoDBDocumentClient,
+  tabla: string,
+  pedido: PedidoTienda,
+): Promise<void> {
+  const creadoEn = new Date().toISOString();
+  await dynamo.send(
+    new PutCommand({
+      TableName: tabla,
+      Item: {
+        PK: `PEDIDO#${pedido.folio}`,
+        SK: "META",
+        GSI1PK: "PEDIDOS",
+        GSI1SK: `${creadoEn}#${pedido.folio}`,
+        pedido,
+        creadoEn,
+      },
+      ConditionExpression: "attribute_not_exists(PK)",
+    }),
+  );
 }
 
 /* ── Acceso a datos ─────────────────────────────────────────────────────── */

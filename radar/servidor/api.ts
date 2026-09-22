@@ -22,16 +22,26 @@ import {
 } from "./identidad";
 import { leerLista } from "./precios";
 import {
+  cuentaDe,
   guardarCarrito,
   guardarDirecciones,
   guardarPedido,
+  guardarPedidoTienda,
   leerCarrito,
   leerDirecciones,
   listarPedidos,
   sanearCarrito,
   sanearDirecciones,
   sanearPedido,
+  sanearSolicitud,
+  siguienteFolio,
 } from "./tienda";
+// Mismo cálculo y mismos precios que la tienda. Hoy el catálogo viene compilado
+// del propio repositorio —las dos cosas se despliegan desde el mismo commit—;
+// cuando viva en DynamoDB, solo cambia la fuente.
+import { cotizar } from "../../compartido/cotizacion";
+import type { PedidoRegistrado } from "../../compartido/pedido";
+import { FUENTE_TIENDA } from "../../src/data/fuente-precios";
 
 /**
  * API del Radar de Proveedores.
@@ -122,6 +132,11 @@ export async function handler(evento: Evento) {
 
     if (metodo === "POST" && ruta === "/acceso") return acceso(evento);
 
+    // Los pedidos de la tienda llegan con o sin cuenta —casi nadie se registra
+    // para comprar—, así que van antes del filtro de sesión. La identidad, si
+    // viene, solo sirve para guardar además la copia en «Mis pedidos».
+    if (metodo === "POST" && ruta === "/pedidos") return crearPedido(evento);
+
     // Todo lo demás exige identidad. La app puede capturar sin ella —los datos
     // viven en el teléfono—, pero nada sube sin haber iniciado sesión.
     const sesion = await sesionDe(evento);
@@ -148,9 +163,6 @@ export async function handler(evento: Evento) {
         return ponerDirecciones(evento, sesion.sub);
       }
       if (metodo === "GET" && ruta === "/pedidos") return verPedidos(sesion.sub);
-      if (metodo === "POST" && ruta === "/pedidos") {
-        return crearPedido(evento, sesion.sub);
-      }
       return json(405, { error: `${metodo} no va en ${ruta}` });
     }
 
@@ -234,11 +246,87 @@ async function verPedidos(sub: string) {
   return json(200, { pedidos: await listarPedidos(dynamo, TABLA, sub) });
 }
 
-async function crearPedido(evento: Evento, sub: string) {
-  const pedido = sanearPedido(leerCuerpo<unknown>(evento));
-  if (!pedido) return json(400, { error: "Falta el folio del pedido" });
-  await guardarPedido(dynamo, TABLA, sub, pedido);
-  return json(200, { ok: true, folio: pedido.folio });
+/** Fecha de calendario en México: un pedido de las 8 pm no es de mañana. */
+function fechaMexico(ahora: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+  }).format(ahora);
+}
+
+/**
+ * Registra un pedido de la tienda.
+ *
+ * **El total se calcula aquí**, con `cotizar` y los precios del catálogo. Lo que
+ * el navegador creyó que costaba no se lee: cualquiera puede editar su propio
+ * JavaScript y mandar un cero. El folio también sale de aquí, de un contador.
+ */
+async function crearPedido(evento: Evento) {
+  const cuerpo = leerCuerpo<unknown>(evento);
+  const sesion = await sesionDe(evento).catch(() => null);
+  const sub = sesion && tieneIdentidadPropia(sesion) ? sesion.sub : null;
+
+  // Camino antiguo: una pestaña abierta con el JavaScript de antes todavía
+  // manda su propio folio y su total para «Mis pedidos». Se acepta como antes
+  // —solo con cuenta— para que esa compra no falle, pero no crea un pedido de
+  // la tienda: ese navegador ya le enseñó al comprador su propio folio. Se
+  // reconoce por no traer `contacto`, que el contrato nuevo siempre lleva: un
+  // `folio` metido a mano en una solicitud nueva se ignora, no la desvía aquí.
+  const bruto = (cuerpo ?? {}) as { folio?: unknown; contacto?: unknown };
+  if (typeof bruto.folio === "string" && bruto.contacto === undefined) {
+    if (!sub) return json(401, { error: "Sesión inválida o vencida" });
+    const copia = sanearPedido(cuerpo);
+    if (!copia) return json(400, { error: "Falta el folio del pedido" });
+    await guardarPedido(dynamo, TABLA, sub, copia);
+    return json(200, { ok: true, folio: copia.folio });
+  }
+
+  const solicitud = sanearSolicitud(cuerpo);
+  if (!solicitud) {
+    return json(400, {
+      error: "Pedido inválido: faltan artículos, forma de pago o nombre y teléfono",
+    });
+  }
+
+  const cotizacion = cotizar(solicitud.items, FUENTE_TIENDA, {
+    cupon: solicitud.cupon,
+    metodo: solicitud.metodo,
+    envio: solicitud.envio,
+  });
+  if (cotizacion.lineas.length === 0) {
+    return json(422, { error: "Ningún artículo del pedido existe en el catálogo" });
+  }
+
+  const fecha = fechaMexico(new Date());
+  const folio = await siguienteFolio(dynamo, TABLA, fecha.slice(0, 4));
+
+  await guardarPedidoTienda(dynamo, TABLA, {
+    folio,
+    fecha,
+    estatus: "Pendiente",
+    solicitud,
+    cuenta: cuentaDe(cotizacion),
+  });
+
+  if (sub) {
+    await guardarPedido(dynamo, TABLA, sub, {
+      folio,
+      fecha,
+      estatus: "Pendiente",
+      total: cotizacion.total,
+      piezas: cotizacion.piezasTotales,
+      items: solicitud.items,
+    });
+  }
+
+  const registrado: PedidoRegistrado = {
+    folio,
+    fecha,
+    total: cotizacion.total,
+    comision: cotizacion.comision,
+    descuentoTransferencia: cotizacion.descuentoTransferencia,
+    metodo: cotizacion.metodo ?? solicitud.metodo,
+  };
+  return json(201, registrado);
 }
 
 // ── Proveedores ─────────────────────────────────────────────────────────────

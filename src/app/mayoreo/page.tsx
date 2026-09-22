@@ -21,9 +21,13 @@ import { LOTES_DESTACADOS, UTILIDAD_MAXIMA } from "@/data/lotes";
 import { MAS_VENDIDOS, precioDesde } from "@/data/productos";
 import { precioRedondo } from "@/lib/format";
 import {
+  COSTO_ENVIO_ESTANDAR,
+  DESCUENTO_MAXIMO,
+  DESCUENTO_TRANSFERENCIA,
   ESCALON_INICIAL,
   ESCALON_TOPE,
   ESCALONES,
+  PIEZAS_ENVIO_GRATIS,
   pct,
   precioUnitario,
 } from "@/lib/volumen";
@@ -33,7 +37,7 @@ export const metadata: Metadata = {
   // gancho de negocio va en la description, no en el título.
   title: "Perfumes al mayoreo en México",
   description:
-    "Precio de mayoreo desde 3 perfumes y hasta 30% de descuento con 10 o más. Sin mínimo de compra, sin papeleo y con envío gratis a todo México.",
+    "Precio de mayoreo desde 3 perfumes: 30% de descuento con 20 o más y 10% extra pagando por transferencia, hasta 40%. Envío gratis a todo México.",
   alternates: { canonical: "/mayoreo" },
 };
 
@@ -67,9 +71,9 @@ export default function MayoreoPage() {
               <p className="text-fg-muted mt-4 max-w-lg text-[15px] leading-relaxed lg:text-lg">
                 Desde {ESCALON_INICIAL.min} perfumes obtienes precio de
                 mayoreo y envío gratis. Con {ESCALON_TOPE.min} o más llegas al{" "}
-                {pct(ESCALON_TOPE.descuento)}% de descuento, y a partir de 20
-                cotizamos precio especial. Sin mínimos, sin cuotas y sin
-                papeleo.
+                {pct(ESCALON_TOPE.descuento)}% de descuento, y pagando por
+                depósito o transferencia sumas {pct(DESCUENTO_TRANSFERENCIA)}%
+                más. Sin mínimos, sin cuotas y sin papeleo.
               </p>
 
               <dl className="mt-7 flex flex-wrap gap-x-8 gap-y-4">
@@ -79,7 +83,7 @@ export default function MayoreoPage() {
                   </dt>
                   {/* La cifra ancla del negocio, en tamaño de titular */}
                   <dd className="cifra-audaz text-gold-gradient">
-                    {pct(ESCALON_TOPE.descuento)}%
+                    {pct(DESCUENTO_MAXIMO)}%
                   </dd>
                 </div>
                 <div>
@@ -174,10 +178,12 @@ export default function MayoreoPage() {
                       <span className="text-fg-subtle text-xs"> c/u</span>
                     </td>
                     <td className="px-4 py-4 text-right">
-                      {e.min >= 3 ? (
+                      {e.min >= PIEZAS_ENVIO_GRATIS ? (
                         <span className="text-success font-medium">GRATIS</span>
                       ) : (
-                        <span className="text-fg-subtle">$ 149.00</span>
+                        <span className="text-fg-subtle">
+                          <Precio valor={COSTO_ENVIO_ESTANDAR} />
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -226,14 +232,15 @@ export default function MayoreoPage() {
                 Comprando {ESCALON_TOPE.min} perfumes
               </p>
               <p data-precio className="font-display mt-1 text-4xl">
-                <Precio valor={precioUnitario(ticket, 12)} />
+                <Precio valor={precioUnitario(ticket, ESCALON_TOPE.min)} />
                 <span className="text-fg-subtle text-base"> c/u</span>
               </p>
               <ul className="mt-5 space-y-2.5 text-sm">
                 {[
                   `${pct(ESCALON_TOPE.descuento)}% de descuento por pieza`,
                   "Envío gratis a todo México",
-                  `Ganas ${precioRedondo((ticket - precioUnitario(ticket, 12)) * 12)} al revender`,
+                  `Ganas ${precioRedondo((ticket - precioUnitario(ticket, ESCALON_TOPE.min)) * ESCALON_TOPE.min)} al revender`,
+                  `${pct(DESCUENTO_TRANSFERENCIA)}% más si pagas por transferencia`,
                 ].map((t) => (
                   <li key={t} className="flex items-start gap-2">
                     <Check size={15} className="text-gold mt-0.5 shrink-0" aria-hidden />

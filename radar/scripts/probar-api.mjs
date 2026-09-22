@@ -201,7 +201,6 @@ for (const [metodo, ruta] of [
   ["GET", "/direcciones"],
   ["PUT", "/direcciones"],
   ["GET", "/pedidos"],
-  ["POST", "/pedidos"],
 ]) {
   const conPin = await pedir(ruta, {
     method: metodo,
@@ -224,6 +223,42 @@ for (const [metodo, ruta] of [
     `HTTP ${sinToken.estado}`,
   );
 }
+
+// ── Pedidos de la tienda: públicos, pero sin fiarse del navegador ───────────
+// `POST /pedidos` no pide sesión —casi nadie se registra para comprar— y el
+// total lo calcula el servidor. Aquí solo se prueban los rechazos: el camino
+// feliz crearía un pedido real y gastaría un folio en producción. Ese camino lo
+// cubren `npm run probar:precios` y la prueba local de la Lambda empaquetada.
+const contacto = { nombre: "Prueba", telefono: "5500000000" };
+const vacio = await pedir("/pedidos", { method: "POST", body: "{}" });
+ok("POST /pedidos no pide sesión (un cuerpo vacío da 400, no 401)", vacio.estado === 400, `HTTP ${vacio.estado}`);
+
+const inventado = await pedir("/pedidos", {
+  method: "POST",
+  body: JSON.stringify({
+    items: [{ productoId: "no-existe-en-el-catalogo", ml: 100, cantidad: 3 }],
+    metodo: "clip",
+    envio: "estandar",
+    contacto,
+  }),
+});
+ok("POST /pedidos rechaza artículos que no existen con 422", inventado.estado === 422, `HTTP ${inventado.estado}`);
+
+const sinTelefono = await pedir("/pedidos", {
+  method: "POST",
+  body: JSON.stringify({
+    items: [{ productoId: "p001", ml: 100, cantidad: 1 }],
+    metodo: "clip",
+    contacto: { nombre: "Prueba" },
+  }),
+});
+ok("POST /pedidos exige teléfono (400)", sinTelefono.estado === 400, `HTTP ${sinTelefono.estado}`);
+
+const viejoSinSesion = await pedir("/pedidos", {
+  method: "POST",
+  body: JSON.stringify({ folio: "AUR-2026-00001", total: 0, items: [] }),
+});
+ok("el contrato viejo (folio y total del navegador) sin sesión da 401", viejoSinSesion.estado === 401, `HTTP ${viejoSinSesion.estado}`);
 
 console.log(`\n${fallos === 0 ? "TODO EN VERDE" : `${fallos} PRUEBAS FALLARON`}`);
 process.exit(fallos === 0 ? 0 : 1);

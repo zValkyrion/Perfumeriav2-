@@ -145,10 +145,19 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | `POST /precios/leer` | Textract sobre la foto de la lista de precios |
 | `GET/PUT /carrito` | El carrito de la tienda, por usuario |
 | `GET/PUT /direcciones` | La libreta de direcciones de ese usuario |
-| `GET/POST /pedidos` | Los pedidos de ese usuario |
+| `GET /pedidos` | Los pedidos de ese usuario («Mis pedidos») |
+| `POST /pedidos` | Registra un pedido de la tienda. **Sin token**: recalcula el total con `cotizar` y asigna el folio |
 
-Las tres últimas son de la **tienda**, no del panel, y por eso no piden grupo:
-piden identidad propia. El resto exige `proveedores` o `admins`.
+`carrito`, `direcciones` y `GET /pedidos` son de la **tienda**, no del panel, y
+por eso no piden grupo: piden identidad propia. `POST /pedidos` ni siquiera
+eso —casi nadie se registra para comprar—; si llega token, además guarda la
+copia en «Mis pedidos». El resto exige `proveedores` o `admins`.
+
+**El total que se cobra lo calcula el servidor.** `POST /pedidos` no lee el
+total ni el folio que mande el navegador: cotiza con `compartido/cotizacion.ts`
+—la misma función que usa el carrito— y los precios del catálogo, que hoy la
+Lambda importa del propio repositorio (`src/data/fuente-precios.ts`) y mañana
+leerá de DynamoDB.
 
 **Autenticación:** PIN de equipo → JWT HS256 firmado con `node:crypto` (sin
 librerías: son treinta líneas y una dependencia menos en el arranque en frío).
@@ -170,10 +179,18 @@ PROV#<id>         META               la ficha completa + GSI1PK/GSI1SK
 PROV#<id>         FOTO#<fotoId>      clave en S3, tipo, lat/lng
 USER#<sub>        CARRITO            carrito, guardados y favoritos de la tienda
 USER#<sub>        DIRECCIONES        la libreta de direcciones
-USER#<sub>        PEDIDO#<folio>     un pedido cerrado
+USER#<sub>        PEDIDO#<folio>     copia del pedido en «Mis pedidos»
+PEDIDO#<folio>    META               el pedido de la tienda (con o sin cuenta) + GSI
+CONTADOR          PEDIDOS            el último número de folio (ADD atómico)
 
 GSI "porFecha":   GSI1PK = "PROVEEDORES"   GSI1SK = "<actualizadoEn>#<id>"
+                  GSI1PK = "PEDIDOS"       GSI1SK = "<creadoEn>#<folio>"
 ```
+
+Los pedidos guardan la solicitud saneada (artículos, forma de pago, envío,
+contacto) y la **cuenta del servidor**: subtotal, cada descuento, envío,
+comisión y total, tal como se calcularon al recibirlos. Su partición `PEDIDOS`
+del índice es la que leerá el panel de administración.
 
 Las filas `USER#` **no llevan `GSI1PK`**. El índice es disperso, así que no las
 ve: `GET /proveedores` sigue devolviendo solo fichas. Es lo que mantiene
@@ -314,10 +331,15 @@ cd radar && npx sst unlock --stage produccion
 ## 6.1 Pruebas
 
 ```bash
+npm run probar:precios                   # reglas de precio (tienda y API), sin AWS
 npm --prefix radar run probar            # las rutas de la API, de punta a punta
 npm --prefix radar run probar-textract   # el lector de listas de precios
 npm --prefix radar run probar-tienda     # carrito y pedidos, contra la tabla
 ```
+
+`probar:precios` corre en el workflow **antes** de desplegar: si falla, no se
+despliega. Cubre la escalera del PDF, la transferencia sumada, el tope del 40%,
+el contra entrega y que lo que manda el navegador no se crea.
 
 `probar` recorre cada ruta con datos reales —incluida la subida de una foto a
 S3— y verifica también los rechazos: PIN equivocado, token inventado, ruta
@@ -354,6 +376,39 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-09-22 · El servidor cobra: reglas del PDF, transferencia y folio
+
+Fase 1 de tres para llevar el catálogo al backend (2: catálogo en DynamoDB e
+imágenes en S3; 3: panel de administración).
+
+- **Por qué:** el total lo calculaba el navegador y la API lo guardaba tal cual
+  —con Clip y transferencias reales, cualquiera podía mandar un total de cero— y
+  el folio salía de `847 + piezas % 500`, así que dos pedidos con las mismas
+  piezas recibían el mismo. Además la escalera de la tienda no era la del
+  catálogo en PDF: daba 20% desde 6 piezas y 30% desde 10.
+- **Reglas del PDF, confirmadas por el dueño:** 3–9 piezas 10%, 10–19 20%, 20+
+  30%, envío gratis desde 3. Depósito o transferencia: 10% extra **sumado** sobre
+  el precio de lista (30% + 10% = 40%), no con tarjeta ni contra entrega. Tope de
+  40% entre volumen, transferencia y cupón; si se pasa, cede el cupón. Ya no hay
+  tramo «pide cotización» desde 20.
+- **Implementación:** `compartido/reglas.ts` y `compartido/cotizacion.ts`, sin
+  dependencias ni alias `@/`, los importan la tienda (`resumenCarrito`, checkout)
+  y la Lambda. `POST /pedidos` pasa a ser público, recalcula con `cotizar` y
+  asigna el folio con un contador atómico que arranca en 2000 (los viejos iban
+  del 847 al 1346). El checkout manda la solicitud y usa el folio y el total que
+  contesta el servidor; sin servidor o sin red, sigue con un folio local
+  `AUR-<año>-L…` para no dejar a nadie sin comprar.
+- **Compatibilidad:** una pestaña con el JavaScript viejo todavía manda su
+  folio y su total a `POST /pedidos`; se reconoce por no traer `contacto` y se
+  guarda como antes, solo en «Mis pedidos» y solo con sesión.
+- **`src/data/{productos,lotes,sets,semillas}.ts` importan con rutas
+  relativas:** la Lambda los compila, y en `radar/` el alias `@/` apunta a otra
+  carpeta. `scripts/catalogo.ts` ya genera `semillas.ts` así.
+- **Verificado:** 24 pruebas de precio en verde; la Lambda empaquetada con
+  esbuild y un DynamoDB falso cobró $34,680 (60% de lista) a una solicitud que
+  mandaba `total: 0`, con folios consecutivos; en el navegador, 17 piezas por
+  transferencia: −20% volumen, −10% transferencia, total al 70% de lista.
 
 ### 2026-08-25 · El envío estándar cobra lo mismo en el carrito y en el checkout
 

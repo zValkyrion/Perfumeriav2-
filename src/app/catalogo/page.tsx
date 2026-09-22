@@ -10,7 +10,7 @@ import { listaProductos, migasDePan } from "@/lib/jsonld";
 
 export const metadata: Metadata = {
   title: "Mayoreo surtido de perfumes",
-  description: `Los ${PRODUCTOS.length} perfumes del catálogo: diseñador, árabes, nicho e inspirados. Elige los que quieras y el descuento baja solo: 10% desde 3 piezas, 30% desde 10, con envío gratis.`,
+  description: `Los ${PRODUCTOS.length} perfumes del catálogo: diseñador, árabes, nicho e inspirados. Elige los que quieras y el descuento baja solo: 10% desde 3 piezas, 20% desde 10 y 30% desde 20, con envío gratis.`,
   alternates: { canonical: "/catalogo" },
 };
 

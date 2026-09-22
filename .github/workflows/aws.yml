@@ -51,6 +51,12 @@ jobs:
       - name: Instalar dependencias del radar
         run: npm ci
 
+      # La tienda y la API cobran con la misma función (`compartido/`). Si sus
+      # pruebas fallan no se despliega nada: cobrar mal es peor que no desplegar.
+      - name: Probar las reglas de precio
+        working-directory: .
+        run: npm run probar:precios
+
       - name: Pedir credenciales temporales a AWS
         uses: aws-actions/configure-aws-credentials@v6
         with:

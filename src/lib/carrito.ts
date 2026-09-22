@@ -1,22 +1,22 @@
+import {
+  ML_PAQUETE,
+  cotizar,
+  type Cotizacion,
+} from "../../compartido/cotizacion";
+import type { IdEnvio, IdPago } from "../../compartido/reglas";
+import { FUENTE_TIENDA } from "@/data/fuente-precios";
 import { getLote } from "@/data/lotes";
 import { getPresentacion, getProductoPorId } from "@/data/productos";
 import { getSet } from "@/data/sets";
 import type { Escalon, ItemCarrito, Presentacion, Producto } from "@/types";
-import {
-  COSTO_ENVIO_ESTANDAR,
-  CUPONES,
-  PIEZAS_ENVIO_GRATIS,
-  escalonPara,
-  siguienteEscalon,
-  type SiguienteEscalon,
-} from "./volumen";
+import { siguienteEscalon, type SiguienteEscalon } from "./volumen";
 
 /**
  * El §4 fija `ItemCarrito` con tres campos, así que los paquetes (lotes y sets)
  * viajan en la misma estructura usando `ml: 0` como marca y el slug del paquete
  * en `productoId`. Evita inventar un tipo paralelo y mantiene el contrato.
  */
-export const ML_PAQUETE = 0;
+export { ML_PAQUETE };
 
 export type TipoLinea = "producto" | "lote" | "set";
 
@@ -58,15 +58,20 @@ export interface ResumenCarrito {
   descuento3x2: number;
   cupon: string | null;
   descuentoCupon: number;
+  /** Descuento extra por pagar con depósito o transferencia. */
+  descuentoTransferencia: number;
+  /**
+   * La forma de pago que aplica, o `null` en el carrito, donde todavía no se ha
+   * elegido. Puede diferir de la pedida: el contra entrega por encima del tope
+   * se cobra con Clip.
+   */
+  metodo: IdPago | null;
+  /** Costo del envío elegido (el estándar mientras no se elija otro). */
   envio: number;
   envioGratis: boolean;
   /**
-   * Comisión del servicio de cobro en destino (pago contra entrega).
-   *
-   * El carrito siempre la deja en cero: aquí todavía no se ha elegido cómo se
-   * paga. La pone el checkout al rehacer el total, igual que hace con el envío,
-   * y vive en el resumen para que el panel de totales la enseñe como un
-   * concepto más en vez de inflar el total sin explicación.
+   * Comisión del servicio de cobro en destino (pago contra entrega). En el
+   * carrito es cero: todavía no se ha elegido cómo se paga.
    */
   comision: number;
   total: number;
@@ -74,8 +79,9 @@ export interface ResumenCarrito {
   vacio: boolean;
 }
 
-function redondear(n: number): number {
-  return Math.round(n * 100) / 100;
+export interface OpcionesResumen {
+  metodo?: IdPago | null;
+  envio?: IdEnvio | null;
 }
 
 /**
@@ -101,154 +107,91 @@ export function stockDisponible(productoId: string, ml: number): number {
 }
 
 /**
- * El 3x2, tal como lo prometen los términos: «al llevar tres piezas
- * participantes, la de menor precio no se cobra».
+ * Una línea ya cotizada, con lo que hace falta para pintarla.
  *
- * Cuenta **sobre todo el carrito**, no por línea: la promesa habla de piezas
- * participantes, no de tres del mismo frasco, y llevar tres modelos distintos
- * con la etiqueta es exactamente el caso que el catálogo invita a hacer.
- *
- * Se ordena de caro a barato y se regala una de cada tres. Así, en cada grupo
- * de tres, la que sale gratis es la más barata — que es lo que dice el texto y
- * también lo que menos sorprende a quien lo lee al revés.
- *
- * Trabaja con el precio **ya rebajado por volumen**, porque los términos dicen
- * que las dos cosas se suman. Regalarla a precio de lista pagaría el descuento
- * dos veces sobre la misma pieza.
+ * La cuenta vive en `compartido/cotizacion.ts`; aquí solo se le pone nombre,
+ * foto y enlace a cada línea.
  */
-function calcular3x2(lineas: LineaCarrito[]): {
-  piezas: number;
-  gratis: number;
-  descuento: number;
-} {
-  const precios: number[] = [];
-  for (const l of lineas) {
-    if (l.tipo !== "producto" || !l.producto?.badges.includes("3x2")) continue;
-    for (let i = 0; i < l.item.cantidad; i++) precios.push(l.unitario);
+function lineaVisible(l: Cotizacion["lineas"][number]): LineaCarrito | null {
+  const cifras = {
+    item: l.item,
+    piezasPorUnidad: l.piezasPorUnidad,
+    unitario: l.unitario,
+    unitarioMenudeo: l.unitarioMenudeo,
+    subtotal: l.subtotal,
+    subtotalMenudeo: l.subtotalMenudeo,
+  };
+
+  if (l.tipo === "paquete") {
+    const lote = getLote(l.item.productoId);
+    if (lote) {
+      return {
+        ...cifras,
+        clave: `lote:${lote.slug}`,
+        tipo: "lote",
+        nombre: lote.nombre,
+        subtitulo: `Lote ${lote.tema} · ${lote.piezas} piezas`,
+        imagen: lote.imagen,
+        enlace: `/lotes/${lote.slug}`,
+        stock: 99,
+      };
+    }
+    const set = getSet(l.item.productoId);
+    if (!set) return null;
+    return {
+      ...cifras,
+      clave: `set:${set.slug}`,
+      tipo: "set",
+      nombre: set.nombre,
+      subtitulo: "Set de regalo",
+      imagen: set.imagen,
+      enlace: `/catalogo/sets`,
+      stock: set.stock,
+    };
   }
 
-  precios.sort((a, b) => b - a);
-  let descuento = 0;
-  let gratis = 0;
-  for (let i = 2; i < precios.length; i += 3) {
-    descuento += precios[i]!;
-    gratis++;
-  }
-
-  return { piezas: precios.length, gratis, descuento: redondear(descuento) };
+  const producto = getProductoPorId(l.item.productoId);
+  if (!producto) return null;
+  const presentacion = getPresentacion(producto, l.item.ml);
+  return {
+    ...cifras,
+    clave: `${producto.id}:${l.item.ml}`,
+    tipo: "producto",
+    nombre: producto.nombre,
+    subtitulo: `${presentacion.ml} ml · ${producto.concentracion}`,
+    imagen: producto.imagenes[0]!,
+    enlace: `/producto/${producto.slug}`,
+    stock: presentacion.stock,
+    producto,
+    presentacion,
+  };
 }
+
+const redondear = (n: number) => Math.round(n * 100) / 100;
 
 /**
  * Calcula el carrito completo.
  *
- * Los lotes y sets no entran a la escalera de volumen porque ya vienen con un
- * descuento mayor —sumarlos haría que un solo lote de 24 regalara precio de
- * distribuidor a todo lo demás—, pero sí cuentan para el envío gratis.
+ * Toda la aritmética —escalera, 3x2, cupón, transferencia, tope del 40%, envío y
+ * comisión— la hace `cotizar`, la misma función con la que el servidor cobra.
+ * El carrito se llama sin forma de pago (no hay descuento por transferencia ni
+ * comisión todavía); el checkout pasa la elegida.
  */
 export function resumenCarrito(
   items: ItemCarrito[],
   cupon: string | null = null,
+  opciones: OpcionesResumen = {},
 ): ResumenCarrito {
-  const sueltos = items.filter((i) => i.ml !== ML_PAQUETE);
-  const piezasSueltas = sueltos.reduce((n, i) => n + i.cantidad, 0);
-  const escalon = escalonPara(Math.max(1, piezasSueltas));
+  const c = cotizar(items, FUENTE_TIENDA, {
+    cupon,
+    metodo: opciones.metodo ?? null,
+    envio: opciones.envio ?? null,
+  });
 
-  const lineas: LineaCarrito[] = [];
-
-  for (const item of items) {
-    if (item.ml === ML_PAQUETE) {
-      const lote = getLote(item.productoId);
-      if (lote) {
-        lineas.push({
-          clave: `lote:${lote.slug}`,
-          tipo: "lote",
-          item,
-          nombre: lote.nombre,
-          subtitulo: `Lote ${lote.tema} · ${lote.piezas} piezas`,
-          imagen: lote.imagen,
-          enlace: `/lotes/${lote.slug}`,
-          piezasPorUnidad: lote.piezas,
-          unitario: lote.precio,
-          unitarioMenudeo: lote.precio + lote.utilidadEstimada,
-          subtotal: redondear(lote.precio * item.cantidad),
-          subtotalMenudeo: redondear(
-            (lote.precio + lote.utilidadEstimada) * item.cantidad,
-          ),
-          stock: 99,
-        });
-        continue;
-      }
-
-      const set = getSet(item.productoId);
-      if (set) {
-        lineas.push({
-          clave: `set:${set.slug}`,
-          tipo: "set",
-          item,
-          nombre: set.nombre,
-          subtitulo: "Set de regalo",
-          imagen: set.imagen,
-          enlace: `/catalogo/sets`,
-          piezasPorUnidad: 1,
-          unitario: set.precio,
-          unitarioMenudeo: set.precioAnterior ?? set.precio,
-          subtotal: redondear(set.precio * item.cantidad),
-          subtotalMenudeo: redondear(
-            (set.precioAnterior ?? set.precio) * item.cantidad,
-          ),
-          stock: set.stock,
-        });
-      }
-      continue;
-    }
-
-    const producto = getProductoPorId(item.productoId);
-    if (!producto) continue;
-
-    const presentacion = getPresentacion(producto, item.ml);
-    // Las ediciones limitadas quedan fuera de la escalera de mayoreo.
-    const descuento = producto.esMayoreoElegible ? escalon.descuento : 0;
-    const unitario = redondear(presentacion.precio * (1 - descuento));
-
-    lineas.push({
-      clave: `${producto.id}:${item.ml}`,
-      tipo: "producto",
-      item,
-      nombre: producto.nombre,
-      subtitulo: `${presentacion.ml} ml · ${producto.concentracion}`,
-      imagen: producto.imagenes[0]!,
-      enlace: `/producto/${producto.slug}`,
-      piezasPorUnidad: 1,
-      unitario,
-      unitarioMenudeo: presentacion.precio,
-      subtotal: redondear(unitario * item.cantidad),
-      subtotalMenudeo: redondear(presentacion.precio * item.cantidad),
-      stock: presentacion.stock,
-      producto,
-      presentacion,
-    });
-  }
-
-  const piezasTotales = lineas.reduce(
-    (n, l) => n + l.piezasPorUnidad * l.item.cantidad,
-    0,
-  );
-
-  const subtotalMenudeo = redondear(
-    lineas.reduce((n, l) => n + l.subtotalMenudeo, 0),
-  );
-  const subtotal = redondear(lineas.reduce((n, l) => n + l.subtotal, 0));
-  const ahorroVolumen = redondear(subtotalMenudeo - subtotal);
-
-  const promo3x2 = calcular3x2(lineas);
-
-  const cuponValido = cupon && CUPONES[cupon] ? cupon : null;
-  const descuentoCupon = cuponValido
-    ? redondear(subtotal * CUPONES[cuponValido]!.descuento)
-    : 0;
-
-  const envioGratis = piezasTotales >= PIEZAS_ENVIO_GRATIS;
-  const envio = lineas.length === 0 || envioGratis ? 0 : COSTO_ENVIO_ESTANDAR;
+  const lineas = c.lineas.flatMap((l) => {
+    const visible = lineaVisible(l);
+    return visible ? [visible] : [];
+  });
 
   // Base sobre la que se mide "cuánto más ahorro si subo una pieza".
   const baseSueltos = redondear(
@@ -256,34 +199,33 @@ export function resumenCarrito(
       .filter((l) => l.tipo === "producto" && l.producto?.esMayoreoElegible)
       .reduce((n, l) => n + l.subtotalMenudeo, 0),
   );
-
   const precioReferencia =
     lineas.find((l) => l.tipo === "producto")?.unitarioMenudeo ?? 0;
 
   return {
     lineas,
-    piezasSueltas,
-    piezasTotales,
-    escalon,
+    piezasSueltas: c.piezasSueltas,
+    piezasTotales: c.piezasTotales,
+    escalon: c.escalon,
     siguiente:
-      piezasSueltas > 0
-        ? siguienteEscalon(piezasSueltas, precioReferencia, baseSueltos)
+      c.piezasSueltas > 0
+        ? siguienteEscalon(c.piezasSueltas, precioReferencia, baseSueltos)
         : null,
-    subtotalMenudeo,
-    subtotal,
-    ahorroVolumen,
-    piezas3x2: promo3x2.piezas,
-    piezasGratis3x2: promo3x2.gratis,
-    descuento3x2: promo3x2.descuento,
-    cupon: cuponValido,
-    descuentoCupon,
-    envio,
-    envioGratis,
-    comision: 0,
-    total: redondear(subtotal - promo3x2.descuento - descuentoCupon + envio),
-    ahorroTotal: redondear(
-      ahorroVolumen + promo3x2.descuento + descuentoCupon,
-    ),
+    subtotalMenudeo: c.subtotalMenudeo,
+    subtotal: c.subtotal,
+    ahorroVolumen: c.ahorroVolumen,
+    piezas3x2: c.piezas3x2,
+    piezasGratis3x2: c.piezasGratis3x2,
+    descuento3x2: c.descuento3x2,
+    cupon: c.cupon,
+    descuentoCupon: c.descuentoCupon,
+    descuentoTransferencia: c.descuentoTransferencia,
+    metodo: c.metodo,
+    envio: c.costoEnvio,
+    envioGratis: c.envioGratis,
+    comision: c.comision,
+    total: c.total,
+    ahorroTotal: c.ahorroTotal,
     vacio: lineas.length === 0,
   };
 }

@@ -12,7 +12,8 @@
     "banner-paca": "tsx scripts/generar-banner-paca.ts",
     "og": "tsx scripts/generar-og.ts",
     "catalogo": "tsx scripts/catalogo.ts",
-    "catalogo:exportar": "tsx scripts/catalogo.ts exportar"
+    "catalogo:exportar": "tsx scripts/catalogo.ts exportar",
+    "probar:precios": "tsx scripts/probar-precios.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

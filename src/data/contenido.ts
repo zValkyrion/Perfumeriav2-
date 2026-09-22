@@ -1,4 +1,8 @@
-import { COSTO_ENVIO_ESTANDAR, PIEZAS_ENVIO_GRATIS } from "@/lib/volumen";
+import {
+  PIEZAS_ENVIO_GRATIS,
+  TARIFAS_ENVIO,
+  type IdEnvio,
+} from "../../compartido/reglas";
 
 /** Datos de marca, copy institucional y contenido editorial de la tienda. */
 
@@ -178,15 +182,15 @@ export const FAQ_CATALOGO = [
   },
   {
     p: "¿Desde cuántas piezas tengo precio de mayoreo?",
-    r: "Desde 3 perfumes ya bajas 10% y el envío te sale gratis. Con 6 el descuento sube a 20% y con 10 o más llegas a 30%. A partir de 20 cotizamos precio especial por WhatsApp. No necesitas registrarte ni comprobar nada: el precio baja solo al agregar las piezas al carrito.",
+    r: "Desde 3 perfumes ya bajas 10% y el envío te sale gratis. Con 10 el descuento sube a 20% y con 20 o más llegas a 30%. Si pagas por depósito o transferencia te descontamos 10% más, hasta un máximo de 40%. No necesitas registrarte ni comprobar nada: el precio baja solo al agregar las piezas al carrito.",
   },
   {
     p: "¿Puedo mezclar modelos distintos para llegar al mayoreo?",
-    r: "Sí, y es lo que recomendamos. El descuento se calcula sobre el total de piezas del pedido, no por modelo. Puedes armar diez piezas con diez fragancias diferentes y aun así te llevas el 30%.",
+    r: "Sí, y es lo que recomendamos. El descuento se calcula sobre el total de piezas del pedido, no por modelo. Puedes armar veinte piezas con veinte fragancias diferentes y aun así te llevas el 30%.",
   },
   {
     p: "¿Cómo puedo pagar?",
-    r: "Tres formas: con Clip, que acepta tarjeta de crédito, débito y efectivo; por depósito o transferencia, y te mandamos las instrucciones por WhatsApp; y pago contra entrega en pedidos menores a $ 10,000.00 MXN, con un costo de servicio de $ 400.00. Con tarjetas participantes tienes 3, 6, 9 o 12 meses sin intereses según el monto de tu compra.",
+    r: "Tres formas: con Clip, que acepta tarjeta de crédito, débito y efectivo; por depósito o transferencia, con 10% extra de descuento sobre el de volumen, y te mandamos las instrucciones por WhatsApp; y pago contra entrega en pedidos menores a $ 10,000.00 MXN, con un costo de servicio de $ 400.00. Con tarjetas participantes tienes 3, 6, 9 o 12 meses sin intereses según el monto de tu compra.",
   },
   {
     p: "¿Desde qué monto hay meses sin intereses?",
@@ -233,7 +237,7 @@ export const FAQ_MAYOREO = [
   },
   {
     p: "¿Puedo elegir qué modelos vienen en mi lote?",
-    r: "En los paquetes armados no, porque el precio depende de esa mezcla exacta. Si quieres elegir modelo por modelo, agrega las piezas sueltas al carrito: a partir de 10 llegas al 30% de descuento.",
+    r: "En los paquetes armados no, porque el precio depende de esa mezcla exacta. Si quieres elegir modelo por modelo, agrega las piezas sueltas al carrito: a partir de 20 llegas al 30% de descuento, y pagando por transferencia al 40%.",
   },
   {
     p: "¿Qué pasa si un modelo no me rota?",
@@ -309,35 +313,42 @@ export const TESTIMONIOS_MAYOREO = [
   },
 ] as const;
 
+/**
+ * Las formas de envío, con su texto. Las tarifas salen de `compartido/reglas.ts`
+ * —el servidor las necesita para cobrar— y aquí solo se pintan: escrita a mano,
+ * una tarifa ya se quedó en cero mientras el carrito cobraba $149.
+ */
 export const OPCIONES_ENVIO = [
   {
     id: "estandar",
     nombre: "Estándar",
     tiempo: "3 a 5 días hábiles",
-    // La tarifa sale de `volumen.ts`, que es donde vive la regla completa junto
-    // al mínimo de piezas que la vuelve gratis. Escrita aquí a mano se quedó en
-    // cero mientras el carrito cobraba $149, y el checkout —que rehace el total
-    // con esta cifra— acababa cobrando menos de lo anunciado.
-    precio: COSTO_ENVIO_ESTANDAR,
+    precio: TARIFAS_ENVIO.estandar,
     detalle: `Estafeta o DHL · gratis desde ${PIEZAS_ENVIO_GRATIS} piezas`,
   },
   {
     id: "express",
     nombre: "Express",
     tiempo: "1 a 2 días hábiles",
-    precio: 180,
+    precio: TARIFAS_ENVIO.express,
     detalle: "FedEx Día Siguiente · disponible en zonas metropolitanas",
   },
   {
     id: "mismo-dia",
     nombre: "Mismo día",
     tiempo: "Hoy, antes de las 9 pm",
-    precio: 250,
+    precio: TARIFAS_ENVIO["mismo-dia"],
     detalle: "99 Minutos · solo CDMX y área metropolitana",
   },
-] as const;
+] as const satisfies readonly {
+  id: IdEnvio;
+  nombre: string;
+  tiempo: string;
+  precio: number;
+  detalle: string;
+}[];
 
-export type IdEnvio = (typeof OPCIONES_ENVIO)[number]["id"];
+export type { IdEnvio };
 
 /**
  * Los sellos de pago del pie de página.

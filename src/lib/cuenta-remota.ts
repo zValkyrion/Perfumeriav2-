@@ -1,6 +1,10 @@
 "use client";
 
 import type { Direccion, ItemCarrito, Pedido } from "@/types";
+import type {
+  PedidoRegistrado,
+  SolicitudPedido,
+} from "../../compartido/pedido";
 
 /**
  * Carrito y pedidos guardados en el servidor, por usuario.
@@ -101,18 +105,42 @@ export function leerPedidosRemotos() {
   return pedir<{ pedidos: Pedido[] }>("/pedidos");
 }
 
-export function guardarPedidoRemoto(pedido: {
-  folio: string;
-  fecha: string;
-  estatus: string;
-  total: number;
-  piezas: number;
-  items: ItemCarrito[];
-}) {
-  return pedir<{ ok: boolean; folio: string }>("/pedidos", {
-    method: "POST",
-    body: JSON.stringify(pedido),
-  });
+/**
+ * Registra el pedido en el servidor, que pone el folio y el total.
+ *
+ * A diferencia del resto de este archivo **no exige sesión**: casi todos los
+ * pedidos llegan sin cuenta. Si la hay, el token viaja igual y el servidor
+ * guarda además la copia en «Mis pedidos».
+ *
+ * Lanza si no hay servidor configurado o no contesta. Quien llama decide qué
+ * hacer entonces; el checkout no deja a nadie sin comprar por eso.
+ */
+export async function registrarPedido(
+  solicitud: SolicitudPedido,
+): Promise<PedidoRegistrado> {
+  if (!BASE) throw new Error("Sin servidor");
+
+  const t = token();
+  const ctrl = new AbortController();
+  const corte = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch(`${BASE}/pedidos`, {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: {
+        "content-type": "application/json",
+        ...(t ? { authorization: `Bearer ${t}` } : {}),
+      },
+      body: JSON.stringify(solicitud),
+    });
+    if (!res.ok) {
+      const detalle = await res.json().catch(() => null);
+      throw new Error(detalle?.error ?? `El servidor respondió ${res.status}`);
+    }
+    return (await res.json()) as PedidoRegistrado;
+  } finally {
+    clearTimeout(corte);
+  }
 }
 
 /* ── Fusión ─────────────────────────────────────────────────────────────── */

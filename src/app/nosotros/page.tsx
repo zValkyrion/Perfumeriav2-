@@ -41,7 +41,8 @@ export default function NosotrosPage() {
         <p>
           Por eso el precio baja solo al agregar piezas al carrito, sin registros
           ni papeleo. Desde 3 perfumes ya hay 10% de descuento y envío gratis; con
-          12 o más se llega al precio de distribuidor.
+          20 o más se llega al precio de distribuidor, y pagando por
+          transferencia se suma 10% más.
         </p>
       </Bloque>
 

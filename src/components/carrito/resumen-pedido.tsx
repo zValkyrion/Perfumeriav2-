@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { Precio } from "@/components/comunes/precio";
 import type { ResumenCarrito } from "@/lib/carrito";
-import { mejorPlazo } from "@/lib/volumen";
+import { DESCUENTO_TRANSFERENCIA, mejorPlazo, pct } from "@/lib/volumen";
 import { useTienda } from "@/store/tienda";
 
 /** Panel de resumen del carrito y del checkout (§12). */
@@ -82,6 +82,15 @@ export function ResumenPedido({
           </div>
         ) : null}
 
+        {resumen.descuentoTransferencia > 0 ? (
+          <div className="text-success flex justify-between">
+            <dt>Pago por transferencia (−{pct(DESCUENTO_TRANSFERENCIA)}%)</dt>
+            <dd>
+              −<Precio valor={resumen.descuentoTransferencia} />
+            </dd>
+          </div>
+        ) : null}
+
         <div className="flex justify-between">
           <dt className="text-fg-muted">Envío</dt>
           <dd className={resumen.envioGratis ? "text-success font-medium" : ""}>
@@ -109,17 +118,27 @@ export function ResumenPedido({
         </div>
       </dl>
 
-      {/* El gancho de meses sin intereses se calla cuando se paga contra
-          entrega: ese pedido se liquida en efectivo al repartidor, y ofrecer
+      {/* El gancho de meses sin intereses solo vale con tarjeta. Se calla con
+          contra entrega —se liquida en efectivo al repartidor— y con
+          transferencia, que además trae su propio descuento: ofrecer
           mensualidades sobre una cifra que nadie va a diferir es prometer algo
-          que en ese camino no existe. La comisión es lo que distingue ese caso. */}
-      {msi && resumen.comision === 0 ? (
+          que en ese camino no existe. */}
+      {msi && resumen.comision === 0 && resumen.metodo !== "transferencia" ? (
         <p className="text-fg-muted mt-2 text-[13px]">
           o {msi.plazo} pagos de{" "}
           <span className="text-gold-light">
             <Precio valor={msi.pago} />
           </span>{" "}
           sin intereses
+        </p>
+      ) : null}
+
+      {/* En el carrito todavía no se elige cómo pagar: se avisa del descuento
+          por transferencia antes de llegar al checkout, que es donde decide. */}
+      {resumen.metodo === null && !resumen.vacio ? (
+        <p className="text-fg-muted mt-2 text-[13px]">
+          Pagando por depósito o transferencia te descontamos{" "}
+          <span className="text-gold-light">{pct(DESCUENTO_TRANSFERENCIA)}% más</span>.
         </p>
       ) : null}
 

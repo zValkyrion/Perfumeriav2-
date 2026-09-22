@@ -1,4 +1,5 @@
-import type { Lote } from "@/types";
+// Relativa y no `@/`: la Lambda de `radar/` también compila este archivo.
+import type { Lote } from "../types";
 import { getProducto, precioDesde } from "./productos";
 
 interface SemillaLote {

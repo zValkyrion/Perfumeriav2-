@@ -11,15 +11,22 @@
  * repositorio.
  */
 
-/**
- * Tope para el pago contra entrega. Por debajo de esta cifra se ofrece; a
- * partir de ella, no. El riesgo de un paquete rechazado crece con el monto y
- * a partir de aquí conviene cobrar antes de que salga de bodega.
- */
-export const TOPE_CONTRA_ENTREGA = 10000;
+import { DESCUENTO_TRANSFERENCIA, type IdPago } from "../../compartido/reglas";
 
-/** Lo que cuesta el servicio de cobro en destino. Lo paga el comprador. */
-export const COMISION_CONTRA_ENTREGA = 400;
+/**
+ * Las reglas con dinero de por medio —tope y comisión del contra entrega,
+ * descuento por transferencia— viven en `compartido/reglas.ts`, porque el
+ * servidor las necesita para cobrar. Aquí queda lo que es solo de la tienda:
+ * nombres, textos y los datos de cobro que llegan por entorno.
+ */
+export {
+  COMISION_CONTRA_ENTREGA,
+  DESCUENTO_TRANSFERENCIA,
+  TOPE_CONTRA_ENTREGA,
+  comisionDe,
+  hayContraEntrega,
+} from "../../compartido/reglas";
+export type { IdPago } from "../../compartido/reglas";
 
 /**
  * Enlace de cobro de Clip.
@@ -51,8 +58,6 @@ export const DATOS_BANCARIOS = {
 /** `true` cuando hay CLABE que enseñar en pantalla. */
 export const HAY_DATOS_BANCARIOS = DATOS_BANCARIOS.clabe !== "";
 
-export type IdPago = "clip" | "transferencia" | "contra";
-
 export interface MetodoPago {
   id: IdPago;
   /** Nombre corto, para la pestaña. */
@@ -75,8 +80,7 @@ export const METODOS: readonly MetodoPago[] = [
     id: "transferencia",
     nombre: "Transferencia",
     etiqueta: "Depósito o transferencia",
-    resumen:
-      "SPEI o depósito en ventanilla. Te mandamos las instrucciones por WhatsApp.",
+    resumen: `SPEI o depósito en ventanilla, con ${Math.round(DESCUENTO_TRANSFERENCIA * 100)}% extra de descuento. Te mandamos las instrucciones por WhatsApp.`,
   },
   {
     id: "contra",
@@ -85,19 +89,3 @@ export const METODOS: readonly MetodoPago[] = [
     resumen: "Pagas al recibir el paquete. Servicio de cobro en destino.",
   },
 ] as const;
-
-/**
- * Si el pago contra entrega aplica a este pedido.
- *
- * Se mide sobre el total **sin** la comisión: lo que decide es el valor del
- * envío, no lo que cuesta ir a cobrarlo. Sumar la comisión antes de comparar
- * dejaría fuera pedidos de $9,700 por culpa del propio servicio.
- */
-export function hayContraEntrega(totalSinComision: number): boolean {
-  return totalSinComision < TOPE_CONTRA_ENTREGA;
-}
-
-/** La comisión que suma al total el método elegido. Hoy solo la cobra uno. */
-export function comisionDe(metodo: IdPago): number {
-  return metodo === "contra" ? COMISION_CONTRA_ENTREGA : 0;
-}

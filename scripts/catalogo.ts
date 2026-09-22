@@ -541,6 +541,8 @@ function generarSemillas(semillas: Semilla[]): string {
     })
     .join("\n");
 
+  // Ruta relativa y no `@/`: la Lambda de `radar/` compila el catálogo para
+  // cobrar con los mismos precios, y allí `@/` apunta a otra carpeta.
   return `${AVISO.replace("%ARCHIVO%", "productos.csv")}
 import type {
   Badge,
@@ -549,7 +551,7 @@ import type {
   Genero,
   Intensidad,
   Ocasion,
-} from "@/types";
+} from "../types";
 
 /**
  * Semilla de producto: solo el contenido de autor. Todo lo derivable

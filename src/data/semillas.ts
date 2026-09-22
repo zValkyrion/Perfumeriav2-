@@ -13,7 +13,7 @@ import type {
   Genero,
   Intensidad,
   Ocasion,
-} from "@/types";
+} from "../types";
 
 /**
  * Semilla de producto: solo el contenido de autor. Todo lo derivable

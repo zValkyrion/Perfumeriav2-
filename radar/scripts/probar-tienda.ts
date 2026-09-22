@@ -33,6 +33,7 @@ import {
   sanearCarrito,
   sanearDirecciones,
   sanearPedido,
+  sanearSolicitud,
 } from "../servidor/tienda.ts";
 
 const TABLA = "Elrey_proveedores";
@@ -70,6 +71,28 @@ ok("un pedido sin folio se rechaza", sanearPedido({ total: 10 }) === null);
 const pedidoSaneado = sanearPedido({ folio: "T-1", estatus: "inventado", total: -5, items: [] });
 ok("un estatus desconocido cae a Pendiente", pedidoSaneado?.estatus === "Pendiente");
 ok("un total negativo se guarda en cero", pedidoSaneado?.total === 0);
+
+// ── Solicitud de pedido nuevo: el total y el folio no se aceptan ────────────
+const contacto = { nombre: "Ana", telefono: "5512345678", correo: "ana@x.mx" };
+const solicitud = sanearSolicitud({
+  items: [{ productoId: "p001", ml: 100, cantidad: 3 }, "basura"],
+  metodo: "transferencia",
+  envio: "teletransporte",
+  cupon: " aura10 ",
+  contacto,
+  folio: "AUR-2026-00001",
+  total: 0,
+});
+ok("una solicitud válida pasa", solicitud !== null);
+ok("no arrastra el folio ni el total del navegador", !!solicitud && !("folio" in solicitud) && !("total" in solicitud));
+ok("un envío desconocido cae a estándar", solicitud?.envio === "estandar");
+ok("el cupón se normaliza", solicitud?.cupon === "AURA10");
+ok("sin artículos se rechaza", sanearSolicitud({ items: [], metodo: "clip", contacto }) === null);
+ok("sin forma de pago válida se rechaza", sanearSolicitud({ items: [{ productoId: "p001", ml: 100, cantidad: 1 }], metodo: "bitcoin", contacto }) === null);
+ok(
+  "sin teléfono se rechaza",
+  sanearSolicitud({ items: [{ productoId: "p001", ml: 100, cantidad: 1 }], metodo: "clip", contacto: { nombre: "Ana" } }) === null,
+);
 
 // ── Ida y vuelta contra DynamoDB ────────────────────────────────────────────
 const vacio = await leerCarrito(dynamo, TABLA, SUB);

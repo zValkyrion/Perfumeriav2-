@@ -1,76 +1,28 @@
-import type { Escalon } from "@/types";
+import {
+  ESCALONES,
+  escalonPara,
+  type Escalon,
+} from "../../compartido/reglas";
 
 /**
  * Escalera de descuento por volumen (§3.1) — la palanca comercial #1.
  *
- * El escalón lo determina el **total de piezas del pedido**, no la cantidad por
- * línea: así un revendedor que arma 12 piezas mezclando modelos obtiene precio
- * de distribuidor, que es como opera un mayorista real.
+ * Las reglas viven en `compartido/reglas.ts`, que es lo que lee también el
+ * servidor para cobrar. Aquí quedan solo las ayudas de pantalla: cuánto falta
+ * para el siguiente escalón, el precio de una fila de la tabla, los meses sin
+ * intereses. Se reexportan para que el resto de la tienda siga importándolas
+ * de aquí.
  */
-export const ESCALONES: readonly Escalon[] = [
-  {
-    min: 1,
-    max: 2,
-    descuento: 0,
-    nombre: "Menudeo",
-    etiqueta: "Precio menudeo",
-  },
-  {
-    min: 3,
-    max: 5,
-    descuento: 0.1,
-    nombre: "Mayoreo",
-    etiqueta: "10% de descuento · envío gratis",
-  },
-  {
-    min: 6,
-    max: 9,
-    descuento: 0.2,
-    nombre: "Mayoreo Plus",
-    etiqueta: "20% de descuento · envío gratis",
-  },
-  {
-    min: 10,
-    max: 19,
-    descuento: 0.3,
-    nombre: "Distribuidor",
-    etiqueta: "30% de descuento · envío gratis",
-  },
-  // A partir de 20 el precio deja de ser automático: se cotiza. Se mantiene el
-  // 30% para que el carrito nunca muestre menos descuento del ya conseguido,
-  // pero la promesa de "precio especial" se hace por WhatsApp, no aquí.
-  {
-    min: 20,
-    max: null,
-    descuento: 0.3,
-    nombre: "Alto volumen",
-    etiqueta: "Precio especial · pide cotización",
-  },
-] as const;
-
-/** Piezas mínimas para envío gratis (§3.2). */
-export const PIEZAS_ENVIO_GRATIS = 3;
-
-/**
- * Lo que cuesta el envío estándar cuando no alcanza el envío gratis.
- *
- * Vive aquí, junto al mínimo que lo hace gratis, porque las dos cifras son la
- * misma regla y hasta ahora estaban en archivos distintos: el carrito cobraba
- * $149 con este número escrito a mano y el checkout rehacía el total con la
- * tarifa de `OPCIONES_ENVIO`, que era cero. Un pedido de una pieza se anunciaba
- * $149 más caro de lo que se acababa cobrando, y nadie lo veía porque los dos
- * totales nunca aparecen juntos en la misma pantalla.
- */
-export const COSTO_ENVIO_ESTANDAR = 149;
-
-/** Devuelve el escalón que aplica a un número de piezas. */
-export function escalonPara(piezas: number): Escalon {
-  const n = Math.max(1, Math.floor(piezas));
-  for (const e of ESCALONES) {
-    if (n >= e.min && (e.max === null || n <= e.max)) return e;
-  }
-  return ESCALONES[0]!;
-}
+export {
+  COSTO_ENVIO_ESTANDAR,
+  CUPONES,
+  DESCUENTO_MAXIMO,
+  DESCUENTO_TRANSFERENCIA,
+  ESCALONES,
+  PIEZAS_ENVIO_GRATIS,
+  escalonPara,
+} from "../../compartido/reglas";
+export type { Escalon } from "../../compartido/reglas";
 
 /** Precio unitario ya con el descuento del escalón, redondeado a centavos. */
 export function precioUnitario(precioBase: number, piezas: number): number {
@@ -134,9 +86,8 @@ export function siguienteEscalon(
   const idx = ESCALONES.indexOf(actual);
 
   // El siguiente escalón que de verdad baja el precio, no simplemente el
-  // siguiente de la lista: el tramo de alto volumen mantiene el mismo
-  // porcentaje y solo cambia a cotización, así que anunciarlo aquí invitaba a
-  // agregar una pieza más "para el 30%" a quien ya tenía el 30%.
+  // siguiente de la lista: si algún día un tramo repite porcentaje, anunciarlo
+  // invitaría a agregar una pieza más "para el 30%" a quien ya tiene el 30%.
   const proximo = ESCALONES.slice(idx + 1).find(
     (e) => e.descuento > actual.descuento,
   );
@@ -190,11 +141,6 @@ export function mejorPlazo(
   return { plazo, pago: mensualidad(total, plazo)! };
 }
 
-/** Cupón de bienvenida del §12. */
-export const CUPONES: Record<string, { descuento: number; etiqueta: string }> = {
-  AURA10: { descuento: 0.1, etiqueta: "10% de bienvenida" },
-};
-
 /**
  * Los dos extremos de la escalera automática, para el copy.
  *
@@ -208,7 +154,7 @@ const CON_DESCUENTO = ESCALONES.filter((e) => e.descuento > 0);
 /** Primer escalón con descuento: el mínimo para entrar a mayoreo. */
 export const ESCALON_INICIAL = CON_DESCUENTO[0]!;
 
-/** Mejor descuento automático, sin pasar por cotización. */
+/** Mejor descuento por volumen, sin contar el extra por transferencia. */
 export const ESCALON_TOPE = CON_DESCUENTO.reduce((a, b) =>
   b.descuento > a.descuento ? b : a,
 );

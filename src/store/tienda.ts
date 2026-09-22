@@ -57,6 +57,11 @@ export interface PedidoConfirmado {
   metodoId: IdPago;
   /** Comisión del cobro en destino. Cero salvo en contra entrega. */
   comision: number;
+  /**
+   * Descuento extra por pagar con transferencia. Opcional porque los pedidos
+   * guardados en el navegador antes de que existiera no lo traen.
+   */
+  descuentoTransferencia?: number;
   total: number;
   piezas: number;
   items: ItemCarrito[];

@@ -1,6 +1,12 @@
 import { MessageCircle } from "lucide-react";
 import { MARCA } from "@/data/contenido";
-import { ESCALONES } from "@/lib/volumen";
+import {
+  DESCUENTO_MAXIMO,
+  DESCUENTO_TRANSFERENCIA,
+  ESCALONES,
+  ESCALON_TOPE,
+  pct,
+} from "@/lib/volumen";
 
 /**
  * Cabecera del catálogo: la escalera de descuento, explicada antes de la
@@ -12,11 +18,8 @@ import { ESCALONES } from "@/lib/volumen";
  * rápida de perder la venta en el checkout.
  */
 export function CabeceraMayoreo() {
-  // El primer escalón es menudeo (0%) y el último se cotiza: ninguno de los dos
-  // va en la tabla de descuentos automáticos.
-  const automaticos = ESCALONES.filter(
-    (e) => e.descuento > 0 && e.max !== null,
-  );
+  // El primer escalón es menudeo (0%): no va en la tabla de descuentos.
+  const automaticos = ESCALONES.filter((e) => e.descuento > 0);
 
   const rango = (min: number, max: number | null) =>
     max === null ? `${min}+ perfumes` : `${min}-${max} perfumes`;
@@ -58,21 +61,23 @@ export function CabeceraMayoreo() {
 
       <div className="border-gold/30 bg-gold-muted mx-auto mt-8 max-w-2xl rounded-lg border px-6 py-7">
         <p className="font-display text-xl leading-tight font-extrabold lg:text-2xl">
-          ¿QUIERES DESCUENTOS MÁS ALTOS?
+          +{pct(DESCUENTO_TRANSFERENCIA)}% PAGANDO POR TRANSFERENCIA
         </p>
         <p className="text-fg-muted mt-2.5 text-[15px] leading-relaxed font-medium">
-          A partir de 20 perfumes accede a precios especiales para emprendedores
-          de alto volumen.
+          Si pagas con depósito o transferencia te descontamos{" "}
+          {pct(DESCUENTO_TRANSFERENCIA)}% extra sobre el descuento por piezas.
+          Con {ESCALON_TOPE.min} perfumes o más llegas al{" "}
+          {pct(DESCUENTO_MAXIMO)}%. No aplica con tarjeta ni contra entrega.
         </p>
 
         <a
-          href={MARCA.whatsappCotizacion}
+          href={MARCA.whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#25D366] px-6 text-sm font-bold text-[#04310f] transition-transform hover:scale-[1.02]"
         >
           <MessageCircle size={18} aria-hidden />
-          Solicita cotización directa · {MARCA.whatsapp}
+          ¿Dudas? Escríbenos · {MARCA.whatsapp}
         </a>
       </div>
     </div>

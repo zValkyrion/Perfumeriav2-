@@ -1,5 +1,6 @@
-import type { SetRegalo } from "@/types";
-import { randEntero } from "@/lib/rand";
+// Relativas y no `@/`: la Lambda de `radar/` también compila este archivo.
+import type { SetRegalo } from "../types";
+import { randEntero } from "../lib/rand";
 import { getProducto, precioDesde } from "./productos";
 
 interface SemillaSet {
