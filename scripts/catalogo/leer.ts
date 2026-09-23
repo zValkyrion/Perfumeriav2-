@@ -17,6 +17,7 @@ import {
   type ProductoCatalogo,
   type SetCatalogo,
 } from "../../compartido/catalogo";
+import { COLUMNAS_PRODUCTO } from "../../compartido/catalogo-csv";
 import { Lector, aSlug, leerCSV, leerPrecios, type Problema } from "./csv";
 import { claveImagen, medidas, procesarFoto, type TipoImagen } from "./imagenes";
 
@@ -30,64 +31,13 @@ import { claveImagen, medidas, procesarFoto, type TipoImagen } from "./imagenes"
  * cliente lo dice.
  */
 
-export const COLUMNAS_PRODUCTO = [
-  "codigo",
-  "codigos_alternos",
-  "slug",
-  "nombre",
-  "marca",
-  "linea",
-  "concentracion",
-  "genero",
-  "familia",
-  "precio_100ml",
-  "precios",
-  "rebaja",
-  "mls",
-  "salida",
-  "corazon",
-  "fondo",
-  "corta",
-  "larga",
-  "badges",
-  "duracion",
-  "estela",
-  "ocasion",
-  "destacado",
-  "anio",
-  "origen",
-  "agotado",
-  "visible",
-  "nota",
-] as const;
-
-export const COLUMNAS_MARCA = ["slug", "nombre", "pais", "fundada", "firma", "descripcion"] as const;
-
-export const COLUMNAS_SET = [
-  "codigo",
-  "slug",
-  "nombre",
-  "marca",
-  "precio",
-  "precio_anterior",
-  "incluye",
-  "descripcion",
-  "agotado",
-  "visible",
-  "nota",
-] as const;
-
-export const COLUMNAS_LOTE = [
-  "slug",
-  "nombre",
-  "tema",
-  "piezas",
-  "precio",
-  "modelos",
-  "descripcion",
-  "incluye",
-  "mas_vendido",
-] as const;
+// Las columnas las fija `compartido/catalogo-csv.ts`, que también las escribe.
+export {
+  COLUMNAS_LOTE,
+  COLUMNAS_MARCA,
+  COLUMNAS_PRODUCTO,
+  COLUMNAS_SET,
+} from "../../compartido/catalogo-csv";
 
 /**
  * Precio de un tamaño que la lista no trae, relativo al de 100 ml. Solo se usa

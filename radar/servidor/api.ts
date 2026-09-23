@@ -13,8 +13,10 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { gzipSync } from "node:zlib";
 import { firmarToken, pinCorrecto } from "./jwt";
 import {
+  esAdmin,
   identificar,
   puedeVerProveedores,
   tieneIdentidadPropia,
@@ -38,10 +40,36 @@ import {
 } from "./tienda";
 // Mismo cálculo que la tienda (`cotizar`) y precios de DynamoDB: la tienda
 // compila el mismo catálogo que aquí se lee, así que enseña lo que se cobra.
-import { catalogoPublico, fuenteDeCatalogo } from "../../compartido/catalogo";
+import {
+  catalogoPublico,
+  disponibilidadDe,
+  fuenteDeCatalogo,
+} from "../../compartido/catalogo";
 import { cotizar } from "../../compartido/cotizacion";
 import type { PedidoRegistrado } from "../../compartido/pedido";
+import {
+  ARCHIVOS_CSV,
+  escribirCSV,
+  filasCsv,
+  type ArchivoCsv,
+} from "../../compartido/catalogo-csv";
+import { esTipoRegistro } from "../../compartido/validar-catalogo";
 import { catalogoVigente } from "./catalogo";
+import {
+  autorizarImagen,
+  borrarRegistro,
+  catalogoAdmin,
+  catalogoCompleto,
+  guardarRegistro,
+  type Contexto,
+  type Resultado,
+} from "./catalogo-admin";
+import {
+  estadoPublicacion,
+  hayPublicacionAutomatica,
+  pedirPublicacion,
+  ultimaCorrida,
+} from "./publicacion";
 
 /**
  * API del Radar de Proveedores.
@@ -60,11 +88,22 @@ import { catalogoVigente } from "./catalogo";
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}), {
   marshallOptions: { removeUndefinedValues: true },
 });
-const s3 = new S3Client({});
+// `WHEN_REQUIRED`: sin esto, el SDK mete en cada URL prefirmada de subida la
+// suma de verificación de un cuerpo **vacío** (`x-amz-checksum-crc32=AAAAAA==`)
+// y S3 rechaza cualquier foto real que llegue por ella. Las operaciones que sí
+// la exigen (como DeleteObjects) la siguen calculando.
+const s3 = new S3Client({ requestChecksumCalculation: "WHEN_REQUIRED" });
 
 const TABLA = Resource.Elrey_proveedores.name;
 const TABLA_CATALOGO = Resource.Elrey_catalogo.name;
 const BUCKET = Resource.Elrey_fotos.name;
+
+const CATALOGO: Contexto = {
+  dynamo,
+  s3,
+  tabla: TABLA_CATALOGO,
+  bucket: Resource.Elrey_imagenes.name,
+};
 
 type Evento = {
   requestContext: { http: { method: string; path: string } };
@@ -117,7 +156,34 @@ function sesionDe(evento: Evento): Promise<Identidad | null> {
   return identificar(evento.headers.authorization ?? evento.headers.Authorization);
 }
 
-export async function handler(evento: Evento) {
+type Respuesta = {
+  statusCode: number;
+  headers: Record<string, string>;
+  body: string;
+  isBase64Encoded?: boolean;
+};
+
+/**
+ * Comprime lo grande. API Gateway no lo hace solo, y el catálogo completo
+ * pesa cientos de KB en JSON que baja a una décima parte: es lo que tarda en
+ * abrir el panel con datos móviles y lo que lee cada build de la tienda.
+ */
+function comprimir(evento: Evento, r: Respuesta): Respuesta {
+  const acepta = (evento.headers["accept-encoding"] ?? "").includes("gzip");
+  if (!acepta || r.body.length < 8192) return r;
+  return {
+    ...r,
+    headers: { ...r.headers, "content-encoding": "gzip", vary: "accept-encoding" },
+    body: gzipSync(r.body).toString("base64"),
+    isBase64Encoded: true,
+  };
+}
+
+export async function handler(evento: Evento): Promise<Respuesta> {
+  return comprimir(evento, await enrutar(evento));
+}
+
+async function enrutar(evento: Evento): Promise<Respuesta> {
   const metodo = evento.requestContext.http.method;
   const ruta = evento.requestContext.http.path;
 
@@ -147,6 +213,16 @@ export async function handler(evento: Evento) {
       });
     }
 
+    // Lo que la tienda pide al abrirse: qué se vende y a cuánto, sin textos
+    // ni fotos. Así un agotado o un precio del panel llegan en un minuto sin
+    // esperar a que se vuelva a compilar la tienda.
+    if (metodo === "GET" && ruta === "/disponibilidad") {
+      const catalogo = await catalogoVigente(dynamo, TABLA_CATALOGO);
+      return json(200, disponibilidadDe(catalogo), {
+        "cache-control": "public, max-age=30",
+      });
+    }
+
     // Los pedidos de la tienda llegan con o sin cuenta —casi nadie se registra
     // para comprar—, así que van antes del filtro de sesión. La identidad, si
     // viene, solo sirve para guardar además la copia en «Mis pedidos».
@@ -156,6 +232,15 @@ export async function handler(evento: Evento) {
     // viven en el teléfono—, pero nada sube sin haber iniciado sesión.
     const sesion = await sesionDe(evento);
     if (!sesion) return json(401, { error: "Sesión inválida o vencida" });
+
+    // El catálogo se edita solo con cuenta del grupo `admins`. Va antes que
+    // todo lo demás para que ninguna otra regla lo pueda abrir por accidente.
+    if (ruta.startsWith("/admin/")) {
+      if (!esAdmin(sesion)) {
+        return json(403, { error: "El catálogo solo lo edita una cuenta del grupo admins" });
+      }
+      return rutaAdmin(evento, metodo, ruta, sesion);
+    }
 
     // Lo de la tienda va antes del filtro por grupo: el carrito y los pedidos
     // son de quien inició sesión, sea cliente o del equipo. Lo que se exige aquí
@@ -221,6 +306,96 @@ async function acceso(evento: Evento) {
     token: firmarToken(evaluador, Resource.Elrey_jwt_secreto.value),
     evaluador,
   });
+}
+
+// ── Catálogo: el panel de admins ───────────────────────────────────────────
+
+const deResultado = <T>(r: Resultado<T>, estado = 200) =>
+  r.ok ? json(estado, r.valor) : json(r.estado, r.cuerpo);
+
+async function rutaAdmin(
+  evento: Evento,
+  metodo: string,
+  ruta: string,
+  sesion: Identidad,
+): Promise<Respuesta> {
+  const token = Resource.Elrey_github_token.value;
+  const quien = sesion.evaluador;
+
+  if (metodo === "GET" && ruta === "/admin/catalogo") {
+    const publicacion = await estadoPublicacion(dynamo, TABLA_CATALOGO, token);
+    return json(200, await catalogoAdmin(CATALOGO, publicacion), { "cache-control": "no-store" });
+  }
+
+  // /admin/catalogo/<tipo>/<id>: guardar (alta o edición) y borrar.
+  const registro = ruta.match(/^\/admin\/catalogo\/([a-z]+)\/([^/]+)$/);
+  if (registro) {
+    const [, tipo, crudo] = registro;
+    if (!esTipoRegistro(tipo)) return json(404, { error: `No hay registros de tipo ${tipo}` });
+    const id = decodeURIComponent(crudo!);
+    if (metodo === "PUT") {
+      const r = await guardarRegistro(CATALOGO, tipo, id, leerCuerpo(evento), quien);
+      return deResultado(r);
+    }
+    if (metodo === "DELETE") {
+      const huella = evento.queryStringParameters?.huella ?? "";
+      return deResultado(await borrarRegistro(CATALOGO, tipo, id, huella, quien));
+    }
+    return json(405, { error: `${metodo} no va en ${ruta}` });
+  }
+
+  // El catálogo en el formato de `catalogo/*.csv`, para Excel o para
+  // actualizarlo a granel. Sale de la tabla: trae lo que se editó en el panel.
+  if (metodo === "GET" && ruta === "/admin/exportar") {
+    const archivo = evento.queryStringParameters?.archivo ?? "";
+    if (!(ARCHIVOS_CSV as readonly string[]).includes(archivo)) {
+      return json(400, { error: `Archivo desconocido: ${archivo}` });
+    }
+    const csv = escribirCSV(filasCsv(await catalogoCompleto(CATALOGO), archivo as ArchivoCsv));
+    return {
+      statusCode: 200,
+      headers: {
+        "content-type": "text/csv; charset=utf-8",
+        "content-disposition": `attachment; filename="${archivo}.csv"`,
+        "cache-control": "no-store",
+        ...CORS,
+      },
+      body: csv,
+    };
+  }
+
+  if (metodo === "POST" && ruta === "/admin/imagenes") {
+    return deResultado(await autorizarImagen(CATALOGO, leerCuerpo(evento)));
+  }
+
+  if (metodo === "GET" && ruta === "/admin/publicacion") {
+    return json(200, await estadoPublicacion(dynamo, TABLA_CATALOGO, token), {
+      "cache-control": "no-store",
+    });
+  }
+
+  if (metodo === "POST" && ruta === "/admin/publicar") {
+    if (!hayPublicacionAutomatica(token)) {
+      return json(503, {
+        error:
+          "Publicar desde el panel todavía no está configurado. Los cambios ya se guardaron " +
+          "y salen en la tienda con el próximo despliegue.",
+      });
+    }
+    // Un despliegue en cola ya va a leer los cambios al compilar: pedir otro
+    // solo alargaría la fila.
+    const corrida = await ultimaCorrida(token).catch(() => null);
+    if (corrida?.estado !== "en_cola") {
+      try {
+        await pedirPublicacion(dynamo, TABLA_CATALOGO, token, quien);
+      } catch (e) {
+        return json(502, { error: e instanceof Error ? e.message : "GitHub no respondió" });
+      }
+    }
+    return json(202, await estadoPublicacion(dynamo, TABLA_CATALOGO, token));
+  }
+
+  return json(404, { error: `Sin ruta para ${metodo} ${ruta}` });
 }
 
 // ── Tienda: carrito y pedidos ───────────────────────────────────────────────

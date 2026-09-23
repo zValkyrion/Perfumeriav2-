@@ -49,7 +49,7 @@ export function Campo({
       </span>
       <input
         {...props}
-        className="h-12 w-full rounded-[var(--radius-md)] border border-border-strong bg-surface px-3 text-fg placeholder:text-fg-subtle"
+        className="h-12 w-full rounded-[var(--radius-md)] border border-border-strong bg-surface px-3 text-fg placeholder:text-fg-subtle disabled:bg-surface-2 disabled:text-fg-muted"
       />
       {pista && <span className="mt-1 block text-[12px] text-fg-subtle">{pista}</span>}
     </label>

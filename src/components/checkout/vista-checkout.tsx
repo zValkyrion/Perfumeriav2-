@@ -47,6 +47,8 @@ import { pixel } from "@/lib/pixel";
 import { useSesion } from "@/lib/sesion";
 import { precio as fmt } from "@/lib/format";
 import { mensualidad, plazosDisponibles, type PlazoMSI } from "@/lib/volumen";
+import { AvisoNoDisponibles } from "@/components/carrito/aviso-no-disponibles";
+import { useFuentePrecios } from "@/store/disponibilidad";
 import {
   useTienda,
   type DatosExpres,
@@ -194,7 +196,8 @@ export function VistaCheckout() {
   // misma función con la que el servidor cobra. Cuando el checkout rehacía la
   // cuenta por su lado, bastaba con olvidar un concepto para anunciar una cifra
   // y cobrar otra.
-  const resumen = resumenCarrito(carrito, cupon, { metodo, envio: envioElegido });
+  const fuente = useFuentePrecios();
+  const resumen = resumenCarrito(carrito, cupon, { metodo, envio: envioElegido, fuente });
   const { comision, total } = resumen;
   const costoEnvio = resumen.envio;
   // El contra entrega por encima del tope se cobra con Clip.
@@ -203,13 +206,14 @@ export function VistaCheckout() {
   // Dos cotizaciones más, porque dependen de la forma de pago y la persona puede
   // estar mirando otra: lo que costaría con Clip —la base de los meses sin
   // intereses— y si el pedido cabe bajo el tope del contra entrega.
-  const comoClip = resumenCarrito(carrito, cupon, { metodo: "clip", envio: envioElegido });
+  const comoClip = resumenCarrito(carrito, cupon, { metodo: "clip", envio: envioElegido, fuente });
   const comoTransferencia = resumenCarrito(carrito, cupon, {
     metodo: "transferencia",
     envio: envioElegido,
+    fuente,
   });
   const contraEntregaOk =
-    resumenCarrito(carrito, cupon, { metodo: "contra", envio: envioElegido }).metodo ===
+    resumenCarrito(carrito, cupon, { metodo: "contra", envio: envioElegido, fuente }).metodo ===
     "contra";
 
   /**
@@ -273,6 +277,10 @@ export function VistaCheckout() {
   if (resumen.vacio) {
     return (
       <Contenedor className="py-20 text-center">
+        <AvisoNoDisponibles
+          lineas={resumen.noDisponibles}
+          className="mx-auto mb-8 max-w-md text-left"
+        />
         <h1 className="font-display mb-3 text-3xl">No hay nada que pagar</h1>
         <p className="text-fg-muted mb-7">
           Tu carrito está vacío. Agrega algunas piezas y vuelve.
@@ -287,6 +295,10 @@ export function VistaCheckout() {
   async function finalizar(metodoPago: string) {
     if (!contacto || enviando) return;
     setEnviando(true);
+
+    // Solo lo que todavía se vende: lo agotado desde que se agregó ya se avisó
+    // arriba y no se cobra, así que tampoco viaja en el pedido.
+    const vendibles = resumen.lineas.map((l) => l.item);
 
     // El cobro con Clip vive fuera de la tienda y se abre en otra pestaña —no se
     // sustituye esta— para que el comprador vuelva a su comprobante al terminar.
@@ -304,7 +316,7 @@ export function VistaCheckout() {
     // reconoce por la «L»: cortar la compra por un problema de red sería
     // castigar al comprador, y el WhatsApp de la confirmación la recoge igual.
     const registrado = await registrarPedido({
-      items: carrito,
+      items: vendibles,
       cupon,
       metodo: metodoEfectivo,
       envio: envioElegido,
@@ -345,7 +357,7 @@ export function VistaCheckout() {
         registrado?.descuentoTransferencia ?? resumen.descuentoTransferencia,
       total: registrado?.total ?? total,
       piezas: resumen.piezasTotales,
-      items: carrito,
+      items: vendibles,
     };
 
     // El aviso a la tienda: si hay webhook configurado, sale ahora mismo con
@@ -375,7 +387,7 @@ export function VistaCheckout() {
       currency: "MXN",
       value: pedido.total,
       num_items: resumen.piezasTotales,
-      content_ids: carrito.map((i) => i.productoId),
+      content_ids: vendibles.map((i) => i.productoId),
       content_type: "product",
     });
 
@@ -397,6 +409,8 @@ export function VistaCheckout() {
           Volver al carrito
         </Link>
       </div>
+
+      <AvisoNoDisponibles lineas={resumen.noDisponibles} className="mb-5" />
 
       {/* Aviso de la compra exprés, con su salida.
           Saltarse tres formularios está muy bien hasta el día que el pedido va

@@ -2,12 +2,18 @@ import {
   ML_PAQUETE,
   cotizar,
   type Cotizacion,
+  type FuentePrecios,
 } from "../../compartido/cotizacion";
 import type { IdEnvio, IdPago } from "../../compartido/reglas";
-import { FUENTE_TIENDA } from "@/data/fuente-precios";
 import { getLote } from "@/data/lotes";
 import { getPresentacion, getProductoPorId } from "@/data/productos";
 import { getSet } from "@/data/sets";
+import {
+  fuenteVigente,
+  productoVivo,
+  setVivo,
+  useDisponibilidad,
+} from "@/store/disponibilidad";
 import type { Escalon, ItemCarrito, Presentacion, Producto } from "@/types";
 import { siguienteEscalon, type SiguienteEscalon } from "./volumen";
 
@@ -40,8 +46,19 @@ export interface LineaCarrito {
   presentacion?: Presentacion;
 }
 
+/** Algo que está en el carrito pero ya no se puede comprar. */
+export interface LineaNoDisponible {
+  item: ItemCarrito;
+  nombre: string;
+}
+
 export interface ResumenCarrito {
   lineas: LineaCarrito[];
+  /**
+   * Lo que se agotó o se retiró desde que se agregó. No se cobra —el servidor
+   * tampoco lo cobraría—, y se dice en vez de desaparecerlo sin aviso.
+   */
+  noDisponibles: LineaNoDisponible[];
   /** Piezas sueltas: las únicas que mueven la escalera de volumen. */
   piezasSueltas: number;
   /** Piezas físicas totales, incluyendo las que vienen dentro de paquetes. */
@@ -82,6 +99,12 @@ export interface ResumenCarrito {
 export interface OpcionesResumen {
   metodo?: IdPago | null;
   envio?: IdEnvio | null;
+  /**
+   * Con qué precios. Por omisión, los vigentes (`fuenteVigente`); un
+   * componente pasa los de `useFuentePrecios` para volver a pintarse cuando
+   * llegue la disponibilidad.
+   */
+  fuente?: FuentePrecios;
 }
 
 /**
@@ -94,16 +117,28 @@ export interface OpcionesResumen {
  * existencia se llegaba a 14 sin un solo aviso.
  *
  * Los lotes no tienen existencias propias —se arman al vender— y por eso
- * conservan el tope genérico que ya usaba el resumen.
+ * conservan el tope genérico que ya usaba el resumen. Lo demás mira la
+ * disponibilidad en vivo: algo agotado en el panel ya no se puede agregar.
  */
 export function stockDisponible(productoId: string, ml: number): number {
+  const { vivo } = useDisponibilidad.getState();
   if (ml === ML_PAQUETE) {
     if (getLote(productoId)) return 99;
-    return getSet(productoId)?.stock ?? 0;
+    const set = getSet(productoId);
+    return set ? setVivo(set, vivo).stock : 0;
   }
   const producto = getProductoPorId(productoId);
   if (!producto) return 0;
-  return getPresentacion(producto, ml).stock;
+  return getPresentacion(productoVivo(producto, vivo), ml).stock;
+}
+
+/** El nombre de algo del carrito, aunque ya no se venda. */
+function nombreDe(item: ItemCarrito): string | null {
+  if (item.ml === ML_PAQUETE) {
+    return getLote(item.productoId)?.nombre ?? getSet(item.productoId)?.nombre ?? null;
+  }
+  const p = getProductoPorId(item.productoId);
+  return p ? `${p.nombre} ${item.ml} ml` : null;
 }
 
 /**
@@ -182,7 +217,7 @@ export function resumenCarrito(
   cupon: string | null = null,
   opciones: OpcionesResumen = {},
 ): ResumenCarrito {
-  const c = cotizar(items, FUENTE_TIENDA, {
+  const c = cotizar(items, opciones.fuente ?? fuenteVigente(), {
     cupon,
     metodo: opciones.metodo ?? null,
     envio: opciones.envio ?? null,
@@ -191,6 +226,12 @@ export function resumenCarrito(
   const lineas = c.lineas.flatMap((l) => {
     const visible = lineaVisible(l);
     return visible ? [visible] : [];
+  });
+  // Solo lo que la tienda conoce: un producto que ni siquiera existe en el
+  // build es un carrito de hace meses y no hay nombre que enseñar.
+  const noDisponibles = c.descartados.flatMap((item) => {
+    const nombre = nombreDe(item);
+    return nombre ? [{ item, nombre }] : [];
   });
 
   // Base sobre la que se mide "cuánto más ahorro si subo una pieza".
@@ -204,6 +245,7 @@ export function resumenCarrito(
 
   return {
     lineas,
+    noDisponibles,
     piezasSueltas: c.piezasSueltas,
     piezasTotales: c.piezasTotales,
     escalon: c.escalon,

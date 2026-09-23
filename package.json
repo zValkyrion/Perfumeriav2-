@@ -16,6 +16,7 @@
     "catalogo": "tsx scripts/catalogo.ts",
     "catalogo:exportar": "tsx scripts/catalogo.ts exportar",
     "catalogo:subir": "tsx scripts/catalogo-subir.ts",
+    "catalogo:publicado": "tsx scripts/catalogo-publicado.ts",
     "probar:precios": "tsx scripts/probar-precios.ts",
     "probar:catalogo": "tsx scripts/probar-catalogo.ts"
   },

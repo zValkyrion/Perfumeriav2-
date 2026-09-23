@@ -10,6 +10,7 @@ import {
   Download,
   LogOut,
   MapPin,
+  Package,
   Plus,
   Scale,
   Search,
@@ -128,11 +129,18 @@ export default function Pagina() {
                   sea y llegue a /admin recibe la explicación ahí mismo: esto
                   decide qué se pinta, no qué se puede leer. */}
               {sesion.grupos.includes("admins") && (
-                <Link href="/admin/" aria-label="Vista de conjunto">
-                  <Boton variante="secundario" className="px-3">
-                    <ChartColumn size={18} />
-                  </Boton>
-                </Link>
+                <>
+                  <Link href="/catalogo/" aria-label="Catálogo de la tienda">
+                    <Boton variante="secundario" className="px-3">
+                      <Package size={18} />
+                    </Boton>
+                  </Link>
+                  <Link href="/admin/" aria-label="Vista de conjunto">
+                    <Boton variante="secundario" className="px-3">
+                      <ChartColumn size={18} />
+                    </Boton>
+                  </Link>
+                </>
               )}
               <ExportarCopia proveedores={proveedores ?? []} />
               <Boton

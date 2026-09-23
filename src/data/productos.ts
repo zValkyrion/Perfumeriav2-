@@ -1,4 +1,4 @@
-import type { ProductoCatalogo } from "../../compartido/catalogo";
+import type { ProductoCatalogo, ProductoPrecio } from "../../compartido/catalogo";
 import { normalizar, puntuar } from "../lib/coincidencia";
 import { randEntero } from "../lib/rand";
 import type { Nota, Presentacion, Producto } from "../types";
@@ -27,7 +27,12 @@ function notas(p: ProductoCatalogo): Nota[] {
   ];
 }
 
-function presentaciones(p: ProductoCatalogo): Presentacion[] {
+/**
+ * Precios y existencias de un producto. Acepta el catálogo compilado o la
+ * disponibilidad en vivo (`GET /disponibilidad`), que trae solo estos campos:
+ * así la ficha pinta igual un precio de hace un minuto que uno del build.
+ */
+export function presentacionesDe(p: ProductoPrecio): Presentacion[] {
   return p.presentaciones.map((v) => ({
     ml: v.ml,
     // El precio es el de la lista, tal cual: redondear una cifra que alguien
@@ -57,7 +62,7 @@ function construirProducto(p: ProductoCatalogo): Producto {
     notas: notas(p),
     descripcionCorta: p.corta,
     descripcionLarga: p.larga || p.corta,
-    presentaciones: presentaciones(p),
+    presentaciones: presentacionesDe(p),
     imagenes: p.imagenes.length > 0 ? p.imagenes.map(urlImagen) : [SIN_FOTO],
     badges: p.badges,
     rating: randEntero(`${p.slug}-rating`, 42, 50) / 10,

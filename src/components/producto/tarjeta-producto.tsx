@@ -13,6 +13,7 @@ import { presentacionPrincipal } from "@/data/productos";
 import { precio as fmt } from "@/lib/format";
 import { pixel } from "@/lib/pixel";
 import { mejorPlazo, precioUnitario } from "@/lib/volumen";
+import { useProductoVivo } from "@/store/disponibilidad";
 import { useTienda } from "@/store/tienda";
 import type { Producto } from "@/types";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,7 @@ import { cn } from "@/lib/utils";
 const STOCK_BAJO = 19;
 
 export function TarjetaProducto({
-  producto,
+  producto: compilado,
   prioridad = false,
   className,
 }: {
@@ -35,6 +36,8 @@ export function TarjetaProducto({
   prioridad?: boolean;
   className?: string;
 }) {
+  // Lo compilado, con lo agotado y los precios de ahora encima.
+  const producto = useProductoVivo(compilado);
   const principal = presentacionPrincipal(producto);
   const [ml, setMl] = useState(principal.ml);
   const presentacion =

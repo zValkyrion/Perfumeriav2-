@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio, PrecioAnterior, Descuento } from "@/components/comunes/precio";
 import { precio as fmt } from "@/lib/format";
+import { useSetVivo } from "@/store/disponibilidad";
 import { useTienda } from "@/store/tienda";
 import type { SetRegalo } from "@/types";
 
-export function TarjetaSet({ set }: { set: SetRegalo }) {
+export function TarjetaSet({ set: compilado }: { set: SetRegalo }) {
+  // Lo compilado, con lo agotado y el precio de ahora encima.
+  const set = useSetVivo(compilado);
   const agregarPaquete = useTienda((s) => s.agregarPaquete);
   const abrirDrawer = useTienda((s) => s.abrirDrawer);
 

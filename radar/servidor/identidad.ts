@@ -95,6 +95,17 @@ export function puedeVerProveedores(identidad: Identidad): boolean {
 }
 
 /**
+ * ¿Puede editar el catálogo de la tienda?
+ *
+ * Solo `admins`, y solo con cuenta propia: lo que se cambia aquí se cobra y se
+ * publica, y cada cambio queda firmado con quién lo hizo. El PIN compartido no
+ * firma a nadie, así que no entra aunque abra el panel de proveedores.
+ */
+export function esAdmin(identidad: Identidad): boolean {
+  return identidad.origen === "cognito" && identidad.grupos.includes("admins");
+}
+
+/**
  * ¿Puede tener carrito y pedidos propios?
  *
  * Cualquier cuenta de Cognito, sin pedir grupo: quien compra en la tienda está

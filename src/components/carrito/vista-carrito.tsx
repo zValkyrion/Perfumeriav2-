@@ -9,7 +9,9 @@ import { Precio, PrecioAnterior } from "@/components/comunes/precio";
 import { Contenedor } from "@/components/comunes/layout";
 import { GridSkeleton } from "@/components/producto/grid-productos";
 import { resumenCarrito } from "@/lib/carrito";
+import { useFuentePrecios } from "@/store/disponibilidad";
 import { useTienda } from "@/store/tienda";
+import { AvisoNoDisponibles } from "./aviso-no-disponibles";
 import { BarraEscalon } from "./barra-escalon";
 import { ResumenPedido } from "./resumen-pedido";
 import { Stepper } from "./stepper";
@@ -25,8 +27,9 @@ export function VistaCarrito() {
   const regresarAlCarrito = useTienda((s) => s.regresarAlCarrito);
   const quitarGuardado = useTienda((s) => s.quitarGuardado);
 
-  const resumen = resumenCarrito(carrito, cupon);
-  const resumenGuardados = resumenCarrito(guardados, null);
+  const fuente = useFuentePrecios();
+  const resumen = resumenCarrito(carrito, cupon, { fuente });
+  const resumenGuardados = resumenCarrito(guardados, null, { fuente });
 
   // Hasta que localStorage se lee, el servidor y el cliente deben coincidir.
   if (!hidratado) {
@@ -43,6 +46,10 @@ export function VistaCarrito() {
   if (resumen.vacio) {
     return (
       <Contenedor className="py-16 lg:py-24">
+        <AvisoNoDisponibles
+          lineas={resumen.noDisponibles}
+          className="mx-auto mb-8 max-w-md"
+        />
         <div className="mx-auto max-w-md text-center">
           <div className="border-border-strong text-fg-subtle mx-auto mb-6 grid size-20 place-items-center rounded-full border border-dashed">
             <ShoppingBag size={30} aria-hidden />
@@ -75,6 +82,7 @@ export function VistaCarrito() {
 
       <div className="lg:grid lg:grid-cols-[1fr_380px] lg:items-start lg:gap-10">
         <div className="min-w-0">
+          <AvisoNoDisponibles lineas={resumen.noDisponibles} className="mb-5" />
           <BarraEscalon resumen={resumen} className="mb-5" />
 
           <ul className="divide-border-soft border-border-soft divide-y border-y">

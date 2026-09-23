@@ -22,6 +22,10 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "Elrey_github_token": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "Elrey_imagenes": {
       "name": string
       "type": "sst.aws.Bucket"

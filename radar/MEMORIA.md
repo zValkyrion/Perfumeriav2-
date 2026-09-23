@@ -66,9 +66,11 @@ Región **us-east-1**. Cuenta **637423567003**. Etapa: `produccion`.
 | S3 (fotos) | `elrey-radar-produccion-elreyfotosbucket-mmokknwk` | Las fotos, subidas directo desde el teléfono |
 | S3 (sitio) | `elrey-radar-produccion-elreyradarassetsbucket-*` | El SPA estático |
 | Lambda | `Elrey_api_produccion` | La API entera, una sola función |
+| Lambda + EventBridge | `Elrey_publicacion_produccion` (Cron, cada 10 min) | Publica solo los cambios del panel que llevan 10 min quietos |
 | API Gateway | `Elrey_api` | HTTP API v2 |
 | CloudFront | distribución de `Elrey_radar` | Sirve el sitio |
 | SSM | `Elrey_pin`, `Elrey_jwt_secreto` | Secretos (vía `sst secret`) |
+| SSM | `Elrey_github_token` | Token de GitHub para publicar desde el panel. Vacío por defecto |
 | Cognito | `Elrey_usuarios` (`us-east-1_qpU8tmkIB`) | Identidad y grupos |
 
 ### La excepción a `Elrey_`
@@ -140,6 +142,7 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | --- | --- |
 | `GET /salud` | Diagnóstico. Sin token |
 | `GET /catalogo` | El catálogo publicado (sin ocultos ni notas). Sin token, caché de un minuto |
+| `GET /disponibilidad` | Qué se vende y a cuánto, sin textos ni fotos (~33 KB). Sin token, caché de 30 s. La pide la tienda al abrirse |
 | `POST /acceso` | PIN + nombre → JWT de 90 días. Sin token |
 | `GET /proveedores` | Todas las fichas, por fecha |
 | `PUT /proveedores/{id}` | Guarda una ficha |
@@ -151,11 +154,39 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | `GET/PUT /direcciones` | La libreta de direcciones de ese usuario |
 | `GET /pedidos` | Los pedidos de ese usuario («Mis pedidos») |
 | `POST /pedidos` | Registra un pedido de la tienda. **Sin token**: recalcula el total con `cotizar` y asigna el folio |
+| `GET /admin/catalogo` | El catálogo completo (con ocultos y notas), la huella de cada registro, el estado de la publicación y el vocabulario |
+| `PUT /admin/catalogo/{tipo}/{id}` | Alta o edición de un producto, marca, set o lote. Lleva la huella leída (`null` en un alta) |
+| `DELETE /admin/catalogo/{tipo}/{id}?huella=` | Borra, si nada lo usa |
+| `POST /admin/imagenes` | URL prefirmada para subir una foto ya procesada, con nombre de huella |
+| `GET /admin/exportar?archivo=` | `productos`, `marcas`, `sets` o `lotes` en el formato de `catalogo/*.csv` |
+| `GET /admin/publicacion` · `POST /admin/publicar` | Si la tienda está al día; pedir que se vuelva a compilar |
 
 `carrito`, `direcciones` y `GET /pedidos` son de la **tienda**, no del panel, y
 por eso no piden grupo: piden identidad propia. `POST /pedidos` ni siquiera
 eso —casi nadie se registra para comprar—; si llega token, además guarda la
-copia en «Mis pedidos». El resto exige `proveedores` o `admins`.
+copia en «Mis pedidos». `/admin/*` exige cuenta de Cognito del grupo `admins`
+(el PIN no entra: no firma a nadie). El resto exige `proveedores` o `admins`.
+
+**El catálogo lo edita el panel** (`/radar/catalogo/`). Cada guardado se valida
+campo por campo con `compartido/validar-catalogo.ts` —las mismas reglas que el
+lector del CSV— y solo se escribe si la huella que manda el navegador sigue
+siendo la de la tabla: si otro administrador o una carga del CSV lo cambió en
+medio, responde 409 en vez de pisarlo. Una foto nueva tiene que existir ya en el
+bucket. Borrar una marca con perfumes o un perfume que está en un lote da 409.
+
+**Lo que se vende llega en un minuto; lo demás, al publicar.** La tienda es
+estática. Al abrirse pide `GET /disponibilidad` y lo agotado, lo oculto y los
+precios de ahí mandan sobre lo compilado —en la tarjeta, la ficha, el carrito y
+el total—, así que un agotado deja de venderse en un minuto. Un perfume nuevo,
+un texto, una foto u ocultarlo de las listas necesitan volver a compilar:
+«publicar» lanza `aws.yml` por `workflow_dispatch`. Lo hace el botón del panel
+o, solo, el Cron diez minutos después del último cambio, **una vez por tanda**:
+si ese despliegue falla no se reintenta, el panel lo enseña en rojo. Sin
+`Elrey_github_token` no hay publicación desde el panel; los cambios salen con el
+siguiente push. Las reglas están en `compartido/publicacion.ts`.
+
+**Las respuestas grandes van comprimidas** (gzip si el cliente lo acepta): el
+catálogo completo baja de 248 KB a 62 KB.
 
 **El total que se cobra lo calcula el servidor.** `POST /pedidos` no lee el
 total ni el folio que mande el navegador: cotiza con `compartido/cotizacion.ts`
@@ -171,6 +202,12 @@ El nombre de quien captura viaja dentro del token, así cada ficha queda firmada
 **Las fotos no pasan por la Lambda.** Suben directo a S3 con URL prefirmada:
 con roaming, mandar la imagen por API Gateway es pagar dos veces la misma
 transferencia y arriesgarse al límite de 6 MB de payload.
+
+> **El cliente de S3 va con `requestChecksumCalculation: "WHEN_REQUIRED"`.**
+> Sin eso, el SDK mete en cada URL prefirmada de subida la suma CRC32 de un
+> cuerpo vacío (`x-amz-checksum-crc32=AAAAAA==`) y S3 rechaza la foto real que
+> llega por ella. Afecta a las dos subidas: la del panel de catálogo y la de las
+> fotos de proveedores.
 
 ---
 
@@ -201,19 +238,31 @@ del índice es la que leerá el panel de administración.
 
 ```
 PK         SK                 Contenido
-PRODUCTO   <código del PDF>   datos (ProductoCatalogo) + huella
-MARCA      <slug>             datos (MarcaCatalogo) + huella
-SET        <código del PDF>   datos (SetCatalogo) + huella
-LOTE       <slug>             datos (LoteCatalogo) + huella
-META       CATALOGO           generado, huella y conteos de la última carga
+PRODUCTO   <código del PDF>   datos (ProductoCatalogo) + huella + fuente + editadoEn/Por [+ borrado]
+MARCA      <slug>             datos (MarcaCatalogo) + lo mismo
+SET        <código del PDF>   datos (SetCatalogo) + lo mismo
+LOTE       <slug>             datos (LoteCatalogo) + lo mismo
+META       CATALOGO           generado (último cambio), publicado, publicadoEn, pedidaEn/Por
 ```
 
 Tabla aparte porque es pública y lo demás es privado. La forma de las filas la
 fijan `compartido/catalogo.ts` y `compartido/catalogo-tabla.ts`, que comparten
-quien escribe (`scripts/catalogo-subir.ts`) y quien lee (la Lambda). Las fotos
-van a S3 con clave `productos/<código>/<huella>.webp`: la huella es de la foto de
-origen, así que una foto que no cambió no se vuelve a subir y una que cambió
-estrena clave (caché de un año, nunca hay que invalidar).
+quien escribe (la carga del CSV y el panel, vía la Lambda) y quien lee. Las
+fotos van a S3 con clave `productos/<código>/<huella>.webp`: una foto que no
+cambió no se vuelve a subir y una que cambió estrena clave (caché de un año,
+nunca hay que invalidar). Las del CSV llevan la huella de la foto de origen; las
+del panel, el SHA-256 del archivo procesado.
+
+**La tabla es la fuente de verdad; el CSV propone.** Lo editan dos manos: el
+panel, registro por registro, y `catalogo:subir`, a granel. Cada fila que vino
+del CSV guarda en `fuente` lo que el CSV decía en la última carga, y la carga
+siguiente fusiona **campo por campo** (`planDeCarga` / `fusionar`): aplica solo
+lo que cambió en el CSV desde entonces. Un agotado del panel sobrevive a que el
+Excel suba el precio. Si los dos cambiaron el mismo campo gana el CSV y la carga
+lo avisa. Lo creado en el panel (sin `fuente`) nunca lo borra la carga; lo que
+vino del CSV y se quitó de él, sí. Borrar en el panel algo del CSV deja la fila
+con `borrado` para que la carga no lo resucite. `huella` es la de `datos` con
+las claves ordenadas (`estable`), para que el panel y el CSV coincidan.
 
 Las filas `USER#` **no llevan `GSI1PK`**. El índice es disperso, así que no las
 ve: `GET /proveedores` sigue devolviendo solo fichas. Es lo que mantiene
@@ -273,7 +322,7 @@ contraseñas para el mismo humano. Lo que separa es el grupo, no la cuenta.
 
 | Grupo | Precedencia | Qué abre |
 | --- | --- | --- |
-| `admins` | 1 | Todo |
+| `admins` | 1 | Todo, incluido el catálogo de la tienda |
 | `proveedores` | 2 | El panel |
 | `clientes` | 3 | Solo la tienda |
 
@@ -338,6 +387,11 @@ cd radar && npx sst deploy --stage produccion
 cd radar && npx sst secret set Elrey_pin <nuevo> --stage produccion
 cd radar && npx sst deploy --stage produccion   # hace falta redesplegar
 
+# Publicar desde el panel: token de GitHub de grano fino, solo este
+# repositorio, permiso «Actions: Read and write». Lo crea y lo pone el dueño.
+cd radar && npx sst secret set Elrey_github_token <token> --stage produccion
+cd radar && npx sst deploy --stage produccion   # hace falta redesplegar
+
 # Ver logs de la API
 aws logs tail /aws/lambda/Elrey_api_produccion --follow
 
@@ -355,7 +409,7 @@ cd radar && npx sst unlock --stage produccion
 
 ```bash
 npm run probar:precios                   # reglas de precio (tienda y API), sin AWS
-npm run probar:catalogo                  # el CSV del catálogo: agotados, ocultos, fotos, ida y vuelta
+npm run probar:catalogo                  # el catálogo: CSV, panel, fusión, disponibilidad y publicación
 npm --prefix radar run probar            # las rutas de la API, de punta a punta
 npm --prefix radar run probar-textract   # el lector de listas de precios
 npm --prefix radar run probar-tienda     # carrito y pedidos, contra la tabla
@@ -364,6 +418,12 @@ npm --prefix radar run probar-tienda     # carrito y pedidos, contra la tabla
 `probar:precios` corre en el workflow **antes** de desplegar: si falla, no se
 despliega. Cubre la escalera del PDF, la transferencia sumada, el tope del 40%,
 el contra entrega y que lo que manda el navegador no se crea.
+
+`probar:catalogo` también corre antes: además del CSV, comprueba que el panel
+acepta los 321 productos tal como los cargó el CSV (y que guardarlos sin tocar
+nada no los cambia), que la disponibilidad cobra igual que el catálogo
+completo, la fusión del CSV con el panel y las reglas de la publicación
+automática.
 
 `probar` recorre cada ruta con datos reales —incluida la subida de una foto a
 S3— y verifica también los rechazos: PIN equivocado, token inventado, ruta
@@ -400,6 +460,52 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-09-23 · El catálogo se edita desde el panel
+
+Fase 3 de tres. Las fases 1 y 2 quedaron en producción el mismo día: `GET
+/catalogo` sirve los 307 perfumes publicados sin ocultos ni notas y las fotos
+salen de CloudFront con caché de un año.
+
+- **Por qué:** con la fase 2 el catálogo vivía en DynamoDB, pero cambiar un
+  precio o marcar un agotado seguía pidiendo editar un CSV y hacer push.
+- **Panel** (`/radar/catalogo/`, solo `admins`): lista con búsqueda, pestañas
+  (perfumes, sets, marcas, lotes) y filtros (agotados, ocultos, sin foto, con
+  nota); agotado y visible con un toque desde la lista; editor completo con alta
+  y borrado; la foto se recorta en el teléfono con la misma receta que la carga
+  del CSV (600×800 sobre blanco, WebP, miniatura de 12 px) y sube directo a S3;
+  exportar cada CSV en el formato de `catalogo/`.
+- **Servidor:** rutas `/admin/*` y `GET /disponibilidad`. Validación compartida
+  con el lector del CSV (`compartido/validar-catalogo.ts`), escritura
+  condicionada a la huella (409 si otro cambió el registro), foto nueva
+  verificada en el bucket, respuestas grandes con gzip.
+- **CSV y panel conviven:** la carga fusiona campo por campo con la `fuente`
+  guardada en cada fila, así que no pisa lo del panel (§4). La primera carga
+  tras desplegar solo anota la `fuente` de las filas de la fase 2.
+- **Tienda:** pide `GET /disponibilidad` al abrir (y al volver a la pestaña
+  pasados cinco minutos). Tarjeta, ficha, carrito y checkout usan esos precios
+  y existencias; lo que se agotó después de meterlo al carrito se avisa, no se
+  cobra y no viaja en el pedido.
+- **Publicar:** `workflow_dispatch` de `aws.yml` desde el panel o el Cron
+  `Elrey_publicacion` (10 min sin cambios, una vez por tanda). La CI anota en
+  META qué catálogo compiló (`catalogo:publicado`). Hace falta
+  `Elrey_github_token`; sin él, todo lo demás funciona y publica el siguiente
+  push.
+- **Encontrado de paso:** las URL prefirmadas de subida llevaban la suma CRC32
+  de un cuerpo vacío (comportamiento nuevo del SDK de S3) y S3 habría rechazado
+  cualquier foto real. El cliente pasa a `WHEN_REQUIRED`; arregla también la
+  subida de fotos de proveedores, que usa el mismo cliente.
+- **Verificado:** 49 pruebas del catálogo, 24 de precio y las de la tienda en
+  verde. De punta a punta, con la Lambda empaquetada contra DynamoDB y S3 falsos
+  (51 comprobaciones): la puerta (sin sesión 401; proveedores y PIN 403), el
+  guardado con huella vieja (409), datos inválidos (422 con su campo), el alta
+  con foto subida por la URL prefirmada, borrar lo que se usa (409), la marca de
+  borrado, la exportación, y la carga del CSV respetando el agotado del panel
+  mientras aplicaba un cambio de precio del CSV. En el navegador: el panel
+  (lista, agotado con un toque, editor, foto, alta y borrado de una marca,
+  error bajo su campo) y la tienda contra la API local (un agotado del panel
+  sale agotado en la ficha y avisado en el carrito; un precio nuevo se cobra
+  en el total).
 
 ### 2026-09-22 · El catálogo real vive en DynamoDB y sus fotos en S3
 
@@ -1122,5 +1228,5 @@ proveedores no se entera.
 - **El detalle del pedido no rastrea de verdad**: el estatus es el que se guardó
   al cerrarlo y nadie lo mueve todavía. La guía y la paquetería solo existen en
   los pedidos de muestra.
-- **El total del pedido lo calcula el navegador.** Sirve mientras el checkout sea
-  una demostración; con cobro real hay que calcularlo en el servidor.
+- **Publicar tarda unos minutos** (el mismo despliegue que un push). Lo que se
+  vende y a cuánto no espera; un perfume nuevo o una foto, sí.

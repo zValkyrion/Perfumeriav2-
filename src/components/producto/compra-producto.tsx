@@ -12,11 +12,14 @@ import { MARCA } from "@/data/contenido";
 import { precio as fmt, precioPorMl } from "@/lib/format";
 import { pixel } from "@/lib/pixel";
 import { ESCALONES, escalonPara, mejorPlazo, precioUnitario, siguienteEscalon } from "@/lib/volumen";
+import { useProductoVivo } from "@/store/disponibilidad";
 import { useTienda } from "@/store/tienda";
 import type { Producto } from "@/types";
 import { cn } from "@/lib/utils";
 
-export function CompraProducto({ producto }: { producto: Producto }) {
+export function CompraProducto({ producto: compilado }: { producto: Producto }) {
+  // Lo compilado, con lo agotado y los precios de ahora encima.
+  const producto = useProductoVivo(compilado);
   const router = useRouter();
 
   const inicial =

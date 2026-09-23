@@ -4,11 +4,11 @@
  *   npm run catalogo            catalogo/*.csv + fotos  →  src/data/catalogo.json
  *   npm run catalogo:exportar   src/data/catalogo.json  →  catalogo/*.csv
  *
- * La fuente de verdad en producción es DynamoDB (`Elrey_catalogo`), que se carga
- * desde estos mismos CSV con `npm run catalogo:subir` en cada despliegue. Lo que
- * genera este script es la **copia local**: la que usa `npm run dev`, la copia
- * de GitHub Pages y el build cuando la API todavía no tiene catálogo. Por eso se
- * versiona.
+ * La fuente de verdad en producción es DynamoDB (`Elrey_catalogo`): la edita el
+ * panel y le llegan los cambios de estos CSV con `npm run catalogo:subir` en
+ * cada despliegue. Lo que genera este script es la **copia local**: la que usa
+ * `npm run dev`, la copia de GitHub Pages y el build cuando la API todavía no
+ * tiene catálogo. Por eso se versiona.
  *
  * Además deja las fotos procesadas en `public/imagenes/` (fuera de git) para
  * que en desarrollo se vean igual que en producción, donde las sirve CloudFront.
@@ -18,16 +18,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import type { Catalogo } from "../compartido/catalogo";
-import { escribirCSV } from "./catalogo/csv";
-import {
-  COLUMNAS_LOTE,
-  COLUMNAS_MARCA,
-  COLUMNAS_PRODUCTO,
-  COLUMNAS_SET,
-  datosDeFoto,
-  leerCatalogo,
-  sinFecha,
-} from "./catalogo/leer";
+import { ARCHIVOS_CSV, escribirCSV, filasCsv } from "../compartido/catalogo-csv";
+import { datosDeFoto, leerCatalogo, sinFecha } from "./catalogo/leer";
 
 const raiz = process.cwd();
 const CARPETA = join(raiz, "catalogo");
@@ -87,9 +79,6 @@ async function importar() {
 
 /* ── Exportar: la copia local de vuelta a CSV ─────────────────────────── */
 
-const lista = (v: readonly string[] | undefined) => (v ?? []).join("|");
-const siNo = (v: boolean) => (v ? "si" : "");
-
 async function exportar() {
   const c = await leerJsonLocal();
   if (!c) {
@@ -97,82 +86,12 @@ async function exportar() {
     process.exit(1);
   }
   await mkdir(CARPETA, { recursive: true });
-
-  const productos = c.productos.map((p) => {
-    const cien = p.presentaciones.find((v) => v.ml === 100);
-    return [
-      p.codigo,
-      lista(p.codigosAlternos),
-      p.slug,
-      p.nombre,
-      p.marca,
-      p.linea ?? "",
-      p.concentracion,
-      p.genero,
-      p.familia,
-      cien ? String(cien.precio) : "",
-      p.presentaciones.map((v) => `${v.ml}:${v.precio}`).join("|"),
-      p.rebaja ? String(p.rebaja) : "",
-      p.presentaciones.map((v) => v.ml).join("|"),
-      lista(p.salida),
-      lista(p.corazon),
-      lista(p.fondo),
-      p.corta,
-      p.larga === p.corta ? "" : p.larga,
-      lista(p.badges),
-      String(p.duracion),
-      String(p.estela),
-      lista(p.ocasion),
-      siNo(p.destacado),
-      p.anio ? String(p.anio) : "",
-      p.origen ?? "",
-      siNo(p.agotado),
-      p.visible ? "si" : "no",
-      p.nota ?? "",
-    ];
-  });
-
-  const marcas = c.marcas.map((m) => [
-    m.slug,
-    m.nombre,
-    m.pais,
-    m.fundada ? String(m.fundada) : "",
-    m.firma,
-    m.descripcion,
-  ]);
-
-  const sets = c.sets.map((s) => [
-    s.codigo,
-    s.slug,
-    s.nombre,
-    s.marca,
-    String(s.precio),
-    s.precioAnterior ? String(s.precioAnterior) : "",
-    lista(s.incluye),
-    s.descripcion,
-    siNo(s.agotado),
-    s.visible ? "si" : "no",
-    s.nota ?? "",
-  ]);
-
-  const lotes = c.lotes.map((l) => [
-    l.slug,
-    l.nombre,
-    l.tema,
-    String(l.piezas),
-    String(l.precio),
-    lista(l.modelos),
-    l.descripcion,
-    lista(l.incluye),
-    siNo(l.masVendido),
-  ]);
-
-  await writeFile(join(CARPETA, "productos.csv"), escribirCSV([[...COLUMNAS_PRODUCTO], ...productos]), "utf8");
-  await writeFile(join(CARPETA, "marcas.csv"), escribirCSV([[...COLUMNAS_MARCA], ...marcas]), "utf8");
-  await writeFile(join(CARPETA, "sets.csv"), escribirCSV([[...COLUMNAS_SET], ...sets]), "utf8");
-  await writeFile(join(CARPETA, "lotes.csv"), escribirCSV([[...COLUMNAS_LOTE], ...lotes]), "utf8");
-
-  console.log(`✓ ${productos.length} productos, ${marcas.length} marcas, ${sets.length} sets y ${lotes.length} lotes → catalogo/*.csv`);
+  for (const archivo of ARCHIVOS_CSV) {
+    await writeFile(join(CARPETA, `${archivo}.csv`), escribirCSV(filasCsv(c, archivo)), "utf8");
+  }
+  console.log(
+    `✓ ${c.productos.length} productos, ${c.marcas.length} marcas, ${c.sets.length} sets y ${c.lotes.length} lotes → catalogo/*.csv`,
+  );
 }
 
 // Envuelto en una función y no con `await` de primer nivel: los scripts de este

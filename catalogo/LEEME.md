@@ -1,9 +1,26 @@
 # Cómo cargar el catálogo
 
 El catálogo de la tienda vive en AWS: los datos en DynamoDB (`Elrey_catalogo`) y
-las fotos en S3 (`Elrey_imagenes`), servidas por CloudFront. Esta carpeta es la
-**entrada**: lo que se edita en Excel o Google Sheets y se carga en cada
-despliegue. No hace falta tocar código.
+las fotos en S3 (`Elrey_imagenes`), servidas por CloudFront. **La tabla es la
+fuente de verdad**, y hay dos formas de cambiarla:
+
+- **El panel** (`/radar/catalogo/`, con una cuenta del grupo `admins`): para el
+  día a día. Marcar agotado, ocultar, cambiar un precio, dar de alta un perfume
+  con su foto. Lo que se vende y a cuánto llega a la tienda en un minuto; lo
+  demás, al publicar (el botón del panel, o solo a los diez minutos del último
+  cambio si está configurado el token de GitHub).
+- **Esta carpeta**: para los cambios a granel, como el catálogo del mes. Se
+  edita en Excel o Google Sheets y se carga en cada despliegue. No hace falta
+  tocar código.
+
+**Las dos no se pisan.** La carga del CSV aplica solo los campos que cambiaron
+en el CSV desde la carga anterior: si en el panel se marcó un perfume agotado y
+en el Excel se le cambió el precio, se quedan los dos. Si los dos cambiaron el
+mismo campo gana el CSV, y la carga lo dice en el registro del despliegue.
+
+Antes de un cambio grande en Excel conviene partir de lo que hay: el botón
+**Exportar** del panel baja cada CSV tal como está en la tabla, en este mismo
+formato.
 
 | Archivo | Qué lleva |
 | --- | --- |
@@ -22,8 +39,8 @@ despliegue. No hace falta tocar código.
 2. Comprueba que carga: `npm run catalogo`. Si algo está mal, **no escribe nada**
    y te dice archivo, fila y columna, con la fila numerada como en Excel.
 3. Haz commit y push a `main`. El despliegue valida el catálogo, sube a S3 las
-   fotos nuevas, escribe en DynamoDB solo lo que cambió y compila la tienda con
-   lo que quedó en la tabla.
+   fotos nuevas, fusiona en DynamoDB lo que cambió y compila la tienda con lo
+   que quedó en la tabla.
 
 ## Los comandos
 
@@ -115,7 +132,9 @@ enlace viejo daría 404 y se perdería el posicionamiento en Google.
 
 **Borrar una fila la borra de la tienda en el siguiente despliegue.** Si solo
 quieres que deje de verse, pon `visible` en `no`: el producto sigue en la base,
-no se publica y no se puede cobrar.
+no se publica y no se puede cobrar. Lo que se dio de alta en el panel no está en
+el CSV y la carga no lo toca; lo que se borró en el panel no vuelve aunque siga
+aquí (la carga avisa para que lo quites).
 
 **Una foto nueva se detecta sola.** El nombre del archivo publicado lleva la
 huella de la foto, así que cambiar `fotos/0001.jpg` sube la nueva y la tienda la

@@ -23,7 +23,7 @@ export function hayApi(): boolean {
  * Quince segundos alcanzan para cualquier consulta normal. Leer una foto con
  * Textract es otra cosa —analiza la imagen entera— y por eso puede pedir más.
  */
-async function pedir<T>(
+export async function pedir<T>(
   ruta: string,
   opciones: RequestInit & { token?: string; msCorte?: number } = {},
 ): Promise<T> {

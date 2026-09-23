@@ -32,6 +32,14 @@ export default $config({
     // `npx sst secret set Elrey_pin <valor> --stage produccion`.
     const pin = new sst.Secret("Elrey_pin");
     const jwtSecreto = new sst.Secret("Elrey_jwt_secreto");
+    // Token de GitHub con permiso de Actions (escritura) sobre este repositorio
+    // y nada más: es lo que deja al panel volver a compilar la tienda. Vacío
+    // por defecto —el despliegue no falla sin él—; entonces el panel guarda
+    // igual y lo publica el siguiente push.
+    const githubToken = new sst.Secret("Elrey_github_token", "");
+    // De dónde se pide el despliegue. En la CI lo dice GitHub; a mano, el de
+    // siempre.
+    const repositorio = process.env.GITHUB_REPOSITORY ?? "zValkyrion/Perfumeriav2-";
 
     // ── Datos ───────────────────────────────────────────────────────────────
     const tabla = new sst.aws.Dynamo("Elrey_proveedores", {
@@ -185,7 +193,20 @@ export default $config({
     // nada: el paquete es idéntico y la concurrencia sobra.
     api.route("$default", {
       handler: "servidor/api.handler",
-      link: [tabla, catalogo, fotos, pin, jwtSecreto, usuarios, clienteWeb],
+      // `imagenes`: el panel sube fotos de producto con URL prefirmada, y la
+      // firma sale del permiso de esta función sobre el bucket.
+      link: [
+        tabla,
+        catalogo,
+        imagenes,
+        fotos,
+        pin,
+        jwtSecreto,
+        githubToken,
+        usuarios,
+        clienteWeb,
+      ],
+      environment: { ELREY_REPOSITORIO: repositorio },
       name: `Elrey_api_${$app.stage}`,
       memory: "512 MB",
       timeout: "20 seconds",
@@ -195,6 +216,20 @@ export default $config({
       permissions: [
         { actions: ["textract:AnalyzeDocument"], resources: ["*"] },
       ],
+    });
+
+    // ── Publicación automática ──────────────────────────────────────────────
+    // Cada diez minutos: si el panel dejó cambios sin publicar y nadie ha
+    // tocado nada en diez minutos, pide el despliegue. Sin token no hace nada.
+    new sst.aws.Cron("Elrey_publicacion", {
+      schedule: "rate(10 minutes)",
+      function: {
+        handler: "servidor/publicar-cron.handler",
+        link: [catalogo, githubToken],
+        environment: { ELREY_REPOSITORIO: repositorio },
+        name: `Elrey_publicacion_${$app.stage}`,
+        timeout: "30 seconds",
+      },
     });
 
     // ── Sitio ───────────────────────────────────────────────────────────────

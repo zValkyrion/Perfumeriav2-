@@ -9,36 +9,44 @@
  *
  *   cd radar && npx sst shell --stage produccion -- npm --prefix .. run catalogo:subir
  *
- * Es idempotente: sube solo las fotos que faltan, reescribe solo las filas que
- * cambiaron y borra las que ya no están en el CSV. Correrla dos veces seguidas
- * no hace nada la segunda. El orden importa: **primero las fotos y después la
- * tabla**, para que ningún producto publicado apunte a una imagen que todavía
- * no existe.
+ * **La tabla manda; el CSV propone.** Desde que existe el panel, la tabla
+ * tiene cambios que el CSV no conoce. La carga no reemplaza filas: aplica solo
+ * los campos que cambiaron **en el CSV** desde la carga anterior
+ * (`planDeCarga`). Un perfume marcado agotado en el panel sigue agotado aunque
+ * el Excel le suba el precio. Si los dos cambiaron el mismo campo gana el CSV
+ * y se avisa.
+ *
+ * Es idempotente: correrla dos veces seguidas no hace nada la segunda. Primero
+ * suben las fotos y después se escribe la tabla, para que ningún producto
+ * apunte a una imagen que todavía no existe.
  *
  * En la CI escribe `cambios=true|false` en `$GITHUB_OUTPUT`.
  */
-import { createHash } from "node:crypto";
 import { appendFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-  BatchWriteCommand,
+  DeleteCommand,
   DynamoDBDocumentClient,
   PutCommand,
   QueryCommand,
+  UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-import type { Catalogo } from "../compartido/catalogo";
 import {
   META,
   PARTICIONES,
   catalogoDeFilas,
   filasDe,
-  type FilaCatalogo,
+  iguales,
+  planDeCarga,
+  type Escritura,
+  type FilaGuardada,
 } from "../compartido/catalogo-tabla";
-import { datosDeFoto, leerCatalogo, sinFecha } from "./catalogo/leer";
+import { huellaDe } from "../compartido/huella";
+import { datosDeFoto, leerCatalogo } from "./catalogo/leer";
 
 const simular = process.argv.includes("--simular");
 const siExiste = process.argv.includes("--si-existe");
@@ -54,14 +62,11 @@ function recurso(nombre: string): { name: string } | undefined {
   }
 }
 
-const huella = (valor: unknown) =>
-  createHash("sha1").update(JSON.stringify(valor)).digest("hex");
-
 async function leerTabla(
   dynamo: DynamoDBDocumentClient,
   tabla: string,
-): Promise<{ filas: FilaCatalogo[]; generado: string }> {
-  const filas: FilaCatalogo[] = [];
+): Promise<{ filas: FilaGuardada[]; generado: string }> {
+  const filas: FilaGuardada[] = [];
   for (const pk of PARTICIONES) {
     let desde: Record<string, unknown> | undefined;
     do {
@@ -71,9 +76,10 @@ async function leerTabla(
           KeyConditionExpression: "PK = :pk",
           ExpressionAttributeValues: { ":pk": pk },
           ExclusiveStartKey: desde,
+          ConsistentRead: true,
         }),
       );
-      for (const item of r.Items ?? []) filas.push(item as FilaCatalogo);
+      for (const item of r.Items ?? []) filas.push(item as FilaGuardada);
       desde = r.LastEvaluatedKey;
     } while (desde);
   }
@@ -87,24 +93,15 @@ async function leerTabla(
   return { filas, generado: String(meta.Items?.[0]?.generado ?? "") };
 }
 
-/** BatchWrite de 25 en 25, reintentando lo que DynamoDB devuelva sin procesar. */
-async function escribirLotes(
-  dynamo: DynamoDBDocumentClient,
-  tabla: string,
-  peticiones: Record<string, unknown>[],
-) {
-  for (let i = 0; i < peticiones.length; i += 25) {
-    let pendientes: Record<string, unknown>[] = peticiones.slice(i, i + 25);
-    for (let intento = 0; pendientes.length > 0; intento++) {
-      if (intento > 0) await new Promise((r) => setTimeout(r, 200 * 2 ** intento));
-      if (intento > 6) throw new Error("DynamoDB no aceptó el lote después de varios intentos");
-      const r = await dynamo.send(
-        new BatchWriteCommand({ RequestItems: { [tabla]: pendientes as never } }),
-      );
-      pendientes = (r.UnprocessedItems?.[tabla] ?? []) as Record<string, unknown>[];
-    }
+/** De diez en diez: rápido sin pasarse de la capacidad de la tabla. */
+async function enTandas<T>(lista: readonly T[], fn: (x: T) => Promise<void>) {
+  for (let i = 0; i < lista.length; i += 10) {
+    await Promise.all(lista.slice(i, i + 10).map(fn));
   }
 }
+
+const esCondicionFallida = (e: unknown) =>
+  e instanceof Error && e.name === "ConditionalCheckFailedException";
 
 async function main() {
   const tabla = recurso("Elrey_catalogo")?.name;
@@ -127,9 +124,9 @@ async function main() {
   // en el subdominio, que un servidor local no puede resolver.
   const s3 = new S3Client({ forcePathStyle: Boolean(process.env.AWS_ENDPOINT_URL_S3) });
 
-  /* 1. Lo que hay ahora, para no rehacer fotos ni reescribir filas iguales. */
+  /* 1. Lo que hay ahora: para fusionar y para no rehacer fotos. */
   const actual = await leerTabla(dynamo, tabla);
-  const previo: Catalogo = catalogoDeFilas(actual.filas, actual.generado);
+  const previo = catalogoDeFilas(actual.filas, actual.generado);
 
   /* 2. Lo que dice el CSV. */
   const { catalogo, fotos, problemas, avisos } = await leerCatalogo({
@@ -172,44 +169,91 @@ async function main() {
     );
   }
 
-  /* 4. Tabla: poner lo que cambió, borrar lo que ya no está. */
-  const existentes = new Map(actual.filas.map((f) => [`${f.PK}#${f.SK}`, f]));
-  const deseadas = filasDe(catalogo).map((f) => ({ ...f, huella: huella(f.datos) }));
-  const claves = new Set(deseadas.map((f) => `${f.PK}#${f.SK}`));
+  /* 4. Tabla: fusionar lo que el CSV cambió, borrar lo que quitó. */
+  const plan = planDeCarga(actual.filas, filasDe(catalogo));
+  const cambiaDatos = (e: Escritura) => !e.previa || !iguales(e.datos, e.previa.datos);
+  const conCambios = plan.escribir.filter(cambiaDatos);
+  const ahora = new Date().toISOString();
+  const saltadas: string[] = [];
 
-  const poner = deseadas.filter((f) => existentes.get(`${f.PK}#${f.SK}`)?.huella !== f.huella);
-  const borrar = actual.filas.filter((f) => !claves.has(`${f.PK}#${f.SK}`));
+  if (!simular) {
+    await enTandas(plan.escribir, async (e) => {
+      const previa = e.previa;
+      try {
+        await dynamo.send(
+          new PutCommand({
+            TableName: tabla,
+            Item: {
+              PK: e.PK,
+              SK: e.SK,
+              datos: e.datos,
+              huella: huellaDe(e.datos),
+              fuente: e.fuente,
+              cargadoEn: ahora,
+              ...(previa?.editadoEn
+                ? { editadoEn: previa.editadoEn, editadoPor: previa.editadoPor }
+                : {}),
+              ...(previa?.borrado ? { borrado: true } : {}),
+            },
+            // Solo si nadie tocó la fila desde que se leyó: el panel puede
+            // estar guardando en este mismo momento.
+            ConditionExpression: !previa
+              ? "attribute_not_exists(PK)"
+              : previa.huella
+                ? "huella = :h"
+                : "attribute_not_exists(huella)",
+            ExpressionAttributeValues: previa?.huella ? { ":h": previa.huella } : undefined,
+          }),
+        );
+      } catch (err) {
+        // La fusión se rehace en la próxima carga con lo que haya entonces.
+        if (esCondicionFallida(err)) saltadas.push(`${e.PK}#${e.SK}`);
+        else throw err;
+      }
+    });
 
-  const cambios = poner.length + borrar.length > 0;
+    await enTandas(plan.borrar, async (f) => {
+      await dynamo.send(new DeleteCommand({ TableName: tabla, Key: { PK: f.PK, SK: f.SK } }));
+    });
+  }
+
+  // `generado` es «cuándo cambió lo que se publica»: solo se mueve si cambió
+  // algún dato. Anotar la `fuente` de las filas viejas no cambia la tienda.
+  const cambios = conCambios.length + plan.borrar.length > 0;
   if (!simular && cambios) {
-    await escribirLotes(dynamo, tabla, [
-      ...poner.map((f) => ({ PutRequest: { Item: f } })),
-      ...borrar.map((f) => ({ DeleteRequest: { Key: { PK: f.PK, SK: f.SK } } })),
-    ]);
     await dynamo.send(
-      new PutCommand({
+      new UpdateCommand({
         TableName: tabla,
-        Item: {
-          ...META,
-          generado: catalogo.generado,
-          huella: huella(sinFecha(catalogo)),
-          productos: catalogo.productos.length,
-          sets: catalogo.sets.length,
-          lotes: catalogo.lotes.length,
-          marcas: catalogo.marcas.length,
-        },
+        Key: META,
+        UpdateExpression: "SET generado = :g, cargadoEn = :g",
+        ExpressionAttributeValues: { ":g": ahora },
       }),
     );
   }
 
-  const verbo = simular ? "se subirían" : "subidas";
+  const s = simular;
   console.log(
-    `${simular ? "SIMULACIÓN · " : "✓ "}${subidas} foto(s) ${verbo}; ` +
-      `${poner.length} fila(s) ${simular ? "por escribir" : "escritas"}, ` +
-      `${borrar.length} ${simular ? "por borrar" : "borradas"} ` +
-      `(${catalogo.productos.length} productos, ${catalogo.sets.length} sets, ` +
-      `${catalogo.lotes.length} lotes, ${catalogo.marcas.length} marcas)`,
+    `${s ? "SIMULACIÓN · " : "✓ "}${subidas} foto(s) ${s ? "se subirían" : "subidas"}; ` +
+      `${conCambios.length} fila(s) con cambios ${s ? "por escribir" : "escritas"}, ` +
+      `${plan.borrar.length} ${s ? "por borrar" : "borradas"}` +
+      (plan.escribir.length > conCambios.length
+        ? `; ${plan.escribir.length - conCambios.length} anotada(s) con su origen en el CSV`
+        : "") +
+      ` (${catalogo.productos.length} productos, ${catalogo.sets.length} sets, ` +
+      `${catalogo.lotes.length} lotes, ${catalogo.marcas.length} marcas en el CSV)`,
   );
+  if (plan.respetadas.length > 0) {
+    console.log(`· ${plan.respetadas.length} fila(s) conservan cambios hechos en el panel.`);
+  }
+  for (const c of plan.conflictos.slice(0, 30)) {
+    console.log(`! ${c.clave}: el CSV y el panel cambiaron ${c.campos.join(", ")}. Quedó lo del CSV.`);
+  }
+  for (const clave of plan.borradasEnPanel) {
+    console.log(`! ${clave} se borró en el panel pero sigue en el CSV: quítalo del CSV o restáuralo.`);
+  }
+  for (const clave of saltadas) {
+    console.log(`! ${clave} cambió mientras se cargaba: se fusiona en la próxima carga.`);
+  }
 
   if (process.env.GITHUB_OUTPUT) {
     await appendFile(process.env.GITHUB_OUTPUT, `cambios=${cambios && !simular}\n`);

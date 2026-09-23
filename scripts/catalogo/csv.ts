@@ -75,19 +75,8 @@ function detectarSeparador(texto: string): string {
   return puntoYComa > comas ? ";" : ",";
 }
 
-function celdaCSV(valor: string): string {
-  return /["\n\r,;]/.test(valor) ? `"${valor.replace(/"/g, '""')}"` : valor;
-}
-
-/**
- * Escribe el CSV con BOM y separado por comas.
- *
- * El BOM no es decorativo: sin él, Excel abre el archivo en la codificación del
- * sistema y cada acento se convierte en un símbolo raro.
- */
-export function escribirCSV(filas: string[][]): string {
-  return "﻿" + filas.map((f) => f.map(celdaCSV).join(",")).join("\r\n") + "\r\n";
-}
+/** Vive en `compartido/`: el panel exporta con el mismo formato. */
+export { escribirCSV } from "../../compartido/catalogo-csv";
 
 /** Un problema concreto, con su archivo, su fila y su columna. */
 export interface Problema {
@@ -243,14 +232,7 @@ export class Lector {
  * pública del producto y una vez publicada no se cambia sin romper enlaces y
  * perder el posicionamiento acumulado.
  */
-export function aSlug(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
+export { aSlug } from "../../compartido/validar-catalogo";
 
 /** `"30:390|100:790"` → `[{ml: 30, precio: 390}, {ml: 100, precio: 790}]`. */
 export function leerPrecios(

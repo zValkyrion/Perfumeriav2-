@@ -190,14 +190,16 @@ export function catalogoPublico(c: Catalogo): Catalogo {
 }
 
 /** La presentación que se vende por defecto: 100 ml si existe, si no la mayor. */
-export function presentacionBase(p: ProductoCatalogo): PresentacionCatalogo {
+export function presentacionBase(
+  p: Pick<ProductoCatalogo, "presentaciones">,
+): PresentacionCatalogo {
   return (
     p.presentaciones.find((v) => v.ml === 100) ??
     [...p.presentaciones].sort((a, b) => b.ml - a.ml)[0]!
   );
 }
 
-export function precioMinimo(p: ProductoCatalogo): number {
+export function precioMinimo(p: Pick<ProductoCatalogo, "presentaciones">): number {
   return Math.min(...p.presentaciones.map((v) => v.precio));
 }
 
@@ -207,8 +209,8 @@ export function precioMinimo(p: ProductoCatalogo): number {
  * revendedor; un modelo que ya no existe cuenta cero.
  */
 export function valorLote(
-  lote: LoteCatalogo,
-  porCodigo: ReadonlyMap<string, ProductoCatalogo>,
+  lote: LotePrecio,
+  porCodigo: ReadonlyMap<string, Pick<ProductoCatalogo, "presentaciones">>,
 ): number {
   let suma = 0;
   for (let i = 0; i < lote.piezas; i++) {
@@ -218,13 +220,83 @@ export function valorLote(
   return suma;
 }
 
+/* ── Disponibilidad en vivo ───────────────────────────────────────────── */
+
+/** De un producto, solo lo que decide si se vende y a cuánto. */
+export type ProductoPrecio = Pick<
+  ProductoCatalogo,
+  "codigo" | "presentaciones" | "badges" | "agotado" | "visible" | "rebaja"
+>;
+export type SetPrecio = Pick<
+  SetCatalogo,
+  "codigo" | "slug" | "precio" | "precioAnterior" | "agotado" | "visible"
+>;
+export type LotePrecio = Pick<LoteCatalogo, "slug" | "precio" | "piezas" | "modelos">;
+
+/**
+ * Lo que la tienda consulta al abrirse (`GET /disponibilidad`): qué se vende y
+ * a cuánto, **ahora**.
+ *
+ * La tienda es estática y se compila con el catálogo de ese momento. Sin esto,
+ * marcar un perfume como agotado en el panel no llegaría hasta el siguiente
+ * build, y un precio cambiado se enseñaría viejo mientras el servidor ya cobra
+ * el nuevo. Es una fracción del catálogo —sin textos ni fotos— para que pedirla
+ * en cada visita no cueste.
+ */
+export interface Disponibilidad {
+  generado: string;
+  productos: ProductoPrecio[];
+  sets: SetPrecio[];
+  lotes: LotePrecio[];
+}
+
+/** Las etiquetas que cambian lo que se cobra; las demás son solo de vitrina. */
+const BADGES_DE_PRECIO: readonly Badge[] = ["Edición limitada", "3x2"];
+
+export function disponibilidadDe(c: Catalogo): Disponibilidad {
+  return {
+    generado: c.generado,
+    productos: c.productos
+      .filter((p) => p.visible)
+      .map((p) => ({
+        codigo: p.codigo,
+        presentaciones: p.presentaciones,
+        badges: p.badges.filter((b) => BADGES_DE_PRECIO.includes(b)),
+        agotado: p.agotado,
+        visible: true,
+        ...(p.rebaja ? { rebaja: p.rebaja } : {}),
+      })),
+    sets: c.sets
+      .filter((s) => s.visible)
+      .map((s) => ({
+        codigo: s.codigo,
+        slug: s.slug,
+        precio: s.precio,
+        ...(s.precioAnterior ? { precioAnterior: s.precioAnterior } : {}),
+        agotado: s.agotado,
+        visible: true,
+      })),
+    lotes: c.lotes.map((l) => ({
+      slug: l.slug,
+      precio: l.precio,
+      piezas: l.piezas,
+      modelos: l.modelos,
+    })),
+  };
+}
+
 /**
  * Los precios de un catálogo, en la forma que pide `cotizar`.
  *
  * Lo oculto y lo agotado **no se cobra**: el carrito ya no deja agregarlo, y el
- * servidor tampoco lo acepta aunque alguien lo mande a mano.
+ * servidor tampoco lo acepta aunque alguien lo mande a mano. Acepta el catálogo
+ * completo o solo su `Disponibilidad`: los dos cobran igual.
  */
-export function fuenteDeCatalogo(c: Catalogo): FuentePrecios {
+export function fuenteDeCatalogo(c: {
+  productos: readonly ProductoPrecio[];
+  sets: readonly SetPrecio[];
+  lotes: readonly LotePrecio[];
+}): FuentePrecios {
   const todos = new Map(c.productos.map((p) => [p.codigo, p]));
   const vendibles = new Map(
     c.productos.filter((p) => p.visible && !p.agotado).map((p) => [p.codigo, p]),

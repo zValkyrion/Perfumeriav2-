@@ -69,12 +69,16 @@ jobs:
           role-to-assume: arn:aws:iam::637423567003:role/Elrey_despliegue_github
           aws-region: us-east-1
 
-      # El catálogo de la tienda vive en DynamoDB y S3, y se carga desde
-      # `catalogo/*.csv` y `catalogo/fotos/`. Va **antes** del despliegue porque
-      # el build de la tienda publica lo que devuelve `GET /catalogo`: cargado
-      # después, la tienda saldría con el catálogo anterior. La carga es
-      # idempotente —solo toca lo que cambió— y `--si-existe` la salta sin error
-      # la primera vez, cuando la tabla todavía no existe.
+      # El catálogo de la tienda vive en DynamoDB y S3. Lo editan el panel
+      # (/radar/catalogo) y `catalogo/*.csv`; la carga del CSV **no pisa** lo del
+      # panel: solo aplica los campos que cambiaron en el CSV desde la carga
+      # anterior. Va **antes** del despliegue porque el build de la tienda
+      # publica lo que devuelve `GET /catalogo`: cargado después, la tienda
+      # saldría con el catálogo anterior. Es idempotente, y `--si-existe` la
+      # salta sin error la primera vez, cuando la tabla todavía no existe.
+      #
+      # Este workflow también lo lanza el botón «Publicar» del panel (y la
+      # publicación automática) con `workflow_dispatch`.
       - name: Cargar el catálogo (antes del build)
         run: npx sst shell --stage produccion -- npm --prefix .. run catalogo:subir -- --si-existe
 
@@ -103,6 +107,12 @@ jobs:
           NEXT_PUBLIC_CLIP_LINK: ${{ vars.CLIP_LINK }}
           NEXT_PUBLIC_WEBHOOK_PEDIDOS: ${{ vars.WEBHOOK_PEDIDOS }}
         run: npx sst deploy --stage produccion
+
+      # Qué catálogo quedó publicado: el panel lo compara con el último cambio
+      # para decir si hay algo pendiente, y la publicación automática para
+      # saber si tiene que volver a compilar.
+      - name: Anotar el catálogo publicado
+        run: npx sst shell --stage produccion -- npm --prefix .. run catalogo:publicado
 
       # Desplegar no es funcionar. Si la API queda rota, el workflow falla y
       # aparece en rojo en vez de descubrirse en la calle al día siguiente.

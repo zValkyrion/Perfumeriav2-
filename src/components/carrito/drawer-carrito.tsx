@@ -14,6 +14,8 @@ import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { Precio, PrecioAnterior } from "@/components/comunes/precio";
 import { resumenCarrito } from "@/lib/carrito";
 import { presentacionPrincipal } from "@/data/productos";
+import { AvisoNoDisponibles } from "@/components/carrito/aviso-no-disponibles";
+import { useFuentePrecios } from "@/store/disponibilidad";
 import { useTienda } from "@/store/tienda";
 import type { Producto } from "@/types";
 import { Stepper } from "./stepper";
@@ -28,7 +30,8 @@ export function DrawerCarrito({ sugeridos }: { sugeridos: Producto[] }) {
   const quitar = useTienda((s) => s.quitar);
   const agregar = useTienda((s) => s.agregar);
 
-  const resumen = resumenCarrito(carrito, cupon);
+  const fuente = useFuentePrecios();
+  const resumen = resumenCarrito(carrito, cupon, { fuente });
   const enCarrito = new Set(carrito.map((i) => i.productoId));
   const complementos = sugeridos
     .filter((p) => !enCarrito.has(p.id))
@@ -51,6 +54,8 @@ export function DrawerCarrito({ sugeridos }: { sugeridos: Producto[] }) {
             ) : null}
           </SheetTitle>
         </SheetHeader>
+
+        <AvisoNoDisponibles lineas={resumen.noDisponibles} className="mx-4 mt-4" />
 
         {resumen.vacio ? (
           <EstadoVacio onCerrar={() => setDrawer(false)} />
