@@ -53,7 +53,9 @@ export function TarjetaSet({ set }: { set: SetRegalo }) {
           ) : null}
         </div>
 
-        {set.stock <= 15 ? (
+        {set.stock === 0 ? (
+          <p className="text-fg-subtle mt-1.5 text-[11px]">Agotado por ahora</p>
+        ) : set.stock <= 15 ? (
           <p className="text-danger mt-1.5 text-[11px]">
             Solo quedan {set.stock}
           </p>
@@ -64,6 +66,7 @@ export function TarjetaSet({ set }: { set: SetRegalo }) {
             variant="goldOutline"
             size="touch"
             className="w-full"
+            disabled={set.stock === 0}
             onClick={() => {
               agregarPaquete(set.slug, 1);
               abrirDrawer();
@@ -73,7 +76,7 @@ export function TarjetaSet({ set }: { set: SetRegalo }) {
             }}
           >
             <Plus size={16} aria-hidden />
-            Agregar set
+            {set.stock === 0 ? "Agotado" : "Agregar set"}
           </Button>
         </div>
       </div>

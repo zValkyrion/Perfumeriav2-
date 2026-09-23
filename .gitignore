@@ -20,6 +20,10 @@
 # production
 /build
 
+# fotos del catálogo ya procesadas: en producción viven en S3 y las sirve
+# CloudFront; esta copia la regenera `npm run catalogo` para desarrollo
+/public/imagenes/
+
 # misc
 .DS_Store
 *.pem

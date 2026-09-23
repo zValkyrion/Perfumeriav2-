@@ -1,21 +1,8 @@
-// Rutas relativas y no `@/`: la Lambda de `radar/` también compila este
-// archivo para cobrar con los mismos precios, y allí `@/` apunta a otra carpeta.
+import type { ProductoCatalogo } from "../../compartido/catalogo";
 import { normalizar, puntuar } from "../lib/coincidencia";
 import { randEntero } from "../lib/rand";
 import type { Nota, Presentacion, Producto } from "../types";
-import { SEMILLAS, type Semilla } from "./semillas";
-
-/**
- * Precio por presentación, relativo al de 100 ml. No es lineal: en perfumería
- * el frasco grande siempre ofrece mejor precio por mililitro, y ese diferencial
- * es justamente lo que empuja al cliente a subir de tamaño.
- */
-const RATIO_ML: Record<number, number> = {
-  30: 0.45,
-  50: 0.68,
-  100: 1,
-  200: 1.6,
-};
+import { CATALOGO, SIN_FOTO, urlImagen } from "./catalogo";
 
 /** Redondea a un precio "de tienda": termina en 0 y nunca en 00. */
 function precioBonito(valor: number): number {
@@ -23,80 +10,74 @@ function precioBonito(valor: number): number {
   return r % 100 === 0 ? r - 10 : r;
 }
 
-function sku(semilla: Semilla, ml: number): string {
-  const marca = semilla.marca.replace(/-/g, "").slice(0, 3).toUpperCase();
-  const nombre = semilla.slug.replace(/-/g, "").slice(0, 4).toUpperCase();
-  return `AUR-${marca}-${nombre}-${ml}`;
-}
+/**
+ * Existencias. No hay inventario por pieza todavía: el catálogo solo dice qué
+ * está agotado. Lo que no lo está se vende sin tope, porque un tope inventado
+ * —antes era un número al azar entre 15 y 30— impedía justo el pedido que el
+ * mayoreo busca: veinte piezas del mismo modelo. Y un «solo quedan 17» sobre un
+ * número inventado es una escasez falsa.
+ */
+const STOCK_DISPONIBLE = 999;
 
-function notas(semilla: Semilla): Nota[] {
+function notas(p: ProductoCatalogo): Nota[] {
   return [
-    ...semilla.salida.map((nombre) => ({ tipo: "salida" as const, nombre })),
-    ...semilla.corazon.map((nombre) => ({ tipo: "corazon" as const, nombre })),
-    ...semilla.fondo.map((nombre) => ({ tipo: "fondo" as const, nombre })),
+    ...p.salida.map((nombre) => ({ tipo: "salida" as const, nombre })),
+    ...p.corazon.map((nombre) => ({ tipo: "corazon" as const, nombre })),
+    ...p.fondo.map((nombre) => ({ tipo: "fondo" as const, nombre })),
   ];
 }
 
-function presentaciones(semilla: Semilla): Presentacion[] {
-  const agotandose = semilla.badges.includes("Últimas piezas");
-
-  return semilla.mls.map((ml) => {
-    // El precio de la lista real manda sobre la curva deducida. `precioBonito`
-    // no se le aplica: redondear una cifra que alguien tecleó a propósito la
-    // convertiría en otra, y el frasco se vende al precio que dice la lista.
-    const precio = semilla.precios?.[ml] ?? precioBonito(semilla.base * (RATIO_ML[ml] ?? 1));
-    const precioAnterior = semilla.rebaja
-      ? precioBonito(precio / (1 - semilla.rebaja))
-      : undefined;
-
-    return {
-      ml,
-      precio,
-      precioAnterior,
-      // Existencias de 15 a 30 piezas mientras no haya inventario real: es lo
-      // que hay hoy en bodega y basta para que el catálogo se vea surtido sin
-      // prometer cantidades que no se pueden servir. Las marcadas como «Últimas
-      // piezas» se quedan en la parte baja de ese mismo rango, porque una
-      // etiqueta de escasez sobre 30 frascos es simplemente falsa.
-      stock: agotandose
-        ? randEntero(`${semilla.slug}-${ml}-stock`, 15, 19)
-        : randEntero(`${semilla.slug}-${ml}-stock`, 15, 30),
-      sku: sku(semilla, ml),
-    };
-  });
+function presentaciones(p: ProductoCatalogo): Presentacion[] {
+  return p.presentaciones.map((v) => ({
+    ml: v.ml,
+    // El precio es el de la lista, tal cual: redondear una cifra que alguien
+    // tecleó a propósito la convertiría en otra.
+    precio: v.precio,
+    precioAnterior: p.rebaja ? precioBonito(v.precio / (1 - p.rebaja)) : undefined,
+    stock: p.agotado ? 0 : STOCK_DISPONIBLE,
+    // El código del PDF: es el que el cliente dicta por WhatsApp.
+    sku: p.codigo,
+  }));
 }
 
-function construirProducto(semilla: Semilla, indice: number): Producto {
+function construirProducto(p: ProductoCatalogo): Producto {
   return {
-    id: `p${String(indice + 1).padStart(3, "0")}`,
-    slug: semilla.slug,
-    nombre: semilla.nombre,
-    marca: semilla.marca,
-    linea: semilla.linea,
-    concentracion: semilla.concentracion,
-    genero: semilla.genero,
-    familia: semilla.familia,
-    notas: notas(semilla),
-    descripcionCorta: semilla.corta,
-    descripcionLarga: semilla.larga,
-    presentaciones: presentaciones(semilla),
-    imagenes: [1, 2, 3, 4].map((n) => `/productos/${semilla.slug}-${n}.webp`),
-    badges: semilla.badges,
-    rating: randEntero(`${semilla.slug}-rating`, 42, 50) / 10,
-    totalReseñas: randEntero(`${semilla.slug}-resenas`, 14, 486),
-    duracion: semilla.duracion,
-    estela: semilla.estela,
-    ocasion: semilla.ocasion,
+    // El código y no la posición: con la posición, reordenar el catálogo
+    // cambiaba el producto de los carritos ya guardados.
+    id: p.codigo,
+    codigo: p.codigo,
+    agotado: p.agotado,
+    slug: p.slug,
+    nombre: p.nombre,
+    marca: p.marca,
+    linea: p.linea,
+    concentracion: p.concentracion,
+    genero: p.genero,
+    familia: p.familia,
+    notas: notas(p),
+    descripcionCorta: p.corta,
+    descripcionLarga: p.larga || p.corta,
+    presentaciones: presentaciones(p),
+    imagenes: p.imagenes.length > 0 ? p.imagenes.map(urlImagen) : [SIN_FOTO],
+    badges: p.badges,
+    rating: randEntero(`${p.slug}-rating`, 42, 50) / 10,
+    totalReseñas: randEntero(`${p.slug}-resenas`, 14, 486),
+    duracion: p.duracion,
+    estela: p.estela,
+    ocasion: p.ocasion,
     // Las ediciones limitadas no entran a la escalera de mayoreo.
-    esMayoreoElegible: !semilla.badges.includes("Edición limitada"),
-    destacado: semilla.destacado ?? false,
-    viendoAhora: randEntero(`${semilla.slug}-viendo`, 6, 34),
-    anio: semilla.anio,
-    origen: semilla.origen,
+    esMayoreoElegible: !p.badges.includes("Edición limitada"),
+    destacado: p.destacado,
+    viendoAhora: randEntero(`${p.slug}-viendo`, 6, 34),
+    anio: p.anio,
+    origen: p.origen,
   };
 }
 
-export const PRODUCTOS: readonly Producto[] = SEMILLAS.map(construirProducto);
+/** Lo publicado: los productos ocultos siguen en el catálogo, no en la tienda. */
+export const PRODUCTOS: readonly Producto[] = CATALOGO.productos
+  .filter((p) => p.visible)
+  .map(construirProducto);
 
 export const PRODUCTOS_POR_SLUG = new Map(PRODUCTOS.map((p) => [p.slug, p]));
 export const PRODUCTOS_POR_ID = new Map(PRODUCTOS.map((p) => [p.id, p]));
@@ -257,7 +238,7 @@ export function sugerencias(consulta: string, limite = 6): Producto[] {
 
 /**
  * Índice compacto para el buscador del header. Se pasa como prop desde un
- * componente de servidor: 52 entradas ligeras en vez de las fichas completas.
+ * componente de servidor: entradas ligeras en vez de las fichas completas.
  */
 export interface EntradaIndice {
   slug: string;

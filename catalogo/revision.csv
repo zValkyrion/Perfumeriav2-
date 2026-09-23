@@ -1,0 +1,644 @@
+﻿codigo,nombre,campo,valor_propuesto,motivo
+HZP4,CeraVe Loción Hidratante (piel seca),fuera,,Cuidado de la piel: la tienda no tiene esa categoría todavía; no se carga
+HZP5,CeraVe Limpiador Hidratante (piel normal a seca),fuera,,Cuidado de la piel: la tienda no tiene esa categoría todavía; no se carga
+HZP2,Vichy Minéral 89,fuera,,Cuidado de la piel: la tienda no tiene esa categoría todavía; no se carga
+HZP7,COSRX Aloe Soothing Sun Cream,fuera,,Cuidado de la piel: la tienda no tiene esa categoría todavía; no se carga
+HZP8,Anua Heartleaf 77% Toner Pads,fuera,,Cuidado de la piel: la tienda no tiene esa categoría todavía; no se carga
+0001,Yara,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0002,Asad,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0003,Asad Zanzibar,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0003,Asad Zanzibar,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0003,Asad Zanzibar,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0004,Yara Candy,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0005,Yara Tous,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0006,Yara Moi,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0007,Khamrah,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0008,Khamrah Qahwa,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0009,Fakhar Men,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0010,Fakhar Rose,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0010,Fakhar Rose,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0011,Royal Amber,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0012,Hawas for Him,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0013,Eros,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0014,Eros Flame,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0015,Club de Nuit Intense Man,familia,Chipre,Propuesta: el PDF no trae familia olfativa
+0016,Club de Nuit Woman,familia,Chipre,Propuesta: el PDF no trae familia olfativa
+0017,Sauvage,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0018,Purr,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0019,Cloud,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0020,Fantasy,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0021,Miracle,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0022,Coco Mademoiselle,familia,Chipre,Propuesta: el PDF no trae familia olfativa
+0023,Light Blue Summer Vibes,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0025,Rave Now Black,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0026,Rave Now White,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0026,Rave Now White,genero,Unisex,Propuesta: el PDF no lo dice
+0027,Qaed Al Fursan,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0027,Qaed Al Fursan,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0027,Qaed Al Fursan,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0028,9pm,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0028,9pm,nombre,9pm,"La celda dice ""Con caja de regalo: 235 pesos / Versión normal: 215 pesos"" pero el precio es 589"
+0029,Bleu de Chanel,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0029,Bleu de Chanel,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0030,Light Blue,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0030,Light Blue,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0031,Bade'e Al Oud Sublime,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0032,Bade'e Al Oud for Glory,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0032,Bade'e Al Oud for Glory,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0032,Bade'e Al Oud for Glory,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0033,Bright Crystal,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0033,Bright Crystal,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0034,Yellow Diamond,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0035,Legend Spirit,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0036,Touch of Pink,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0037,Brit Sheer,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0038,L'Eau d'Issey,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0039,9am Dive,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0040,Invictus,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0041,Pour Homme,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0042,Le Male,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0043,Eros,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0044,Man Eau Fraîche,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0045,Acqua di Giò Profondo,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0045,Acqua di Giò Profondo,visible,no,"Mismo producto que 0321 (Acqua di Giò Profondo). Se publica 0321, que está disponible"
+FT046,Uomo Born in Roma,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+FT047,Uomo Born in Roma Coral Fantasy,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+FT047,Uomo Born in Roma Coral Fantasy,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+FT047,Uomo Born in Roma Coral Fantasy,ml,100,El PDF no dice el tamaño; se asume 100 ml
+FT047,Uomo Born in Roma Coral Fantasy,nombre,Uomo Born in Roma Coral Fantasy,Nombre cortado en el catálogo; variante deducida de la foto — confirmar
+0048,"Thank U, Next",familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0049,Toy 2 Bubble Gum,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0050,Toy 2,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0051,CK One,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0052,CK Be,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0053,Club de Nuit Urban Man,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0054,Dylan Blue Pour Homme,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0055,Crystal Noir,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0056,Dylan Turquoise,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0057,Club de Nuit Sillage,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0057,Club de Nuit Sillage,visible,no,Duplicado de 0160 (Club de Nuit Sillage) con otro precio: $569 contra $619. Se publica 0160; confirmar precio
+0059,Light Blue,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0060,Sweet Like Candy,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0061,Y,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0062,Acqua di Giò,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0063,Hawas Ice,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0063,Hawas Ice,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0063,Hawas Ice,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0066,Toy Boy,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0066,Toy Boy,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0066,Toy Boy,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0067,Moonlight,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0068,Amor Amor,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0069,Meow,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0070,Éclaire,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0071,Hawas Black,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0071,Hawas Black,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0072,Hawas Fire,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0072,Hawas Fire,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0073,Odyssey Mandarin Sky,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0073,Odyssey Mandarin Sky,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0073,Odyssey Mandarin Sky,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0074,Her Confession,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0075,His Confession,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0076,Khair Confection,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0076,Khair Confection,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0077,Khair Pistachio,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0077,Khair Pistachio,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0078,Teriaq,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0079,for Men,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0079,for Men,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0080,Rave Now Red,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0080,Rave Now Red,genero,Unisex,Propuesta: el PDF no lo dice
+0080,Rave Now Red,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0081,Cool Water,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0082,Scandal Pour Homme,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0083,Reserve for Men,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0084,360°,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0085,360° Red,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0086,Eternity for Women,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0087,Be Delicious Fresh Blossom,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0088,Uomo Born in Roma Intense,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0092,Bleu de Chanel,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0093,Odyssey Mega,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0094,Oud Saffron,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0095,Amber Rouge,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0095,Amber Rouge,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0096,Royal Blue,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0097,Musamam,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0098,Musamam White Intense,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0098,Musamam White Intense,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0099,Santal 33,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0100,Odyssey Candee,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0101,Ameer Al Arab,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0102,Ameerat Al Arab,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0102,Ameerat Al Arab,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0102,Ameerat Al Arab,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0103,Ameerat Al Arab Privé Rose,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0104,Ameer Al Arab Imperium,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0105,Ultra Male,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0106,Be Delicious,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0106,Be Delicious,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0106,Be Delicious,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0107,Asad Bourbon,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0107,Asad Bourbon,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0108,Ari,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0111,La Luna,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0111,La Luna,genero,Unisex,Propuesta: el PDF no lo dice
+0111,La Luna,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0112,Hudson Valley,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0112,Hudson Valley,genero,Unisex,Propuesta: el PDF no lo dice
+0112,Hudson Valley,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0113,Ra'ed Luxe Gold,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0115,Cool Water Woman,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0116,Fahrenheit,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0117,Polo Sport,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0119,Incanto Shine,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0119,Incanto Shine,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0119,Incanto Shine,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0120,Happy for Men,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0121,L.12.12 Blanc,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0122,Aventus,familia,Chipre,Propuesta: el PDF no trae familia olfativa
+0122,Aventus,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0123,Voyage,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0124,Club de Nuit Iconic,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0126,(nombre por confirmar),familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0126,(nombre por confirmar),genero,Unisex,Propuesta: el PDF no lo dice
+0126,(nombre por confirmar),visible,no,"Nombre incompleto en el PDF («Edp Lattafa, 100»): falta identificarlo"
+0127,(nombre por confirmar),familia,Floral,Propuesta: el PDF no trae familia olfativa
+0127,(nombre por confirmar),genero,Mujer,Propuesta: el PDF no lo dice
+0127,(nombre por confirmar),visible,no,"Nombre incompleto en el PDF («Edp Lattafa, 100»): falta identificarlo"
+0128,Sultan Al Quloob,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0128,Sultan Al Quloob,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0128,Sultan Al Quloob,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0129,Musk Mood,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0129,Musk Mood,genero,Unisex,Propuesta: el PDF no lo dice
+0130,Oud Mood Elixir,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0131,Oud Mood Reminiscence,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0131,Oud Mood Reminiscence,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0132,Khamrah,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0133,Khamrah Qahwa,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0134,Khamrah Dukhan,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0136,Donna Born in Roma Intense,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0136,Donna Born in Roma Intense,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0137,Donna Born in Roma Pink PP,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0137,Donna Born in Roma Pink PP,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0138,Donna Born in Roma The Gold,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0138,Donna Born in Roma The Gold,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0139,Donna Born in Roma Coral Fantasy,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0139,Donna Born in Roma Coral Fantasy,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0140,Uomo Born in Roma The Gold,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0140,Uomo Born in Roma The Gold,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0141,360° for Men,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0141,360° for Men,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0141,360° for Men,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0142,Reserve,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0142,Reserve,genero,Hombre,Propuesta: el PDF no lo dice
+0142,Reserve,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0142,Reserve,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0144,Scandal Pour Homme Intense,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0144,Scandal Pour Homme Intense,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0145,Coco Mademoiselle L'Eau Privée,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0145,Coco Mademoiselle L'Eau Privée,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0146,Sauvage Parfum,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0146,Sauvage Parfum,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0147,La Vie Est Belle,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0148,Hugo Just Different,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0149,Odyssey Limoni Fresh,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0150,Odyssey Spectra,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0151,Odyssey Dubai Chocolat,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0152,Hugo Iced,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0152,Hugo Iced,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0153,Hugo Man,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0153,Hugo Man,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0154,Le Beau Le Parfum Intense,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0155,Le Male Le Parfum,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0156,Le Male Elixir,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0157,Le Beau Flower Edition,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0157,Le Beau Flower Edition,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0158,Club de Nuit Urban Man Elixir,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0159,Bleecker Street,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0160,Club de Nuit Sillage,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0161,Explorer,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0161,Explorer,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0162,9pm Elixir,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0163,Boss Bottled Oud Saffron,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0163,Boss Bottled Oud Saffron,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0164,Boss Bottled Absolu,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0165,Boss Bottled Bold Citrus,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0165,Boss Bottled Bold Citrus,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0166,Boss Bottled Night,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0167,Paris Hilton,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0168,Hawas Tropical,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0169,Angham,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0170,Hawas for Her,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0171,Odyssey Wild One Gold Edition,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0172,Odyssey Aoud,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0173,Odyssey Artisto Red Edition,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0173,Odyssey Artisto Red Edition,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0174,Odyssey Mandarin Sky Elixir,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0175,Hayaati,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0176,Hayaati Al Maleky,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0176,Hayaati Al Maleky,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0176,Hayaati Al Maleky,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0180,Nitro Red,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0181,Nitro Green,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0181,Nitro Green,nombre,Nitro Green,El catálogo dice Nitro Green pero la caja de la foto dice Nitro Black
+0185,Give Me Gourmand Vanilla Freak,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0185,Give Me Gourmand Vanilla Freak,genero,Unisex,Propuesta: el PDF no lo dice
+0185,Give Me Gourmand Vanilla Freak,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0185,Give Me Gourmand Vanilla Freak,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0185,Give Me Gourmand Vanilla Freak,nombre,Give Me Gourmand Vanilla Freak,Los 6 Give Me Gourmand (0185–0190) tienen el mismo nombre; variante leída en la caja
+0186,Give Me Gourmand (variante naranja),familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0186,Give Me Gourmand (variante naranja),genero,Unisex,Propuesta: el PDF no lo dice
+0186,Give Me Gourmand (variante naranja),concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0186,Give Me Gourmand (variante naranja),ml,100,El PDF no dice el tamaño; se asume 100 ml
+0186,Give Me Gourmand (variante naranja),visible,no,Give Me Gourmand naranja: la caja no se alcanza a leer
+0187,Give Me Gourmand Berry on Top,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0187,Give Me Gourmand Berry on Top,genero,Unisex,Propuesta: el PDF no lo dice
+0187,Give Me Gourmand Berry on Top,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0187,Give Me Gourmand Berry on Top,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0187,Give Me Gourmand Berry on Top,nombre,Give Me Gourmand Berry on Top,Los 6 Give Me Gourmand (0185–0190) tienen el mismo nombre; variante leída en la caja
+0188,Give Me Gourmand (variante morada),familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0188,Give Me Gourmand (variante morada),genero,Unisex,Propuesta: el PDF no lo dice
+0188,Give Me Gourmand (variante morada),concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0188,Give Me Gourmand (variante morada),ml,100,El PDF no dice el tamaño; se asume 100 ml
+0188,Give Me Gourmand (variante morada),visible,no,Give Me Gourmand morado: la caja no se alcanza a leer
+0189,Give Me Gourmand (variante chocolate),familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0189,Give Me Gourmand (variante chocolate),genero,Unisex,Propuesta: el PDF no lo dice
+0189,Give Me Gourmand (variante chocolate),concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0189,Give Me Gourmand (variante chocolate),ml,100,El PDF no dice el tamaño; se asume 100 ml
+0189,Give Me Gourmand (variante chocolate),visible,no,Give Me Gourmand chocolate: la caja no se alcanza a leer
+0190,Give Me Gourmand (variante café),familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0190,Give Me Gourmand (variante café),genero,Unisex,Propuesta: el PDF no lo dice
+0190,Give Me Gourmand (variante café),concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0190,Give Me Gourmand (variante café),ml,100,El PDF no dice el tamaño; se asume 100 ml
+0190,Give Me Gourmand (variante café),visible,no,Give Me Gourmand café: la caja no se alcanza a leer
+0207,Yara (variante por confirmar),familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0207,Yara (variante por confirmar),genero,Mujer,Propuesta: el PDF no lo dice
+0207,Yara (variante por confirmar),concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0207,Yara (variante por confirmar),visible,no,El PDF solo dice «yara 100ml»: falta saber qué variante es
+0208,Asad Elixir,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0208,Asad Elixir,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0208,Asad Elixir,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0208,Asad Elixir,nombre,Asad Elixir,El catálogo sólo dice 'Asad Lattafa'; la caja dice Elixir
+0232,Odyssey Aqua,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0232,Odyssey Aqua,genero,Unisex,Propuesta: el PDF no lo dice
+0232,Odyssey Aqua,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0232,Odyssey Aqua,nombre,Odyssey Aqua,El catálogo dice 'odyssey 100ml'; variante leída en la caja. Códigos escritos '330' y '232'
+0233,Odyssey Tyrant,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0233,Odyssey Tyrant,genero,Hombre,Propuesta: el PDF no lo dice
+0233,Odyssey Tyrant,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0233,Odyssey Tyrant,nombre,Odyssey Tyrant,El catálogo dice 'odyssey 100ml'; variante leída en la caja
+0235,Odyssey Eau de Montagne,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0235,Odyssey Eau de Montagne,genero,Unisex,Propuesta: el PDF no lo dice
+0235,Odyssey Eau de Montagne,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0235,Odyssey Eau de Montagne,nombre,Odyssey Eau de Montagne,El catálogo dice 'odyssey 100ml'; variante leída en la caja
+0239,Odyssey Homme,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0239,Odyssey Homme,genero,Hombre,Propuesta: el PDF no lo dice
+0239,Odyssey Homme,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0239,Odyssey Homme,visible,no,"Mismo producto que 0234 (Armaf Odyssey Homme), mismo precio. Se publica 0234"
+0182,Vulcan (variante turquesa por confirmar),familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0182,Vulcan (variante turquesa por confirmar),genero,Unisex,Propuesta: el PDF no lo dice
+0182,Vulcan (variante turquesa por confirmar),concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0182,Vulcan (variante turquesa por confirmar),visible,no,El PDF solo dice «Vulcan 100ml» (frasco turquesa): falta la variante
+0183,Vulcan Sable,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0183,Vulcan Sable,genero,Unisex,Propuesta: el PDF no lo dice
+0183,Vulcan Sable,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0183,Vulcan Sable,nombre,Vulcan Sable,Nombre genérico en el catálogo; variante leída en la caja
+0184,Vulcan Baie,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0184,Vulcan Baie,genero,Unisex,Propuesta: el PDF no lo dice
+0184,Vulcan Baie,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0184,Vulcan Baie,nombre,Vulcan Baie,Nombre genérico en el catálogo; variante leída en la caja
+0220,Miss Armaf Dazzling,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0221,Miss Armaf Chic,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0222,Miss Armaf Mystique,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0223,Miss Armaf Grandeur,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0192,Erba Gold,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0192,Erba Gold,genero,Unisex,Propuesta: el PDF no lo dice
+0192,Erba Gold,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0192,Erba Gold,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0192,Erba Gold,nombre,Erba Gold,Sin nombre en el catálogo (la celda tiene una foto); la caja parece decir Erba Gold
+0193,(variante por confirmar),familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0193,(variante por confirmar),genero,Unisex,Propuesta: el PDF no lo dice
+0193,(variante por confirmar),concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0193,(variante por confirmar),visible,no,El PDF solo dice «Xerjoff 100ml» (frasco dorado): falta la variante
+0194,Erba Pura,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0194,Erba Pura,genero,Unisex,Propuesta: el PDF no lo dice
+0194,Erba Pura,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0194,Erba Pura,nombre,Erba Pura,"El catálogo dice 'Xerjoff 100ml'; la caja dice Erba Pura. Duplica a 0229 (707, agotado)"
+0229,Erba Pura,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0229,Erba Pura,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0229,Erba Pura,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0229,Erba Pura,visible,no,Duplicado de 0194 (Xerjoff Erba Pura) con otro precio: $707 (agotado) contra $646. Se publica 0194
+0225,Fire on Ice,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0225,Fire on Ice,genero,Unisex,Propuesta: el PDF no lo dice
+ZZPP-A,Glassky,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+ZZPP-A,Glassky,genero,Unisex,Propuesta: el PDF no lo dice
+ZZPP-A,Glassky,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+ZZPP-A,Glassky,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0249,9pm Rebel,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0247,La Bomba,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0064,Acqua di Giò Profumo,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0226,Bouquet of Euphoria,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0226,Bouquet of Euphoria,genero,Mujer,Propuesta: el PDF no lo dice
+0226,Bouquet of Euphoria,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0227,Nectar of Ecstasy,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0227,Nectar of Ecstasy,genero,Unisex,Propuesta: el PDF no lo dice
+0227,Nectar of Ecstasy,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0228,Creme of Clouds,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0228,Creme of Clouds,genero,Mujer,Propuesta: el PDF no lo dice
+0231,Silver Scent,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0231,Silver Scent,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0251,Another 13,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0251,Another 13,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0242,Imagination,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0243,Apogée,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0244,California Dream,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0245,Pacific Chill,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0246,Afternoon Swim,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0246,Afternoon Swim,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0217,The Most Wanted EDT Intense,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0218,The Most Wanted Parfum,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0219,The Most Wanted EDP Intense,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0302,New York Nights,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0302,New York Nights,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0303,Chez Bond,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0303,Chez Bond,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0303,Chez Bond,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0261,Viking Cairo,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0261,Viking Cairo,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0262,Viking Rio,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0262,Viking Rio,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0262,Viking Rio,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0283,Hawas Elixir,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0283,Hawas Elixir,genero,Hombre,Propuesta: el PDF no lo dice
+0283,Hawas Elixir,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0283,Hawas Elixir,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0284,Hawas Diva,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0238,Odyssey Marshmallow,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0238,Odyssey Marshmallow,genero,Unisex,Propuesta: el PDF no lo dice
+0238,Odyssey Marshmallow,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0238,Odyssey Marshmallow,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0286,Hawas Kobra,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0300,Khamrah Karaz,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0300,Khamrah Karaz,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0209,Chocolate,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0210,Bleu,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0211,King Gold Edition,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0211,King Gold Edition,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0212,Odyssey Revolution Ultra Edition,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0213,Odyssey Spectra Blue Edition,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0255,Supremacy Not Only Intense,familia,Chipre,Propuesta: el PDF no trae familia olfativa
+0255,Supremacy Not Only Intense,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0285,Hawas Malibu,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0287,Hawas Pink,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0214,Odyssey Go Mango,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0214,Odyssey Go Mango,genero,Unisex,Propuesta: el PDF no lo dice
+0215,Odyssey Black Forest,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0215,Odyssey Black Forest,genero,Unisex,Propuesta: el PDF no lo dice
+0216,Odyssey Toffee Coffee,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0216,Odyssey Toffee Coffee,genero,Unisex,Propuesta: el PDF no lo dice
+0216,Odyssey Toffee Coffee,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0216,Odyssey Toffee Coffee,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0267,King,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0280,Atlantis,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0281,Irida,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0281,Irida,genero,Mujer,Propuesta: el PDF no lo dice
+0308,Éclaire Banoffi,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0308,Éclaire Banoffi,genero,Mujer,Propuesta: el PDF no lo dice
+0309,Éclaire Pistache,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0309,Éclaire Pistache,genero,Mujer,Propuesta: el PDF no lo dice
+0310,Habik for Women,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0311,Habik for Men,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0252,Supremacy Noir,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0253,Supremacy Collector's Edition,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0254,Supremacy Incense,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0254,Supremacy Incense,genero,Unisex,Propuesta: el PDF no lo dice
+0304,Bade'e Al Oud Amethyst,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0299,Khamrah Dukhan,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0312,Hawas Atlantis,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0312,Hawas Atlantis,genero,Hombre,Propuesta: el PDF no lo dice
+0312,Hawas Atlantis,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0312,Hawas Atlantis,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0314,Hawas Viper,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0314,Hawas Viper,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0313,Hawas Verde,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0313,Hawas Verde,genero,Hombre,Propuesta: el PDF no lo dice
+0305,Yum Yum,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0305,Yum Yum,genero,Mujer,Propuesta: el PDF no lo dice
+0305,Yum Yum,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0305,Yum Yum,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0307,Delights Island Breeze,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0307,Delights Island Breeze,genero,Unisex,Propuesta: el PDF no lo dice
+0307,Delights Island Breeze,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0307,Delights Island Breeze,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0316,9am,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0306,Island Bliss,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0272,Donna Born in Roma Yellow Dream,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0272,Donna Born in Roma Yellow Dream,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0276,Uomo Intense,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0276,Uomo Intense,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0276,Uomo Intense,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0277,Uomo Born in Roma Extradose,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0277,Uomo Born in Roma Extradose,concentracion,Parfum,Propuesta: el PDF no la dice
+0278,Uomo Born in Roma Rockstud Noir,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0278,Uomo Born in Roma Rockstud Noir,concentracion,Eau de Toilette,Propuesta: el PDF no la dice
+0279,Uomo Born in Roma Yellow Dream,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0318,Purple Accento,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0318,Purple Accento,genero,Unisex,Propuesta: el PDF no lo dice
+0318,Purple Accento,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0318,Purple Accento,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0237,Odyssey Homme White Edition,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0237,Odyssey Homme White Edition,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0317,Vulcan (variante negra por confirmar),familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0317,Vulcan (variante negra por confirmar),genero,Unisex,Propuesta: el PDF no lo dice
+0317,Vulcan (variante negra por confirmar),concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0317,Vulcan (variante negra por confirmar),visible,no,El PDF solo dice «Vulcan 100ml» (frasco negro): falta la variante
+0195,Atheeri,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0315,Rose,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0328,Bon Bon,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0328,Bon Bon,genero,Unisex,Propuesta: el PDF no lo dice
+0268,Donna,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0268,Donna,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0269,Donna Born in Roma,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0269,Donna Born in Roma,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0269,Donna Born in Roma,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0270,Donna Born in Roma Green Stravaganza,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0270,Donna Born in Roma Green Stravaganza,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0270,Donna Born in Roma Green Stravaganza,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0271,Donna Born in Roma Extradose,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0271,Donna Born in Roma Extradose,concentracion,Parfum,Propuesta: el PDF no la dice
+0271,Donna Born in Roma Extradose,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0271,Donna Born in Roma Extradose,nombre,Donna Born in Roma Extradose,El catálogo repite el nombre de 0269; la caja dice Extradose
+0274,Uomo Born in Roma Green Stravaganza,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0274,Uomo Born in Roma Green Stravaganza,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0274,Uomo Born in Roma Green Stravaganza,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0298,Hawas Eclat,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0298,Hawas Eclat,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0298,Hawas Eclat,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0275,Uomo Born in Roma Ivory,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0275,Uomo Born in Roma Ivory,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0275,Uomo Born in Roma Ivory,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0288,212 VIP,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0288,212 VIP,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0288,212 VIP,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0290,212 VIP Black,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0290,212 VIP Black,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0291,212 VIP Men Wild Party,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0291,212 VIP Men Wild Party,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0291,212 VIP Men Wild Party,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0292,212 VIP Rosé Extra,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0292,212 VIP Rosé Extra,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0292,212 VIP Rosé Extra,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0293,212 VIP Rosé,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0293,212 VIP Rosé,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0293,212 VIP Rosé,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0324,Marshmallow Blush,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0324,Marshmallow Blush,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0324,Marshmallow Blush,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0250,9pm Pour Femme,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0339,Hawas London,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0339,Hawas London,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0339,Hawas London,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0341,Musamam Black Intense,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0341,Musamam Black Intense,genero,Unisex,Propuesta: el PDF no lo dice
+0341,Musamam Black Intense,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0341,Musamam Black Intense,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0344,Louis XV 1722,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0344,Louis XV 1722,genero,Unisex,Propuesta: el PDF no lo dice
+0344,Louis XV 1722,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0344,Louis XV 1722,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0345,Luxor,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0345,Luxor,genero,Unisex,Propuesta: el PDF no lo dice
+0345,Luxor,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0345,Luxor,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0343,Homme Anniversary,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0343,Homme Anniversary,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0343,Homme Anniversary,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0347,Tony Iommi Deified,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0347,Tony Iommi Deified,genero,Unisex,Propuesta: el PDF no lo dice
+0347,Tony Iommi Deified,concentracion,Parfum,Propuesta: el PDF no la dice
+0347,Tony Iommi Deified,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0331,9pm Night Out,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0236,Odyssey Bahamas,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0236,Odyssey Bahamas,genero,Unisex,Propuesta: el PDF no lo dice
+0333,Chaos,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0333,Chaos,genero,Unisex,Propuesta: el PDF no lo dice
+0333,Chaos,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0342,Noble,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0342,Noble,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0356,Cherry Baby,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0357,Me Espresso,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0357,Me Espresso,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0358,Caramel Dream,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0358,Caramel Dream,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0359,Sweet Tooth,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0359,Sweet Tooth,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0445,Forever Wanted Elixir,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0445,Forever Wanted Elixir,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0445,Forever Wanted Elixir,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0446,Wanted,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0446,Wanted,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0234,Odyssey Homme,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0234,Odyssey Homme,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0346,Aether,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0346,Aether,genero,Unisex,Propuesta: el PDF no lo dice
+0346,Aether,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0346,Aether,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0348,Odyssey Mandarin Sky Vintage Edition,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0348,Odyssey Mandarin Sky Vintage Edition,genero,Hombre,Propuesta: el PDF no lo dice
+0348,Odyssey Mandarin Sky Vintage Edition,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0348,Odyssey Mandarin Sky Vintage Edition,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0325,Veneno Bianco,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0325,Veneno Bianco,genero,Unisex,Propuesta: el PDF no lo dice
+0325,Veneno Bianco,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0325,Veneno Bianco,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0326,Veneno,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0326,Veneno,genero,Unisex,Propuesta: el PDF no lo dice
+0326,Veneno,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0327,Veneno Scarlet,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0327,Veneno Scarlet,genero,Unisex,Propuesta: el PDF no lo dice
+0327,Veneno Scarlet,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0327,Veneno Scarlet,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0321,Acqua di Giò Profondo,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0321,Acqua di Giò Profondo,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0321,Acqua di Giò Profondo,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0322,Acqua di Giò Profondo Lights,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0322,Acqua di Giò Profondo Lights,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0322,Acqua di Giò Profondo Lights,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0323,Acqua di Giò Parfum,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0323,Acqua di Giò Parfum,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0370,Le Male Pride Edition,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0370,Le Male Pride Edition,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0241,Divine,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0241,Divine,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0241,Divine,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0382,Sceptre Oceana,familia,Acuático,Propuesta: el PDF no trae familia olfativa
+0382,Sceptre Oceana,genero,Hombre,Propuesta: el PDF no lo dice
+0382,Sceptre Oceana,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0382,Sceptre Oceana,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0383,Sceptre Amazonite,familia,Fougère,Propuesta: el PDF no trae familia olfativa
+0383,Sceptre Amazonite,genero,Hombre,Propuesta: el PDF no lo dice
+0383,Sceptre Amazonite,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0383,Sceptre Amazonite,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0384,Sceptre Bronzite,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0385,Sceptre Malachite,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0385,Sceptre Malachite,genero,Hombre,Propuesta: el PDF no lo dice
+0385,Sceptre Malachite,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0385,Sceptre Malachite,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0405,Cloud Intense,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0405,Cloud Intense,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0405,Cloud Intense,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0366,Tony Iommi Monkey Special,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0366,Tony Iommi Monkey Special,genero,Unisex,Propuesta: el PDF no lo dice
+0366,Tony Iommi Monkey Special,concentracion,Parfum,Propuesta: el PDF no la dice
+0366,Tony Iommi Monkey Special,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0355,Nardo Oud,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0355,Nardo Oud,genero,Unisex,Propuesta: el PDF no lo dice
+0355,Nardo Oud,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0355,Nardo Oud,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0360,Mawj Appletini,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0360,Mawj Appletini,genero,Unisex,Propuesta: el PDF no lo dice
+0365,Coro,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0365,Coro,genero,Unisex,Propuesta: el PDF no lo dice
+0365,Coro,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0367,Hersh Lahab,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0367,Hersh Lahab,genero,Unisex,Propuesta: el PDF no lo dice
+0374,Sauvage Elixir,familia,Especiado,Propuesta: el PDF no trae familia olfativa
+0374,Sauvage Elixir,concentracion,Parfum,Propuesta: el PDF no la dice
+0374,Sauvage Elixir,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0361,Mawj Cognac Blaze,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0361,Mawj Cognac Blaze,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0362,Mawj Moscow Mule,familia,Cítrico,Propuesta: el PDF no trae familia olfativa
+0362,Mawj Moscow Mule,genero,Unisex,Propuesta: el PDF no lo dice
+0369,No. 3,familia,Oriental,Propuesta: el PDF no trae familia olfativa
+0369,No. 3,genero,Unisex,Propuesta: el PDF no lo dice
+0369,No. 3,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0403,Odyssey Pink Pop,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0403,Odyssey Pink Pop,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0404,Odyssey Li'Chi Lush,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0404,Odyssey Li'Chi Lush,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0380,Shiyaaka Snow,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0380,Shiyaaka Snow,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0381,Shiyaaka Shadow,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0381,Shiyaaka Shadow,genero,Hombre,Propuesta: el PDF no lo dice
+0400,Luscious,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0400,Luscious,genero,Unisex,Propuesta: el PDF no lo dice
+0400,Luscious,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0401,Sweet Paradise,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0401,Sweet Paradise,genero,Unisex,Propuesta: el PDF no lo dice
+0401,Sweet Paradise,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0401,Sweet Paradise,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0402,Meringue,familia,Gourmand,Propuesta: el PDF no trae familia olfativa
+0402,Meringue,genero,Unisex,Propuesta: el PDF no lo dice
+0402,Meringue,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0349,King Soleil,familia,Amaderado,Propuesta: el PDF no trae familia olfativa
+0349,King Soleil,genero,Hombre,Propuesta: el PDF no lo dice
+0408,Very Good Girl,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0410,Very Good Girl Glam,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0410,Very Good Girl Glam,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0410,Very Good Girl Glam,ml,100,El PDF no dice el tamaño; se asume 100 ml
+0413,Very Good Girl Blush,familia,Floral,Propuesta: el PDF no trae familia olfativa
+0413,Very Good Girl Blush,concentracion,Eau de Parfum,Propuesta: el PDF no la dice
+0206,Rasasi Hawas · 4 × 30 ml,visible,no,Mismo set que 0340 (Rasasi Hawas 4 × 30 ml); 0206 está agotado. Se publica 0340
+0337,Afnan 9pm · 4 × 30 ml,marca,Afnan,"El PDF dice «Lattafa 9pm», pero la caja de la foto es de Afnan"

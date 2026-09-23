@@ -1,41 +1,61 @@
 # Cómo cargar el catálogo
 
-Aquí viven los dos archivos que mandan sobre el catálogo de la tienda. Se editan
-en Excel o en Google Sheets; no hace falta tocar código.
+El catálogo de la tienda vive en AWS: los datos en DynamoDB (`Elrey_catalogo`) y
+las fotos en S3 (`Elrey_imagenes`), servidas por CloudFront. Esta carpeta es la
+**entrada**: lo que se edita en Excel o Google Sheets y se carga en cada
+despliegue. No hace falta tocar código.
 
 | Archivo | Qué lleva |
 | --- | --- |
 | `productos.csv` | Un perfume por fila |
 | `marcas.csv` | Las casas a las que apuntan los perfumes |
+| `sets.csv` | Estuches de regalo con precio propio |
+| `lotes.csv` | Paquetes para revender y los modelos que traen |
+| `fotos/<código>.jpg` | La foto de cada producto y de cada set (también `.png` o `.webp`) |
+| `revision.csv` | Lo que se propuso o se ocultó al pasar el PDF y falta confirmar. No se carga |
 
 ---
 
-## Los tres comandos
+## Cómo llega un cambio a la tienda
 
-```bash
-npm run catalogo:exportar
-```
+1. Edita el CSV (o agrega la foto en `fotos/`).
+2. Comprueba que carga: `npm run catalogo`. Si algo está mal, **no escribe nada**
+   y te dice archivo, fila y columna, con la fila numerada como en Excel.
+3. Haz commit y push a `main`. El despliegue valida el catálogo, sube a S3 las
+   fotos nuevas, escribe en DynamoDB solo lo que cambió y compila la tienda con
+   lo que quedó en la tabla.
 
-Baja a CSV lo que hoy tiene la tienda. **Es lo primero que hay que hacer**: así
-editas sobre el catálogo real en vez de partir de una hoja en blanco, y no se
-pierde nada de lo que ya estaba.
+## Los comandos
 
 ```bash
 npm run catalogo
 ```
 
-Sube el CSV a la tienda. Si hay algún error, **no escribe nada** y te dice qué
-fila y qué columna — el número de fila es el mismo que enseña Excel.
+Lee los CSV y las fotos, valida todo y deja la copia local en
+`src/data/catalogo.json` (se versiona: es la que usan el desarrollo, la copia de
+GitHub Pages y el primer despliegue) más las fotos procesadas en
+`public/imagenes/` (no se versionan).
 
 ```bash
-npm run imagenes
+npm run catalogo:exportar
 ```
 
-Genera el arte de los perfumes nuevos. Cada fragancia recibe un frasco propio,
-construido a partir de su familia olfativa. Solo hace falta cuando agregas
-productos.
+Lo contrario: de `src/data/catalogo.json` a los CSV. Sirve para volver a un
+formato limpio después de editar a mano.
 
-Después de cargar, comprueba que todo compila con `npm run build`.
+```bash
+npm run probar:catalogo
+```
+
+Las pruebas que corren antes de cada despliegue: que nada agotado u oculto se
+cobre, que cada producto visible tenga foto, que no se publiquen notas internas.
+
+```bash
+cd radar && npx sst shell --stage produccion -- npm --prefix .. run catalogo:subir
+```
+
+La carga a AWS a mano (la CI la hace sola). Con `-- --simular` dice qué haría
+sin escribir nada. Necesita haber iniciado sesión en AWS (`aws login`).
 
 ---
 
@@ -45,79 +65,82 @@ Después de cargar, comprueba que todo compila con `npm run build`.
 
 | Columna | Qué va | Ejemplo |
 | --- | --- | --- |
-| `nombre` | Como se llama el perfume | `Noir Absolu` |
-| `marca` | El `slug` de una fila de `marcas.csv` | `maison-lumiere` |
+| `codigo` | El número del catálogo en PDF. Es el identificador: no se repite ni se cambia | `0001` |
+| `nombre` | Como se llama el perfume, sin la marca | `Yara` |
+| `marca` | El `slug` de una fila de `marcas.csv` | `lattafa` |
 | `concentracion` | `Parfum`, `Eau de Parfum`, `Eau de Toilette`, `Eau de Cologne` o `Body Mist` | `Eau de Parfum` |
-| `genero` | `Hombre`, `Mujer` o `Unisex` | `Unisex` |
-| `familia` | `Amaderado`, `Oriental`, `Floral`, `Cítrico`, `Fougère`, `Chipre`, `Gourmand`, `Acuático` o `Especiado` | `Amaderado` |
-| `precio_100ml` | Precio de menudeo del frasco de 100 ml | `2890` |
+| `genero` | `Hombre`, `Mujer` o `Unisex` | `Mujer` |
+| `familia` | `Amaderado`, `Oriental`, `Floral`, `Cítrico`, `Fougère`, `Chipre`, `Gourmand`, `Acuático` o `Especiado` | `Gourmand` |
+| `precios` o `precio_100ml` | El precio de lista de cada tamaño: `100:569`, o `105:569` para un frasco de 105 ml | `100:569` |
 
-La familia y el género **no se adivinan**. De ellos dependen las páginas de
-categoría y los filtros: un perfume con la familia equivocada aparece en la
-página que no le toca y nadie se entera hasta que un cliente lo dice.
+La familia y el género **no se adivinan**: de ellos dependen las páginas de
+categoría y los filtros.
 
 ### Opcionales
 
 | Columna | Qué va | Si la dejas vacía |
 | --- | --- | --- |
-| `slug` | La dirección pública: `/producto/noir-absolu/` | Se saca del nombre |
-| `linea` | Colección dentro de la marca | No se muestra |
-| `precios` | Precio exacto por tamaño: `30:990\|50:1690\|100:2890` | Se deduce del de 100 ml |
-| `rebaja` | Descuento vigente en decimal: `0.25` es −25% | Sin precio tachado |
-| `mls` | Tamaños disponibles: `30\|50\|100` | Solo 100 ml |
-| `salida`, `corazon`, `fondo` | Notas, separadas por `\|` | La pirámide olfativa no se pinta |
-| `corta` | Una línea, la que se lee en el catálogo | Vacía |
-| `larga` | La descripción de la ficha | Se usa la corta |
+| `codigos_alternos` | Otros números con los que aparece en el PDF: `0371` | Ninguno |
+| `slug` | La dirección pública: `/producto/lattafa-yara/` | Se saca del nombre |
+| `agotado` | `si` si no hay existencias: se ve, pero no se puede comprar | Disponible |
+| `visible` | `no` para ocultarlo sin borrarlo (duplicados, pendientes de confirmar) | Visible |
+| `mls` | Tamaños: `50\|100`. Un tamaño sin precio en `precios` se deduce del de 100 ml | Los de `precios` |
 | `badges` | `Nuevo`, `Más vendido`, `Últimas piezas`, `Edición limitada`, `Importado`, `3x2`, `Exclusivo` | Sin etiquetas |
+| `destacado` | `si` para que salga en la portada | No sale |
+| `linea` | Colección dentro de la marca | No se muestra |
+| `rebaja` | Descuento vigente en decimal: `0.25` es −25% | Sin precio tachado |
+| `salida`, `corazon`, `fondo` | Notas, separadas por `\|` | La pirámide olfativa no se pinta |
+| `corta`, `larga` | Descripción de catálogo y de ficha | Vacía |
 | `duracion`, `estela` | Del 1 al 5 | 3 |
 | `ocasion` | `Diario`, `Noche`, `Oficina`, `Cita`, `Evento`, `Verano`, `Invierno` | Sin filtro por ocasión |
-| `destacado` | `si` para que salga en la portada | No sale |
-| `anio` | Año de lanzamiento | El año actual |
-| `origen` | País | México |
+| `anio`, `origen` | Año de lanzamiento y país | No se muestran: mejor nada que un dato inventado |
+| `nota` | Para el equipo: de dónde salió el dato o qué falta confirmar. **No se publica** | Vacía |
+
+`sets.csv` lleva `codigo`, `nombre`, `precio` y opcionalmente `slug`, `marca`,
+`precio_anterior`, `incluye` (separado por `|`), `descripcion`, `agotado`,
+`visible` y `nota`. `lotes.csv` lleva `slug`, `nombre`, `piezas`, `precio` y
+`modelos` (códigos de productos separados por `|`); las piezas se reparten entre
+los modelos.
 
 ---
 
-## Cosas que conviene saber antes de editar
+## Cosas que conviene saber
 
-**El slug no se cambia una vez publicado.** Es la dirección del producto. Si
-cambia, el enlace viejo da 404 y se pierde el posicionamiento que esa página
-había acumulado en Google. Por eso el exportador siempre lo escribe: para que al
-reeditar se conserve el que ya existía.
+**El código es la llave.** Los carritos guardados, los pedidos y la foto del
+producto se atan al código del PDF. Cambiar el nombre o el slug no rompe nada;
+cambiar el código es dar de alta otro producto.
+
+**El slug no se cambia una vez publicado.** Es la dirección del producto: el
+enlace viejo daría 404 y se perdería el posicionamiento en Google.
+
+**Borrar una fila la borra de la tienda en el siguiente despliegue.** Si solo
+quieres que deje de verse, pon `visible` en `no`: el producto sigue en la base,
+no se publica y no se puede cobrar.
+
+**Una foto nueva se detecta sola.** El nombre del archivo publicado lleva la
+huella de la foto, así que cambiar `fotos/0001.jpg` sube la nueva y la tienda la
+enseña sin que nadie tenga que limpiar cachés.
 
 **Los precios se pueden pegar tal cual.** `$ 1,290.00` se entiende igual que
-`1290`. Lo que no se acepta es una celda con texto que no sea un número.
-
-**`precios` manda sobre `precio_100ml`.** Sin la columna `precios`, el precio de
-los frascos chicos se deduce con una curva (el de 50 ml sale al 68% del de 100,
-el de 30 al 45%), que es una aproximación razonable de cómo se vende perfumería.
-Si tu lista trae la cifra exacta de cada frasco, ponla en `precios` y esa se
-respeta sin redondeos.
-
-**Las etiquetas cambian el comportamiento, no solo el color.** `Edición
-limitada` deja al producto fuera de los descuentos por volumen, y `3x2` lo mete
-en la promoción de tres por dos. `Últimas piezas` baja sus existencias.
+`1290`.
 
 **Una marca nueva va primero en `marcas.csv`.** Si un producto apunta a una marca
-que no existe, la carga se detiene y te lo dice. Es a propósito: la página de la
-marca se rompería.
+que no existe, la carga se detiene y te lo dice.
 
-**El archivo generado no se edita.** `npm run catalogo` sobrescribe
-`src/data/semillas.ts` y `src/data/marcas.ts` enteros. Si alguien tocó esos
-archivos a mano, recupera esos cambios con `npm run catalogo:exportar` antes de
-volver a cargar.
-
-**Excel en español guarda con punto y coma.** No pasa nada: el cargador detecta
-solo si el archivo viene separado por comas o por punto y coma, y escribe con el
-marcador que hace que Excel abra los acentos bien.
+**Excel en español guarda con punto y coma.** No pasa nada: el cargador lo
+detecta solo, y escribe con el marcador que hace que Excel abra bien los acentos.
 
 ---
 
-## Lo que el CSV no incluye
+## Lo que falta confirmar del PDF
 
-- **Existencias.** Hoy son un número estable entre 15 y 30 por presentación,
-  derivado del nombre del producto. Un inventario de verdad —que baje al vender—
-  necesita que el stock viva en el servidor, no en el navegador.
-- **Fotos reales.** El arte se genera solo, distinto para cada perfume. Si algún
-  día hay fotografía de producto, va en `public/productos/` con el nombre
-  `<slug>-1.webp` … `-4.webp`.
-- **Reseñas y calificaciones.** Se derivan del slug y son estables.
+`revision.csv` enumera cada dato que no venía en el catálogo en PDF y se propuso
+—sobre todo la **familia olfativa** de los 321 perfumes, y el género o la
+concentración cuando el PDF no los decía— y los productos que se cargaron
+**ocultos**: duplicados con dos precios (0057 frente a 0160, 0229 frente a 0194)
+y variantes cuyo nombre no se alcanza a leer. Corrige lo que haga falta en
+`productos.csv`, cambia `visible` a `si` en lo que ya esté confirmado y borra
+de `revision.csv` los renglones resueltos.
+
+Los productos de cuidado de la piel del PDF (CeraVe, Vichy, COSRX, Anua) no se
+cargaron: la tienda todavía no tiene esa categoría.

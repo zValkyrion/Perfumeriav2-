@@ -120,7 +120,12 @@ export function tituloMarca(marca: Marca): string {
 
 export function descripcionMarca(marca: Marca, cantidad: number): string {
   const piezas = cantidad === 1 ? "1 perfume" : `${cantidad} perfumes`;
-  const cabeza = `${piezas} de ${marca.nombre}, casa de ${marca.pais} desde ${marca.fundada}. Envío gratis a todo México y mayoreo desde 3 piezas.`;
+  const origen = [
+    marca.pais ? ` de ${marca.pais}` : "",
+    marca.fundada ? ` desde ${marca.fundada}` : "",
+  ].join("");
+  const casa = origen ? `, casa${origen}` : "";
+  const cabeza = `${piezas} de ${marca.nombre}${casa}. Envío gratis a todo México y mayoreo desde 3 piezas.`;
   return completar(cabeza, marca.firma);
 }
 

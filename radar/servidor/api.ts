@@ -36,12 +36,12 @@ import {
   sanearSolicitud,
   siguienteFolio,
 } from "./tienda";
-// Mismo cálculo y mismos precios que la tienda. Hoy el catálogo viene compilado
-// del propio repositorio —las dos cosas se despliegan desde el mismo commit—;
-// cuando viva en DynamoDB, solo cambia la fuente.
+// Mismo cálculo que la tienda (`cotizar`) y precios de DynamoDB: la tienda
+// compila el mismo catálogo que aquí se lee, así que enseña lo que se cobra.
+import { catalogoPublico, fuenteDeCatalogo } from "../../compartido/catalogo";
 import { cotizar } from "../../compartido/cotizacion";
 import type { PedidoRegistrado } from "../../compartido/pedido";
-import { FUENTE_TIENDA } from "../../src/data/fuente-precios";
+import { catalogoVigente } from "./catalogo";
 
 /**
  * API del Radar de Proveedores.
@@ -63,6 +63,7 @@ const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}), {
 const s3 = new S3Client({});
 
 const TABLA = Resource.Elrey_proveedores.name;
+const TABLA_CATALOGO = Resource.Elrey_catalogo.name;
 const BUCKET = Resource.Elrey_fotos.name;
 
 type Evento = {
@@ -90,9 +91,13 @@ const CORS = {
   "access-control-max-age": "86400",
 };
 
-const json = (estado: number, cuerpo: unknown) => ({
+const json = (
+  estado: number,
+  cuerpo: unknown,
+  cabeceras: Record<string, string> = {},
+) => ({
   statusCode: estado,
-  headers: { "content-type": "application/json", ...CORS },
+  headers: { "content-type": "application/json", ...CORS, ...cabeceras },
   body: JSON.stringify(cuerpo),
 });
 
@@ -131,6 +136,16 @@ export async function handler(evento: Evento) {
     }
 
     if (metodo === "POST" && ruta === "/acceso") return acceso(evento);
+
+    // El catálogo publicado: lo lee el build de la tienda y, más adelante, la
+    // disponibilidad en vivo. Público y cacheable un minuto: sin notas internas
+    // ni productos ocultos (`catalogoPublico`).
+    if (metodo === "GET" && ruta === "/catalogo") {
+      const catalogo = await catalogoVigente(dynamo, TABLA_CATALOGO);
+      return json(200, catalogoPublico(catalogo), {
+        "cache-control": "public, max-age=60",
+      });
+    }
 
     // Los pedidos de la tienda llegan con o sin cuenta —casi nadie se registra
     // para comprar—, así que van antes del filtro de sesión. La identidad, si
@@ -287,7 +302,8 @@ async function crearPedido(evento: Evento) {
     });
   }
 
-  const cotizacion = cotizar(solicitud.items, FUENTE_TIENDA, {
+  const catalogo = await catalogoVigente(dynamo, TABLA_CATALOGO);
+  const cotizacion = cotizar(solicitud.items, fuenteDeCatalogo(catalogo), {
     cupon: solicitud.cupon,
     metodo: solicitud.metodo,
     envio: solicitud.envio,

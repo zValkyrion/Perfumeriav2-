@@ -86,20 +86,26 @@ export function Galeria({
           ))}
         </div>
 
-        <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
-          {imagenes.map((src, i) => (
-            <span
-              key={src}
-              className={cn(
-                "h-1 rounded-full transition-all",
-                i === activa ? "bg-gold w-5" : "bg-border-strong w-1.5",
-              )}
-            />
-          ))}
-        </div>
-        <p className="text-fg-subtle mt-2 text-center text-[11px]">
-          {activa + 1} de {imagenes.length} — desliza para ver el resto
-        </p>
+        {/* Con una sola foto no hay nada que deslizar: los puntos y el
+            «desliza para ver el resto» prometerían fotos que no existen. */}
+        {imagenes.length > 1 ? (
+          <>
+            <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
+              {imagenes.map((src, i) => (
+                <span
+                  key={src}
+                  className={cn(
+                    "h-1 rounded-full transition-all",
+                    i === activa ? "bg-gold w-5" : "bg-border-strong w-1.5",
+                  )}
+                />
+              ))}
+            </div>
+            <p className="text-fg-subtle mt-2 text-center text-[11px]">
+              {activa + 1} de {imagenes.length} — desliza para ver el resto
+            </p>
+          </>
+        ) : null}
       </div>
 
       {/* Foto a pantalla completa. Se cierra con Escape, con el botón o

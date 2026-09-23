@@ -60,6 +60,9 @@ Región **us-east-1**. Cuenta **637423567003**. Etapa: `produccion`.
 | Recurso | Nombre real | Para qué |
 | --- | --- | --- |
 | DynamoDB | `Elrey_proveedores` | Fichas y metadatos de fotos, tabla única |
+| DynamoDB | `Elrey_catalogo` | El catálogo de la tienda: productos, marcas, sets y lotes |
+| S3 (catálogo) | nombre generado desde `Elrey_imagenes` | Fotos de producto procesadas; solo CloudFront las lee |
+| CloudFront | `Elrey_cdn_imagenes` (Router) | Sirve las fotos del catálogo con caché de un año |
 | S3 (fotos) | `elrey-radar-produccion-elreyfotosbucket-mmokknwk` | Las fotos, subidas directo desde el teléfono |
 | S3 (sitio) | `elrey-radar-produccion-elreyradarassetsbucket-*` | El SPA estático |
 | Lambda | `Elrey_api_produccion` | La API entera, una sola función |
@@ -136,6 +139,7 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | Ruta | Qué hace |
 | --- | --- |
 | `GET /salud` | Diagnóstico. Sin token |
+| `GET /catalogo` | El catálogo publicado (sin ocultos ni notas). Sin token, caché de un minuto |
 | `POST /acceso` | PIN + nombre → JWT de 90 días. Sin token |
 | `GET /proveedores` | Todas las fichas, por fecha |
 | `PUT /proveedores/{id}` | Guarda una ficha |
@@ -155,9 +159,10 @@ copia en «Mis pedidos». El resto exige `proveedores` o `admins`.
 
 **El total que se cobra lo calcula el servidor.** `POST /pedidos` no lee el
 total ni el folio que mande el navegador: cotiza con `compartido/cotizacion.ts`
-—la misma función que usa el carrito— y los precios del catálogo, que hoy la
-Lambda importa del propio repositorio (`src/data/fuente-precios.ts`) y mañana
-leerá de DynamoDB.
+—la misma función que usa el carrito— y los precios de `Elrey_catalogo`, leídos
+con caché de un minuto (`servidor/catalogo.ts`). Lo agotado y lo oculto no se
+cobra. Si la tabla está vacía (el primer despliegue, antes de la carga) cobra con
+la copia versionada `src/data/catalogo.json`; si DynamoDB falla, no: rechaza.
 
 **Autenticación:** PIN de equipo → JWT HS256 firmado con `node:crypto` (sin
 librerías: son treinta líneas y una dependencia menos en el arranque en frío).
@@ -191,6 +196,24 @@ Los pedidos guardan la solicitud saneada (artículos, forma de pago, envío,
 contacto) y la **cuenta del servidor**: subtotal, cada descuento, envío,
 comisión y total, tal como se calcularon al recibirlos. Su partición `PEDIDOS`
 del índice es la que leerá el panel de administración.
+
+### `Elrey_catalogo`
+
+```
+PK         SK                 Contenido
+PRODUCTO   <código del PDF>   datos (ProductoCatalogo) + huella
+MARCA      <slug>             datos (MarcaCatalogo) + huella
+SET        <código del PDF>   datos (SetCatalogo) + huella
+LOTE       <slug>             datos (LoteCatalogo) + huella
+META       CATALOGO           generado, huella y conteos de la última carga
+```
+
+Tabla aparte porque es pública y lo demás es privado. La forma de las filas la
+fijan `compartido/catalogo.ts` y `compartido/catalogo-tabla.ts`, que comparten
+quien escribe (`scripts/catalogo-subir.ts`) y quien lee (la Lambda). Las fotos
+van a S3 con clave `productos/<código>/<huella>.webp`: la huella es de la foto de
+origen, así que una foto que no cambió no se vuelve a subir y una que cambió
+estrena clave (caché de un año, nunca hay que invalidar).
 
 Las filas `USER#` **no llevan `GSI1PK`**. El índice es disperso, así que no las
 ve: `GET /proveedores` sigue devolviendo solo fichas. Es lo que mantiene
@@ -332,6 +355,7 @@ cd radar && npx sst unlock --stage produccion
 
 ```bash
 npm run probar:precios                   # reglas de precio (tienda y API), sin AWS
+npm run probar:catalogo                  # el CSV del catálogo: agotados, ocultos, fotos, ida y vuelta
 npm --prefix radar run probar            # las rutas de la API, de punta a punta
 npm --prefix radar run probar-textract   # el lector de listas de precios
 npm --prefix radar run probar-tienda     # carrito y pedidos, contra la tabla
@@ -376,6 +400,41 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-09-22 · El catálogo real vive en DynamoDB y sus fotos en S3
+
+Fase 2 de tres (la 3 es el panel de administración).
+
+- **Por qué:** la tienda compilaba 52 productos de relleno escritos en código, y
+  sus imágenes eran arte generado guardado en git. El dueño pidió la
+  arquitectura donde los datos y las imágenes viven en el backend y la tienda
+  solo los consulta.
+- **El catálogo real:** 321 perfumes, 11 sets y 55 marcas pasados del catálogo en
+  PDF (agosto de 2026) a `catalogo/*.csv`, con la foto de cada uno recortada del
+  PDF en `catalogo/fotos/`. El PDF no traía familia olfativa: **se propuso** para
+  los 321 y está marcada en `catalogo/revision.csv`, igual que el género o la
+  concentración cuando faltaban. Van **ocultos** 14 productos pendientes de
+  confirmar (duplicados con dos precios y variantes ilegibles). Los 5 de cuidado
+  de la piel no se cargaron. Los lotes conservan sus precios; sus modelos pasan
+  a productos reales.
+- **Infraestructura:** tabla `Elrey_catalogo`, bucket `Elrey_imagenes` (solo
+  CloudFront lo lee) y `Elrey_cdn_imagenes` (Router). `sst diff` contra
+  producción confirmó que solo se crean esos cuatro recursos; los «Deleted» que
+  lista para la Lambda y el sitio son un artefacto de la vista previa —dependen
+  de valores de recursos que todavía no existen— y no borrados reales.
+- **Flujo:** la CI carga el CSV antes del build (`catalogo:subir --si-existe`),
+  despliega, vuelve a cargar y, si la segunda carga cambió algo (el primer
+  despliegue), reconstruye. El `prebuild` de la tienda pide `GET /catalogo` y
+  escribe `src/data/catalogo.json`; sin API se queda la copia versionada.
+- **Tienda:** el `id` de un producto es su código del PDF (antes era su posición:
+  reordenar el catálogo cambiaba el producto de los carritos guardados). Sin
+  existencias inventadas: lo disponible se vende sin tope y lo agotado no se
+  puede comprar. Año y origen solo si se conocen. Una sola foto por producto.
+- **Verificado:** 20 pruebas del catálogo y 24 de precio en verde; la Lambda
+  empaquetada contra un DynamoDB falso cobró con el precio de la tabla, rechazó
+  agotados y ocultos y cayó a la copia versionada con la tabla vacía; la carga
+  contra DynamoDB y S3 falsos subió 332 fotos y 393 filas y la segunda pasada no
+  tocó nada; el build genera 410 páginas y con CDN apunta las fotos a CloudFront.
 
 ### 2026-09-22 · El servidor cobra: reglas del PDF, transferencia y folio
 

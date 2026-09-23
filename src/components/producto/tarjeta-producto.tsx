@@ -77,21 +77,27 @@ export function TarjetaProducto({
           aria-label={`Ver ${producto.nombre} de ${marca}`}
         />
 
-        {/* La primera toma se acerca despacio; la segunda entra encima.
-            Dos capas en cruce leen como una foto viva, no como un cambio. */}
+        {/* Con dos tomas, la primera se acerca despacio y la segunda entra
+            encima: dos capas en cruce leen como una foto viva. Con una sola
+            —lo normal en el catálogo real—, solo el acercamiento. */}
         <Imagen
           src={producto.imagenes[0]!}
           alt={`${producto.nombre}, ${producto.concentracion} de ${marca}`}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw"
           priority={prioridad}
-          className="transition-[opacity,transform] duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105 group-hover:opacity-0"
+          className={cn(
+            "transition-[opacity,transform] duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105",
+            producto.imagenes[1] && "group-hover:opacity-0",
+          )}
         />
-        <Imagen
-          src={producto.imagenes[1]!}
-          alt=""
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw"
-          className="scale-110 opacity-0 transition-[opacity,transform] duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-100 group-hover:opacity-100"
-        />
+        {producto.imagenes[1] ? (
+          <Imagen
+            src={producto.imagenes[1]}
+            alt=""
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 20vw"
+            className="scale-110 opacity-0 transition-[opacity,transform] duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-100 group-hover:opacity-100"
+          />
+        ) : null}
 
         {/* Velo inferior: aparece con el CTA para que el botón tenga apoyo */}
         <div

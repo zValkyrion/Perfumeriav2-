@@ -10,7 +10,19 @@ declare module "sst" {
       "type": "sst.aws.ApiGatewayV2"
       "url": string
     }
+    "Elrey_catalogo": {
+      "name": string
+      "type": "sst.aws.Dynamo"
+    }
+    "Elrey_cdn_imagenes": {
+      "type": "sst.aws.Router"
+      "url": string
+    }
     "Elrey_fotos": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
+    "Elrey_imagenes": {
       "name": string
       "type": "sst.aws.Bucket"
     }

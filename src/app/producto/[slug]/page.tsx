@@ -306,26 +306,27 @@ export default async function ProductoPage({
                 </AccordionTrigger>
                 <AccordionContent className="pb-5">
                   <dl className="divide-border-soft grid divide-y text-sm">
+                    {/* Origen, año y ocasión solo si se conocen: un renglón
+                        con un dato inventado es peor que no tenerlo. */}
                     {[
+                      ["Código", producto.codigo],
                       ["Marca", nombreMarca],
                       ["Línea", producto.linea ?? "Colección regular"],
                       ["Concentración", producto.concentracion],
                       ["Familia olfativa", producto.familia],
                       ["Género", producto.genero],
                       ["Origen", producto.origen],
-                      ["Año de lanzamiento", String(producto.anio)],
+                      ["Año de lanzamiento", producto.anio ? String(producto.anio) : undefined],
                       [
                         "Presentaciones",
                         producto.presentaciones
                           .map((p) => `${p.ml} ml`)
                           .join(" · "),
                       ],
-                      [
-                        "SKU",
-                        producto.presentaciones.map((p) => p.sku).join(" · "),
-                      ],
                       ["Ocasión", producto.ocasion.join(" · ")],
-                    ].map(([k, v]) => (
+                    ]
+                      .filter((fila): fila is [string, string] => Boolean(fila[1]))
+                      .map(([k, v]) => (
                       <div key={k} className="grid grid-cols-2 gap-4 py-2.5">
                         <dt className="text-fg-subtle">{k}</dt>
                         <dd className="text-fg-muted">{v}</dd>

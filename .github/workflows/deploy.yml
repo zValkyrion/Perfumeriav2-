@@ -54,8 +54,13 @@ jobs:
         # cobro cambian sin tocar la tienda, y el webhook apunta a un servicio
         # que se puede sustituir. Vacías, la tienda funciona igual: no carga el
         # pixel, no manda a Clip y avisa solo por WhatsApp.
+        #
+        # `IMAGENES` es la URL de CloudFront de las fotos del catálogo (salida
+        # `cdnImagenes` del despliegue a AWS). Vacía, el build procesa las fotos
+        # de `catalogo/fotos/` y las publica junto con la copia de Pages.
         env:
           PAGES: "1"
+          NEXT_PUBLIC_IMAGENES: ${{ vars.IMAGENES }}
           NEXT_PUBLIC_META_PIXEL: ${{ vars.META_PIXEL }}
           NEXT_PUBLIC_CLIP_LINK: ${{ vars.CLIP_LINK }}
           NEXT_PUBLIC_WEBHOOK_PEDIDOS: ${{ vars.WEBHOOK_PEDIDOS }}

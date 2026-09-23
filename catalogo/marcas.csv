@@ -1,13 +1,56 @@
 ﻿slug,nombre,pais,fundada,firma,descripcion
-maison-lumiere,Maison Lumière,Francia,1978,"La alta perfumería, sin el discurso solemne.","Nacida en un taller de Grasse, Maison Lumière trabaja el absoluto de flor como quien pule una piedra: quitando. Sus fórmulas rara vez pasan de veinte materias primas, y esa contención es justo lo que las vuelve reconocibles a tres metros de distancia."
-orfevre,Orfèvre,Francia,1992,"Cuero, humo y paciencia.","Orfèvre empezó curtiendo guantes y terminó perfumándolos. Su obsesión es el cuero en todas sus temperaturas —el suave de la piel nueva, el ahumado de la birmana, el dulce de la gamuza— siempre sobre una base amaderada que aguanta el día entero."
-casa-solano,Casa Solano,España,1964,El Mediterráneo embotellado.,"Tres generaciones destilando azahar en la misma finca alicantina. Casa Solano hace cítricos que no se evaporan en veinte minutos: los ancla en petitgrain, almizcles blancos y una pizca de romero que los sostiene hasta la tarde."
-atelier-nord,Atelier Nord,Dinamarca,2009,"Menos aroma, más atmósfera.","La casa más joven del catálogo y la más austera. Atelier Nord construye fragancias translúcidas —aire salino, madera pálida, papel húmedo— pensadas para oficinas silenciosas y para quien prefiere que su perfume se note al abrazar, no al entrar."
-nuit-royale,Nuit Royale,Francia,1985,Perfumes que empiezan a las nueve de la noche.,"Nuit Royale no fabrica fragancias de oficina y lo dice con orgullo. Ámbar denso, vainilla negra, incienso y flores narcóticas en concentraciones que otras casas considerarían imprudentes. Se aplican con dos toques, nunca con seis."
-ambar-co,Ámbar & Co.,México,2001,"Resinas de aquí, técnica de allá.","Casa mexicana que trabaja copal, benjuí y vainilla de Papantla con método francés. Ámbar & Co. demostró que se podía hacer perfumería de autor en Puebla y hoy exporta a catorce países sin haber movido su laboratorio."
-septimo-cielo,Séptimo Cielo,México,2014,"Dulce, pero con carácter.","Séptimo Cielo entendió antes que nadie que el gourmand mexicano quería azúcar sin empalago. Sus fórmulas cruzan praliné, café de olla y frutas rojas con un fondo amaderado que evita el efecto postre y les da horas de vida."
-kairo-parfums,Kairo Parfums,Emiratos Árabes Unidos,1996,"La escuela árabe, sin traducir.","Kairo trabaja como se trabaja en el Golfo: concentraciones altas, materias caras y ninguna prisa por gustarle a todo el mundo. Azafrán, rosa de Taif, oud y ámbar gris en proporciones que explican por qué media gota rinde una jornada."
-vetiver-house,Vetiver House,Reino Unido,1971,"Una sola raíz, cien lecturas.","Una casa monográfica. Vetiver House lleva medio siglo destilando la misma raíz haitiana y encontrándole ángulos nuevos: ahumado, cítrico, terroso, casi mentolado. Es perfumería de fondo verde para quien ya se cansó de lo dulce."
-lys-blanc,Lys Blanc,Francia,1988,Flores blancas a plena luz.,"Tuberosa, jazmín, gardenia y nardo: Lys Blanc solo trabaja el territorio más difícil de la perfumería floral, el de las flores que se vuelven indolentes si se les da un gramo de más. Su equilibrio es la razón de su reputación."
-oud-imperial,Oud Imperial,Emiratos Árabes Unidos,1983,"El oud como materia noble, no como moda.","Compran madera de agar por lote y la maduran años antes de destilarla. Oud Imperial es la casa más cara del catálogo y la más longeva en piel: sus fondos siguen ahí a la mañana siguiente, en la camisa y en la almohada."
-solaris,Solaris,Italia,2003,Verano permanente.,"Solaris embotella la hora en que la playa se vacía: sal en la piel, higuera caliente, monoi y un cítrico que ya se está apagando. Fragancias solares hechas para climas como el mexicano, donde el calor se come a los perfumes pesados."
+lattafa,Lattafa,Emiratos Árabes Unidos,,Perfumería árabe contemporánea.,"Casa de Emiratos Árabes Unidos conocida por reinterpretar la perfumería oriental con fragancias intensas, de larga duración y a precio accesible."
+armaf,Armaf,Emiratos Árabes Unidos,,Estela marcada y gran rendimiento.,Marca de Emiratos Árabes Unidos detrás de la línea Club de Nuit y de la colección Odyssey.
+rasasi,Rasasi,Emiratos Árabes Unidos,1979,Perfumería de Dubái desde 1979.,Casa perfumista de Dubái fundada en 1979. Su línea Hawas es una de las más reconocidas de la perfumería árabe moderna.
+afnan,Afnan,Emiratos Árabes Unidos,,Perfumería árabe de Dubái.,"Casa de Emiratos Árabes Unidos detrás de las líneas 9pm, 9am y Supremacy."
+french-avenue,French Avenue,Emiratos Árabes Unidos,,"Inspiración de nicho, escuela árabe.","Línea de Fragrance World con fragancias de inspiración nicho como Vulcan, Veneno y Chaos."
+fragrance-world,Fragrance World,Emiratos Árabes Unidos,,Perfumería de Emiratos Árabes Unidos.,"Casa de Emiratos Árabes Unidos con un catálogo amplio de fragancias florales, gourmand y orientales."
+orientica,Orientica,Emiratos Árabes Unidos,,Lujo oriental en frasco de joya.,"Línea de lujo de Al Haramain, reconocible por sus frascos ornamentados y sus fragancias ambaradas."
+asdaaf,Asdaaf,Emiratos Árabes Unidos,,Una línea de la casa Lattafa.,"Marca de la casa Lattafa, conocida por Ameer Al Arab y Ameerat Al Arab."
+maison-alhambra,Maison Alhambra,Emiratos Árabes Unidos,,Una línea de la casa Lattafa.,"Marca de la casa Lattafa con fragancias de inspiración europea, como la colección Sceptre."
+paris-corner,Paris Corner,Emiratos Árabes Unidos,,Perfumería árabe de estilo gourmand.,Casa de Emiratos Árabes Unidos con líneas como Khair y Mawj.
+khadlaj,Khadlaj,Emiratos Árabes Unidos,,Perfumería de Dubái.,"Casa perfumista de Emiratos Árabes Unidos, autora de la línea Shiyaaka."
+dumont,Dumont,Emiratos Árabes Unidos,,Perfumería árabe de estilo francés.,Marca de Emiratos Árabes Unidos creadora de la línea Nitro.
+bharara,Bharara,,,Fragancias de inspiración árabe.,"Casa conocida por fragancias intensas como King, Viking y Bleu."
+gissah,Gissah,,,Perfumería árabe.,Casa de perfumería árabe con presentaciones de 200 ml.
+al-ezz-oud,Al Ezz Oud,,,Perfumería árabe.,"Casa de perfumería árabe, autora de Hersh Lahab."
+xerjoff,Xerjoff,Italia,,Alta perfumería italiana.,"Casa italiana de perfumería de nicho conocida por sus frascos de cristal y las colecciones Erba, Coro y Tony Iommi."
+le-labo,Le Labo,Estados Unidos,2006,Perfumería de nicho de Nueva York.,"Casa neoyorquina de perfumería de nicho, famosa por Santal 33 y Another 13."
+bond-no-9,Bond No. 9,Estados Unidos,2003,Nueva York en un frasco.,Casa de nicho de Nueva York cuyos perfumes rinden homenaje a los barrios de la ciudad.
+creed,Creed,Francia,,Perfumería de nicho de tradición europea.,Casa de perfumería de nicho célebre por Aventus.
+dior,Dior,Francia,1946,Alta costura francesa.,"Casa de moda francesa fundada por Christian Dior en 1946. En perfumería, Sauvage y Fahrenheit."
+chanel,Chanel,Francia,1910,Elegancia parisina.,"Casa de moda francesa fundada por Gabrielle Chanel. En perfumería, Coco Mademoiselle y Bleu de Chanel."
+versace,Versace,Italia,1978,Moda italiana.,"Casa de moda italiana fundada por Gianni Versace. En perfumería, Eros, Dylan Blue y Bright Crystal."
+valentino,Valentino,Italia,1960,Alta costura romana.,Casa de moda italiana fundada en Roma. Su línea Born in Roma es de las más vendidas.
+giorgio-armani,Giorgio Armani,Italia,1975,Moda italiana.,Casa de moda italiana. La familia Acqua di Giò es de sus fragancias más reconocidas.
+hugo-boss,Hugo Boss,Alemania,1924,Moda alemana.,Casa de moda alemana con líneas de perfumería como Boss Bottled y Hugo.
+carolina-herrera,Carolina Herrera,Estados Unidos,,Moda de Nueva York.,Casa de moda fundada por la diseñadora venezolana Carolina Herrera. Sus líneas 212 y Good Girl son de las más vendidas.
+jean-paul-gaultier,Jean Paul Gaultier,Francia,,Moda francesa.,Casa de moda francesa. Le Male y Scandal son sus fragancias más conocidas.
+paco-rabanne,Paco Rabanne,Francia,1966,Moda francesa.,"Casa de moda francesa, hoy Rabanne, creadora de Invictus."
+azzaro,Azzaro,Francia,,Moda francesa.,Casa francesa creadora de las líneas Wanted y The Most Wanted.
+yves-saint-laurent,Yves Saint Laurent,Francia,1961,Moda francesa.,"Casa de moda francesa fundada en 1961. En perfumería, Y."
+lancome,Lancôme,Francia,1935,Belleza francesa.,"Casa francesa de belleza fundada en 1935, creadora de La Vie Est Belle."
+montblanc,Montblanc,Alemania,1906,Casa alemana.,"Casa alemana de instrumentos de escritura y accesorios, con perfumería como Legend y Explorer."
+calvin-klein,Calvin Klein,Estados Unidos,1968,Moda estadounidense.,"Casa de moda estadounidense creadora de CK One, CK Be y Eternity."
+dkny,DKNY,Estados Unidos,1989,Nueva York.,"Línea de Donna Karan New York, creadora de Be Delicious."
+dolce-gabbana,Dolce & Gabbana,Italia,1985,Moda italiana.,Casa de moda italiana creadora de Light Blue.
+moschino,Moschino,Italia,1983,Moda italiana.,Casa de moda italiana. Su línea Toy tiene el frasco con forma de oso.
+burberry,Burberry,Reino Unido,1856,Moda británica.,"Casa de moda británica fundada en 1856, creadora de Brit."
+issey-miyake,Issey Miyake,Japón,,Diseño japonés.,Casa de diseño japonesa creadora de L'Eau d'Issey.
+lacoste,Lacoste,Francia,1933,Moda francesa.,"Casa francesa de ropa deportiva, con fragancias como Touch of Pink y L.12.12 Blanc."
+davidoff,Davidoff,Suiza,,Casa suiza.,Marca suiza creadora de Cool Water.
+ralph-lauren,Ralph Lauren,Estados Unidos,1967,Moda estadounidense.,Casa de moda estadounidense creadora de Polo Sport.
+salvatore-ferragamo,Salvatore Ferragamo,Italia,1927,Moda italiana.,"Casa de moda italiana. En perfumería, la línea Incanto."
+clinique,Clinique,Estados Unidos,1968,Cuidado y fragancia.,Marca estadounidense de belleza creadora de Happy.
+nautica,Nautica,Estados Unidos,1983,Estilo náutico.,Marca estadounidense de ropa creadora de Nautica Voyage.
+perry-ellis,Perry Ellis,Estados Unidos,1976,Moda estadounidense.,Marca estadounidense creadora de la línea 360°.
+cacharel,Cacharel,Francia,1962,Moda francesa.,Casa de moda francesa creadora de Amor Amor.
+paris-hilton,Paris Hilton,Estados Unidos,,Fragancias de celebridad.,Línea de fragancias de la empresaria estadounidense Paris Hilton.
+katy-perry,Katy Perry,Estados Unidos,,Fragancias de celebridad.,"Línea de fragancias de la cantante Katy Perry, con frascos en forma de gato."
+ariana-grande,Ariana Grande,Estados Unidos,,Fragancias de celebridad.,"Línea de fragancias de la cantante Ariana Grande, creadora de Cloud."
+britney-spears,Britney Spears,Estados Unidos,,Fragancias de celebridad.,"Línea de fragancias de la cantante Britney Spears, creadora de Fantasy."
+billie-eilish,Billie Eilish,Estados Unidos,,Fragancias de celebridad.,Línea de fragancias de la cantante Billie Eilish.
+sabrina-carpenter,Sabrina Carpenter,Estados Unidos,,Fragancias de celebridad.,Línea de fragancias Sweet Tooth de la cantante Sabrina Carpenter.
+louis-vuitton,Louis Vuitton,Francia,1854,Lujo francés.,"Casa de lujo francesa fundada en 1854, con una colección de perfumes de autor."
+jacques-bogart,Jacques Bogart,Francia,,Perfumería francesa.,Casa de perfumería francesa creadora de Silver Scent.
+otras-casas,Otras casas,,,Fragancias de casas sin ficha propia.,Fragancias de casas que todavía no tienen ficha propia en la tienda.

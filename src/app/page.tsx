@@ -50,7 +50,7 @@ export default function Home() {
   // Los pósters de los videos salen del arte de producto ya generado.
   const videos = videosDesdeResenas(
     RESEÑAS_DESTACADAS,
-    MAS_VENDIDOS.slice(0, 5).map((p) => p.imagenes[1]!),
+    MAS_VENDIDOS.slice(0, 5).map((p) => p.imagenes[1] ?? p.imagenes[0]!),
   );
 
   return (

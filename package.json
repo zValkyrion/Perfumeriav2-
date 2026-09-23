@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "tsx scripts/obtener-catalogo.ts",
     "dev": "next dev",
+    "prebuild": "tsx scripts/obtener-catalogo.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -13,7 +15,9 @@
     "og": "tsx scripts/generar-og.ts",
     "catalogo": "tsx scripts/catalogo.ts",
     "catalogo:exportar": "tsx scripts/catalogo.ts exportar",
-    "probar:precios": "tsx scripts/probar-precios.ts"
+    "catalogo:subir": "tsx scripts/catalogo-subir.ts",
+    "probar:precios": "tsx scripts/probar-precios.ts",
+    "probar:catalogo": "tsx scripts/probar-catalogo.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
@@ -38,6 +42,9 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1114.0",
+    "@aws-sdk/client-s3": "^3.1114.0",
+    "@aws-sdk/lib-dynamodb": "^3.1114.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

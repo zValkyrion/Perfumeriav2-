@@ -13,9 +13,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import sharp from "sharp";
 
-import { PRODUCTOS } from "../src/data/productos";
 import { LOTES } from "../src/data/lotes";
-import { MODELOS_DE_SET, SETS } from "../src/data/sets";
 import { CATEGORIAS } from "../src/data/taxonomia";
 import type { Concentracion, FamiliaOlfativa } from "../src/types";
 
@@ -367,14 +365,28 @@ async function main() {
   const blurs: Record<string, string> = {};
   let n = 0;
 
-  for (const p of PRODUCTOS) {
-    for (const v of [1, 2, 3, 4]) {
-      const svg = svgProducto(p, v);
-      await escribir(svg, join(publico, "productos", `${p.slug}-${v}.webp`), 900);
-      if (v === 1) blurs[`/productos/${p.slug}-1.webp`] = await blurDataURL(svg);
-      n++;
-    }
-  }
+  // Los perfumes y los sets ya no llevan arte generado: tienen su foto real en
+  // S3 (ver `scripts/catalogo/`). Aquí solo queda el reemplazo genérico para el
+  // que todavía no tenga foto.
+  const sinFotoProducto = svgProducto(
+    { slug: "sin-foto", familia: "Amaderado", concentracion: "Eau de Parfum" },
+    1,
+  );
+  await escribir(sinFotoProducto, join(publico, "productos", "sin-foto.webp"), 600);
+  blurs["/productos/sin-foto.webp"] = await blurDataURL(sinFotoProducto);
+  n++;
+
+  const sinFotoSet = svgConjunto({
+    slug: "sin-foto",
+    familia: "Floral",
+    concentracion: "Parfum",
+    piezas: 3,
+    w: 1200,
+    h: 900,
+  });
+  await escribir(sinFotoSet, join(publico, "sets", "sin-foto.webp"), 1200);
+  blurs["/sets/sin-foto.webp"] = await blurDataURL(sinFotoSet);
+  n++;
 
   for (const l of LOTES) {
     const svg = svgConjunto({
@@ -387,20 +399,6 @@ async function main() {
     });
     await escribir(svg, join(publico, "lotes", `${l.slug}.webp`), 1200);
     blurs[`/lotes/${l.slug}.webp`] = await blurDataURL(svg);
-    n++;
-  }
-
-  for (const s of SETS) {
-    const svg = svgConjunto({
-      slug: s.slug,
-      familia: "Floral",
-      concentracion: "Parfum",
-      piezas: MODELOS_DE_SET.get(s.slug)?.length ?? 3,
-      w: 1200,
-      h: 900,
-    });
-    await escribir(svg, join(publico, "sets", `${s.slug}.webp`), 1200);
-    blurs[`/sets/${s.slug}.webp`] = await blurDataURL(svg);
     n++;
   }
 

@@ -51,6 +51,39 @@ export default $config({
       },
     });
 
+    // ── Catálogo de la tienda ───────────────────────────────────────────────
+    //
+    // Tabla aparte de `Elrey_proveedores` a propósito: el catálogo es público
+    // —lo sirve `GET /catalogo`— y lo demás es privado (fichas de proveedores,
+    // carritos, direcciones, pedidos). Separarlos deja los permisos, los
+    // respaldos y los borrados de cada mundo sin riesgo de tocar el otro.
+    //
+    //   PK = PRODUCTO  SK = <código del PDF>
+    //   PK = MARCA     SK = <slug>
+    //   PK = SET       SK = <código del PDF>
+    //   PK = LOTE      SK = <slug>
+    //   PK = META      SK = CATALOGO   → versión y huella de la última carga
+    //
+    // Cabe en unas pocas particiones porque son cientos de filas, no millones,
+    // y siempre se leen completas; la huella evita reescribir lo que no cambió.
+    const catalogo = new sst.aws.Dynamo("Elrey_catalogo", {
+      fields: { PK: "string", SK: "string" },
+      primaryIndex: { hashKey: "PK", rangeKey: "SK" },
+      transform: {
+        table: { name: "Elrey_catalogo" },
+      },
+    });
+
+    // Las fotos de producto no viven en el repositorio ni en la tienda: se
+    // suben aquí y se sirven por CloudFront. El bucket no es público; solo
+    // CloudFront puede leerlo. Los nombres llevan la huella del contenido, así
+    // que cada archivo se sirve con caché de un año sin miedo a quedar viejo.
+    const imagenes = new sst.aws.Bucket("Elrey_imagenes", {
+      access: "cloudfront",
+    });
+    const cdnImagenes = new sst.aws.Router("Elrey_cdn_imagenes");
+    cdnImagenes.routeBucket("/", imagenes);
+
     const fotos = new sst.aws.Bucket("Elrey_fotos", {
       // El teléfono sube directo con URL prefirmada: el navegador necesita CORS.
       cors: {
@@ -152,7 +185,7 @@ export default $config({
     // nada: el paquete es idéntico y la concurrencia sobra.
     api.route("$default", {
       handler: "servidor/api.handler",
-      link: [tabla, fotos, pin, jwtSecreto, usuarios, clienteWeb],
+      link: [tabla, catalogo, fotos, pin, jwtSecreto, usuarios, clienteWeb],
       name: `Elrey_api_${$app.stage}`,
       memory: "512 MB",
       timeout: "20 seconds",
@@ -178,6 +211,9 @@ export default $config({
       },
       environment: {
         NEXT_PUBLIC_API: api.url,
+        // De aquí sale la URL de cada foto de producto. El catálogo solo guarda
+        // la clave dentro del bucket.
+        NEXT_PUBLIC_IMAGENES: cdnImagenes.url,
         NEXT_PUBLIC_COGNITO_CLIENTE: clienteWeb.id,
         NEXT_PUBLIC_COGNITO_REGION: "us-east-1",
         // Ajustes de la tienda que no son infraestructura: el pixel de Meta, el
@@ -198,6 +234,9 @@ export default $config({
       pool: usuarios.id,
       clienteCognito: clienteWeb.id,
       bucket: fotos.name,
+      catalogo: catalogo.name,
+      imagenes: imagenes.name,
+      cdnImagenes: cdnImagenes.url,
     };
   },
 });

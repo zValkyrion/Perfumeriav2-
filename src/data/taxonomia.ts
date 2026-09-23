@@ -143,15 +143,29 @@ export const FAMILIA_POR_NOMBRE = new Map(FAMILIAS.map((f) => [f.nombre, f]));
 
 /* ── Categorías de tienda ─────────────────────────────────────────────── */
 
-const MARCAS_ARABES = ["kairo-parfums", "oud-imperial"];
-const MARCAS_NICHO = [
-  "maison-lumiere",
-  "orfevre",
-  "atelier-nord",
-  "lys-blanc",
-  "nuit-royale",
-  "vetiver-house",
+/**
+ * Las casas de la escuela del Golfo y las de nicho, por `slug` de marca. Una
+ * marca nueva que no esté aquí cae en «Diseñador», que es lo que es la mayoría
+ * del catálogo.
+ */
+const MARCAS_ARABES = [
+  "lattafa",
+  "armaf",
+  "rasasi",
+  "afnan",
+  "french-avenue",
+  "fragrance-world",
+  "orientica",
+  "asdaaf",
+  "maison-alhambra",
+  "paris-corner",
+  "khadlaj",
+  "dumont",
+  "bharara",
+  "gissah",
+  "al-ezz-oud",
 ];
+const MARCAS_NICHO = ["xerjoff", "le-labo", "bond-no-9", "creed"];
 
 export interface Categoria {
   slug: string;

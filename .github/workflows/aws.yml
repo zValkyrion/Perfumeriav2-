@@ -57,17 +57,47 @@ jobs:
         working-directory: .
         run: npm run probar:precios
 
+      # El CSV del catálogo se valida antes de tocar AWS: un agotado que se
+      # cobre o una nota interna publicada no deben llegar a producción.
+      - name: Probar el catálogo
+        working-directory: .
+        run: npm run probar:catalogo
+
       - name: Pedir credenciales temporales a AWS
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::637423567003:role/Elrey_despliegue_github
           aws-region: us-east-1
 
+      # El catálogo de la tienda vive en DynamoDB y S3, y se carga desde
+      # `catalogo/*.csv` y `catalogo/fotos/`. Va **antes** del despliegue porque
+      # el build de la tienda publica lo que devuelve `GET /catalogo`: cargado
+      # después, la tienda saldría con el catálogo anterior. La carga es
+      # idempotente —solo toca lo que cambió— y `--si-existe` la salta sin error
+      # la primera vez, cuando la tabla todavía no existe.
+      - name: Cargar el catálogo (antes del build)
+        run: npx sst shell --stage produccion -- npm --prefix .. run catalogo:subir -- --si-existe
+
       - name: Desplegar
         # Mismas variables opcionales que el workflow de Pages: `sst.config.ts`
         # las lee de aquí y se las pasa a la compilación de la tienda. Si están
         # vacías, la tienda se publica sin pixel, sin enlace de Clip y avisando
         # de los pedidos solo por WhatsApp.
+        env:
+          NEXT_PUBLIC_META_PIXEL: ${{ vars.META_PIXEL }}
+          NEXT_PUBLIC_CLIP_LINK: ${{ vars.CLIP_LINK }}
+          NEXT_PUBLIC_WEBHOOK_PEDIDOS: ${{ vars.WEBHOOK_PEDIDOS }}
+        run: npx sst deploy --stage produccion
+
+      # La segunda pasada solo hace algo en el primer despliegue (la tabla acaba
+      # de nacer) o si alguien cambió el catálogo entre las dos. En esos casos la
+      # tienda se compiló sin él y se reconstruye.
+      - name: Cargar el catálogo (después del despliegue)
+        id: catalogo
+        run: npx sst shell --stage produccion -- npm --prefix .. run catalogo:subir
+
+      - name: Reconstruir la tienda con el catálogo recién cargado
+        if: steps.catalogo.outputs.cambios == 'true'
         env:
           NEXT_PUBLIC_META_PIXEL: ${{ vars.META_PIXEL }}
           NEXT_PUBLIC_CLIP_LINK: ${{ vars.CLIP_LINK }}

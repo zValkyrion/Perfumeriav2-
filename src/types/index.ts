@@ -1,42 +1,21 @@
-export type Concentracion =
-  | "Parfum"
-  | "Eau de Parfum"
-  | "Eau de Toilette"
-  | "Eau de Cologne"
-  | "Body Mist";
-
-export type Genero = "Hombre" | "Mujer" | "Unisex";
-
-export type FamiliaOlfativa =
-  | "Amaderado"
-  | "Oriental"
-  | "Floral"
-  | "Cítrico"
-  | "Fougère"
-  | "Chipre"
-  | "Gourmand"
-  | "Acuático"
-  | "Especiado";
-
-export type Ocasion =
-  | "Diario"
-  | "Noche"
-  | "Oficina"
-  | "Cita"
-  | "Evento"
-  | "Verano"
-  | "Invierno";
-
-export type Badge =
-  | "Nuevo"
-  | "Más vendido"
-  | "Últimas piezas"
-  | "Edición limitada"
-  | "Importado"
-  | "3x2"
-  | "Exclusivo";
-
-export type Intensidad = 1 | 2 | 3 | 4 | 5;
+// Los vocabularios los fija el contrato del catálogo, que comparten la tienda,
+// la base de datos y la API.
+export type {
+  Badge,
+  Concentracion,
+  FamiliaOlfativa,
+  Genero,
+  Intensidad,
+  Ocasion,
+} from "../../compartido/catalogo";
+import type {
+  Badge,
+  Concentracion,
+  FamiliaOlfativa,
+  Genero,
+  Intensidad,
+  Ocasion,
+} from "../../compartido/catalogo";
 
 export interface Nota {
   tipo: "salida" | "corazon" | "fondo";
@@ -52,7 +31,10 @@ export interface Presentacion {
 }
 
 export interface Producto {
+  /** El código del catálogo en PDF: estable, y el que se dicta por WhatsApp. */
   id: string;
+  codigo: string;
+  agotado: boolean;
   slug: string;
   nombre: string;
   marca: string;
@@ -75,10 +57,10 @@ export interface Producto {
   destacado: boolean;
   /** Espectadores "en vivo": pseudo-aleatorio pero estable por producto (§10.14). */
   viendoAhora: number;
-  /** Año de lanzamiento, para la ficha técnica. */
-  anio: number;
-  /** País de origen, para la ficha técnica. */
-  origen: string;
+  /** Año de lanzamiento, si se conoce. Sin él, la ficha no inventa uno. */
+  anio?: number;
+  /** País de origen, si se conoce. */
+  origen?: string;
 }
 
 export interface Lote {
@@ -114,7 +96,8 @@ export interface Marca {
   slug: string;
   nombre: string;
   pais: string;
-  fundada: number;
+  /** Solo si se sabe con certeza. */
+  fundada?: number;
   descripcion: string;
   firma: string;
 }

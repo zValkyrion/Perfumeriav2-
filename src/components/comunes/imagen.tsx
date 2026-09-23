@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { blurDe } from "@/data/blur";
+import { blurDeCatalogo } from "@/data/catalogo";
 import { cn } from "@/lib/utils";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -23,7 +24,9 @@ export function Imagen({
   priority?: boolean;
   quality?: number;
 }) {
-  const blur = blurDe(src);
+  // El arte generado trae su blur en `blur.ts`; las fotos del catálogo, dentro
+  // del propio catálogo.
+  const blur = blurDe(src) ?? blurDeCatalogo(src);
   const fullSrc =
     src.startsWith("/") && basePath && !src.startsWith(basePath)
       ? `${basePath}${src}`

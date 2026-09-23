@@ -116,8 +116,10 @@ export function producto(item: Producto, nombreMarca: string) {
     sku: item.presentaciones[0]?.sku,
     brand: { "@type": "Brand", name: nombreMarca },
     category: `Perfumería > ${item.genero} > ${item.familia}`,
-    countryOfOrigin: item.origen,
-    releaseDate: String(item.anio),
+    // Solo si se conocen: un año o un país inventados en los datos
+    // estructurados son información falsa servida directo a Google.
+    ...(item.origen ? { countryOfOrigin: item.origen } : {}),
+    ...(item.anio ? { releaseDate: String(item.anio) } : {}),
     additionalProperty: [
       propiedad("Familia olfativa", item.familia),
       propiedad("Concentración", item.concentracion),

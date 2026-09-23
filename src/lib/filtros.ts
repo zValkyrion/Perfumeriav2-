@@ -114,7 +114,13 @@ export function ordenar(productos: Producto[], orden: Orden): Producto[] {
     case "vendidos":
       return copia.sort((a, b) => b.totalReseñas - a.totalReseñas);
     case "novedades":
-      return copia.sort((a, b) => b.anio - a.anio);
+      // Lo marcado como «Nuevo» primero; después, el año de lanzamiento si se
+      // conoce. Casi ningún producto real lo trae, así que el año solo desempata.
+      return copia.sort(
+        (a, b) =>
+          Number(b.badges.includes("Nuevo")) - Number(a.badges.includes("Nuevo")) ||
+          (b.anio ?? 0) - (a.anio ?? 0),
+      );
     case "rating":
       return copia.sort((a, b) => b.rating - a.rating);
     default:

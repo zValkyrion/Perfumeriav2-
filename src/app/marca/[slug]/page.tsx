@@ -62,7 +62,13 @@ export default async function MarcaPage({
 
       <VistaCatalogo
         base={productos}
-        eyebrow={`${marca.pais} · desde ${marca.fundada}`}
+        // País y año solo si se saben: «desde 0» o un país vacío delatan un
+        // dato que falta en vez de ocultarlo.
+        eyebrow={
+          [marca.pais, marca.fundada ? `desde ${marca.fundada}` : ""]
+            .filter(Boolean)
+            .join(" · ") || "Casa de perfumería"
+        }
         titulo={marca.nombre}
         descripcion={marca.descripcion}
         migas={[{ label: "Marcas", href: "/catalogo" }, { label: marca.nombre }]}
