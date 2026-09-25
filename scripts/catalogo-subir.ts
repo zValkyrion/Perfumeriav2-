@@ -40,12 +40,14 @@ import {
   PARTICIONES,
   catalogoDeFilas,
   filasDe,
+  filasTrasPlan,
   iguales,
   planDeCarga,
   type Escritura,
   type FilaGuardada,
 } from "../compartido/catalogo-tabla";
 import { huellaDe } from "../compartido/huella";
+import { incoherencias } from "../compartido/validar-catalogo";
 import { datosDeFoto, leerCatalogo } from "./catalogo/leer";
 
 const simular = process.argv.includes("--simular");
@@ -129,11 +131,22 @@ async function main() {
   const previo = catalogoDeFilas(actual.filas, actual.generado);
 
   /* 2. Lo que dice el CSV. */
-  const { catalogo, fotos, problemas, avisos } = await leerCatalogo({
-    carpeta: join(process.cwd(), "catalogo"),
-    previo,
-  });
-  for (const a of avisos) console.log(`· ${a}`);
+  const { catalogo, fotos, problemas, avisos, informativos, clavesPorComprobar } =
+    await leerCatalogo({ carpeta: join(process.cwd(), "catalogo"), previo });
+  for (const a of [...avisos, ...informativos]) console.log(`· ${a}`);
+
+  // Una clave de la columna `foto` que la tabla no conoce tiene que estar ya
+  // en el bucket: un producto no puede publicarse apuntando a una foto que no
+  // existe.
+  for (const clave of clavesPorComprobar) {
+    const existe = await s3
+      .send(new HeadObjectCommand({ Bucket: bucket, Key: clave }))
+      .then(() => true)
+      .catch(() => false);
+    if (!existe) {
+      problemas.push({ archivo: "-", fila: 0, columna: "foto", mensaje: `«${clave}» no está en el bucket` });
+    }
+  }
   if (problemas.length > 0) {
     console.error(`\n✗ ${problemas.length} problema(s) en el CSV. No se cargó nada.\n`);
     for (const p of problemas.slice(0, 40)) {
@@ -142,7 +155,22 @@ async function main() {
     process.exit(1);
   }
 
-  /* 3. Fotos: solo las que no están ya publicadas. */
+  /* 3. El plan, y cómo quedaría el catálogo con él. */
+  const plan = planDeCarga(actual.filas, filasDe(catalogo));
+  // El CSV se revisó contra sí mismo; aquí se revisa mezclado con lo del
+  // panel. Solo detiene lo que esta carga rompería: lo que ya estaba mal se
+  // arregla aparte y no debe bloquear cada despliegue.
+  const yaEstaban = new Set(incoherencias(previo));
+  const rotas = incoherencias(catalogoDeFilas(filasTrasPlan(actual.filas, plan), "")).filter(
+    (r) => !yaEstaban.has(r),
+  );
+  if (rotas.length > 0) {
+    console.error(`\n✗ Con lo que hay en el panel, esta carga dejaría el catálogo incoherente. No se cargó nada.\n`);
+    for (const r of rotas.slice(0, 40)) console.error(`  ${r}`);
+    process.exit(1);
+  }
+
+  /* 4. Fotos: solo las que no están ya publicadas. */
   const publicadas = new Set(
     [...previo.productos, ...previo.sets].flatMap((x) => (x.imagenes ?? []).map((i) => i.clave)),
   );
@@ -169,8 +197,7 @@ async function main() {
     );
   }
 
-  /* 4. Tabla: fusionar lo que el CSV cambió, borrar lo que quitó. */
-  const plan = planDeCarga(actual.filas, filasDe(catalogo));
+  /* 5. Tabla: fusionar lo que el CSV cambió, borrar lo que quitó. */
   const cambiaDatos = (e: Escritura) => !e.previa || !iguales(e.datos, e.previa.datos);
   const conCambios = plan.escribir.filter(cambiaDatos);
   const ahora = new Date().toISOString();

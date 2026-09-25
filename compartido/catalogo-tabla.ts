@@ -175,6 +175,30 @@ export interface PlanCarga {
 const claveDe = (f: { PK: string; SK: string }) => `${f.PK}#${f.SK}`;
 
 /**
+ * Una `larga` igual a la `corta` no es un texto propio: es la que deducen el
+ * lector del CSV (columna vacía), el panel (campo vacío) y el exportador (que
+ * la vuelve a dejar vacía). Se fusiona como vacía y se deduce otra vez al
+ * final; si no, llenar la corta en el Excel parecería un cambio de la larga y
+ * pisaría la que se escribió en el panel.
+ */
+function sinLargaDeducida(pk: string, x: RegistroCatalogo): RegistroCatalogo;
+function sinLargaDeducida(pk: string, x: RegistroCatalogo | undefined): RegistroCatalogo | undefined;
+function sinLargaDeducida(pk: string, x: RegistroCatalogo | undefined) {
+  if (pk !== "PRODUCTO" || !x) return x;
+  const p = x as ProductoCatalogo;
+  return p.larga === p.corta ? { ...p, larga: "" } : p;
+}
+
+const sinFotos = (x: RegistroCatalogo) =>
+  !("imagenes" in x) || !Array.isArray(x.imagenes) || x.imagenes.length === 0;
+
+function conLargaDeducida(pk: string, x: RegistroCatalogo): RegistroCatalogo {
+  if (pk !== "PRODUCTO") return x;
+  const p = x as ProductoCatalogo;
+  return p.larga ? p : { ...p, larga: p.corta };
+}
+
+/**
  * Qué hay que escribir y borrar para llevar el CSV a la tabla sin pisar lo
  * que se editó en el panel.
  *
@@ -226,10 +250,22 @@ export function planDeCarga(
       continue;
     }
 
-    const f = fusionar(base, d.datos, e.datos);
+    // Algo creado en el panel que llega en un CSV sin foto (exportado antes de
+    // que existiera la columna `foto`) no dice «quita la foto»: el CSV no
+    // tenía cómo expresarla. Se conserva la del panel.
+    const csv =
+      base === undefined && sinFotos(d.datos) && !sinFotos(e.datos)
+        ? ({ ...d.datos, imagenes: (e.datos as { imagenes: unknown[] }).imagenes } as RegistroCatalogo)
+        : d.datos;
+    const f = fusionar(
+      sinLargaDeducida(d.PK, base),
+      sinLargaDeducida(d.PK, csv),
+      sinLargaDeducida(d.PK, e.datos),
+    );
+    const datos = conLargaDeducida(d.PK, f.datos);
     if (f.conflictos.length > 0) plan.conflictos.push({ clave, campos: f.conflictos });
-    else if (!iguales(f.datos, d.datos)) plan.respetadas.push(clave);
-    plan.escribir.push({ PK: d.PK, SK: d.SK, datos: f.datos, fuente: d.datos, previa: e });
+    else if (!iguales(datos, d.datos)) plan.respetadas.push(clave);
+    plan.escribir.push({ PK: d.PK, SK: d.SK, datos, fuente: d.datos, previa: e });
   }
 
   const enCsv = new Set(deseadas.map(claveDe));
@@ -242,4 +278,22 @@ export function planDeCarga(
   }
 
   return plan;
+}
+
+/**
+ * La tabla tal como quedaría después de aplicar el plan. La fusión decide
+ * fila por fila; las referencias entre filas —la marca de un producto, los
+ * modelos de un lote, las direcciones— solo se pueden revisar sobre el
+ * resultado completo, porque lo del panel y lo del CSV se mezclan.
+ */
+export function filasTrasPlan(
+  existentes: readonly FilaGuardada[],
+  plan: PlanCarga,
+): FilaGuardada[] {
+  const porClave = new Map(existentes.map((f) => [claveDe(f), f]));
+  for (const f of plan.borrar) porClave.delete(claveDe(f));
+  for (const e of plan.escribir) {
+    porClave.set(claveDe(e), { ...e.previa, PK: e.PK, SK: e.SK, datos: e.datos, fuente: e.fuente });
+  }
+  return [...porClave.values()];
 }

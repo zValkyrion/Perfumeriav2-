@@ -323,3 +323,15 @@ export const numeroOVacio = (texto: string): number | undefined => {
   const limpio = texto.replace(/[$,\s]/g, "");
   return limpio === "" ? undefined : Number(limpio);
 };
+
+/**
+ * Un número opcional: vacío no se manda, y uno mal tecleado («25..») se manda
+ * tal cual para que el servidor responda «tiene que ser un número» debajo del
+ * campo. Descartarlo lo borraría en silencio —y con él, un valor que ya
+ * existía— mientras el formulario lo sigue enseñando.
+ */
+export function numeroOpcional(texto: string, dividir = 1): number | string | undefined {
+  const n = numeroOVacio(texto);
+  if (n === undefined || n === 0) return undefined;
+  return Number.isFinite(n) ? n / dividir : texto.trim();
+}

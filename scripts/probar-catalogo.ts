@@ -9,6 +9,8 @@
  * foto y que el viaje a la tabla y de vuelta no pierda nada. Corre en la CI
  * antes de desplegar.
  */
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
@@ -23,19 +25,24 @@ import {
   catalogoDeFilas,
   estable,
   filasDe,
+  filasTrasPlan,
   fusionar,
   iguales,
   planDeCarga,
   type FilaGuardada,
 } from "../compartido/catalogo-tabla";
 import {
+  incoherencias,
   quienUsa,
   validarLote,
   validarMarca,
   validarProducto,
   validarSet,
 } from "../compartido/validar-catalogo";
+import { ARCHIVOS_CSV, escribirCSV, filasCsv } from "../compartido/catalogo-csv";
 import { porQueNoPublicar } from "../compartido/publicacion";
+import { resumenCarrito } from "../src/lib/carrito";
+import { jsonLd } from "../src/lib/jsonld";
 import { leerCatalogo, sinFecha } from "./catalogo/leer";
 
 let fallos = 0;
@@ -77,9 +84,8 @@ async function main() {
   const setAgotado = c.sets.find((s) => s.visible && s.agotado);
   ok("un set agotado no se cobra", !setAgotado || fuente.paquete(setAgotado.slug) === undefined);
 
-  const porCodigo = new Map(c.productos.map((p) => [p.codigo, p]));
   for (const l of c.lotes) {
-    ok(`el lote ${l.slug} vale más a precio de lista que su precio`, valorLote(l, porCodigo) > l.precio, `${valorLote(l, porCodigo)} contra ${l.precio}`);
+    ok(`el lote ${l.slug} vale más a precio de lista que su precio`, valorLote(l, c.productos) > l.precio, `${valorLote(l, c.productos)} contra ${l.precio}`);
   }
 
   // ── Lo que se publica ───────────────────────────────────────────────────
@@ -180,6 +186,92 @@ async function main() {
   ok("lo borrado en el panel no resucita", p6.escribir.length === 0 && p6.borrar.length === 0);
   const vueltaSinBorrados = catalogoDeFilas([fila(yara, { borrado: true }), fila(otro)], "");
   ok("y no se publica", vueltaSinBorrados.productos.length === 1 && vueltaSinBorrados.productos[0]!.codigo === otro.codigo);
+
+  // ── Lo que encontró la revisión de la fase 3 ────────────────────────────
+  // Cada caso es un defecto que se confirmó y se arregló; la prueba impide
+  // que vuelva.
+  const inyeccion = jsonLd({ description: "Rico</script><script src=//x.io/a.js></script>" });
+  ok("un </script> en un texto del catálogo no cierra la etiqueta del JSON-LD", !inyeccion.includes("<") && JSON.parse(inyeccion).description.includes("</script>"));
+
+  const centavo = validarProducto({ ...yara, presentaciones: [{ ml: 100, precio: 0.004 }] }, c, "0001");
+  ok("un precio que redondea a cero se rechaza", !centavo.ok && centavo.errores.some((e) => e.campo === "presentaciones"));
+
+  const unSet = c.sets.find((s) => s.visible)!;
+  const unLote = c.lotes[0]!;
+  const loteConSlugDeSet = validarLote({ ...unLote, slug: unSet.slug }, c, unSet.slug);
+  const setConSlugDeLote = validarSet({ ...unSet, slug: unLote.slug }, c, unSet.codigo);
+  ok("un lote no puede tomar el slug de un set, ni al revés", !loteConSlugDeSet.ok && !setConSlugDeLote.ok);
+
+  const modelo = unLote.modelos[0]!;
+  const conOculto = { ...c, productos: c.productos.map((p) => (p.codigo === modelo ? { ...p, visible: false } : p)) };
+  const servidor = fuenteDeCatalogo(conOculto).paquete(unLote.slug);
+  const tienda = fuenteDeCatalogo(disponibilidadDe(conOculto)).paquete(unLote.slug);
+  const compilada = fuenteDeCatalogo(catalogoPublico(conOculto)).paquete(unLote.slug);
+  ok(`con un modelo oculto (${modelo}) el lote vale lo mismo en el servidor, en vivo y compilado`, JSON.stringify(servidor) === JSON.stringify(tienda) && JSON.stringify(servidor) === JSON.stringify(compilada), `${servidor?.referencia} / ${tienda?.referencia} / ${compilada?.referencia}`);
+
+  // La larga deducida (= corta) no es un cambio del CSV.
+  const sinTextos = { ...original, corta: "", larga: "" } as ProductoCatalogo;
+  const conLarga = { ...sinTextos, larga: "Larga escrita en el panel" };
+  const excelLlenaCorta = { ...sinTextos, corta: "Corta del Excel", larga: "Corta del Excel" };
+  const pLarga = planDeCarga([fila(conLarga, { fuente: sinTextos, editadoEn: "x" })], [{ PK: "PRODUCTO", SK: yara.codigo, datos: excelLlenaCorta }]);
+  const tras = pLarga.escribir[0]?.datos as ProductoCatalogo | undefined;
+  ok("llenar la corta en el Excel no pisa la larga escrita en el panel", tras?.corta === "Corta del Excel" && tras.larga === "Larga escrita en el panel" && pLarga.conflictos.length === 0, `${tras?.larga}`);
+  const pSinPanel = planDeCarga([fila(sinTextos, { fuente: sinTextos })], [{ PK: "PRODUCTO", SK: yara.codigo, datos: excelLlenaCorta }]);
+  ok("…y sin texto del panel, la larga se sigue deduciendo de la corta", (pSinPanel.escribir[0]?.datos as ProductoCatalogo).larga === "Corta del Excel");
+
+  // Exportar desde el panel y volver a cargar no pierde la foto de un alta del
+  // panel ni tumba la CI.
+  const fotoPanel = { clave: "productos/0999/0123456789abcdef.webp", ancho: 600, alto: 800, blur: "data:image/webp;base64,UklGRg==" };
+  const alta = { ...yara, codigo: "0999", slug: "lattafa-alta-panel", nombre: "Alta del panel", codigosAlternos: [], imagenes: [fotoPanel] } as ProductoCatalogo;
+  const tabla = { ...c, productos: [...c.productos.map((p) => (p.codigo === modelo ? { ...p, agotado: true } : p)), alta] };
+  const carpeta = await mkdtemp(join(tmpdir(), "exportado-"));
+  for (const archivo of ARCHIVOS_CSV) {
+    await writeFile(join(carpeta, `${archivo}.csv`), escribirCSV(filasCsv(tabla, archivo)), "utf8");
+  }
+  const releido = await leerCatalogo({ carpeta, previo: tabla });
+  const sinPrevio = await leerCatalogo({ carpeta });
+  await rm(carpeta, { recursive: true, force: true });
+  const alta2 = releido.catalogo.productos.find((p) => p.codigo === "0999");
+  ok("el CSV exportado vuelve a cargar sin problemas ni avisos", releido.problemas.length === 0 && releido.avisos.length === 0, [...releido.problemas.map((p) => p.mensaje), ...releido.avisos].slice(0, 2).join("; "));
+  ok("…con la foto del alta, sacada de la columna foto", iguales(alta2?.imagenes, [fotoPanel]));
+  ok("…y un modelo de lote agotado queda como informativo, no como aviso", releido.informativos.some((i) => i.includes(modelo)));
+  ok("sin tabla, la clave de la foto se pide comprobar en el bucket", sinPrevio.clavesPorComprobar.includes(fotoPanel.clave) && sinPrevio.avisos.length === 0);
+  const pExport = planDeCarga(filasDe(tabla).map((f) => (f.SK === "0999" ? { ...f, editadoEn: "x" } : { ...f, fuente: f.datos })), filasDe(releido.catalogo));
+  const alta3 = pExport.escribir.find((e) => e.SK === "0999")?.datos as ProductoCatalogo | undefined;
+  ok("…y la carga conserva la foto del alta", iguales(alta3?.imagenes, [fotoPanel]) && !pExport.conflictos.some((x) => x.clave === "PRODUCTO#0999"), JSON.stringify(pExport.conflictos.slice(0, 2)));
+  const altaSinFoto = { ...alta, imagenes: [] };
+  const pViejo = planDeCarga([fila(alta, { editadoEn: "x" })], [{ PK: "PRODUCTO", SK: "0999", datos: altaSinFoto }]);
+  ok("un CSV exportado sin columna foto no le quita la foto a un alta del panel", iguales((pViejo.escribir[0]?.datos as ProductoCatalogo).imagenes, [fotoPanel]));
+
+  // La carga revisa el catálogo ya mezclado con lo del panel.
+  ok("el catálogo del CSV no tiene referencias rotas ni direcciones repetidas", incoherencias(c).length === 0, incoherencias(c).slice(0, 2).join("; "));
+  const marcaSola = { slug: "casa-del-panel", nombre: "Casa del panel", pais: "", firma: "", descripcion: "" };
+  const deLaMarca = { ...alta, codigo: "0997", slug: "casa-del-panel-uno", marca: marcaSola.slug, imagenes: [] } as ProductoCatalogo;
+  const existentes = [
+    ...filasDe(c).map((f) => ({ ...f, fuente: f.datos })),
+    { PK: "MARCA", SK: marcaSola.slug, datos: marcaSola, fuente: marcaSola },
+    { PK: "PRODUCTO", SK: "0997", datos: deLaMarca, editadoEn: "x" },
+  ] as FilaGuardada[];
+  const sinLaMarca = planDeCarga(existentes, filasDe(c));
+  const rotas = incoherencias(catalogoDeFilas(filasTrasPlan(existentes, sinLaMarca), "")).filter((r) => !incoherencias(catalogoDeFilas(existentes, "")).includes(r));
+  ok("quitar del CSV una marca que usa un alta del panel se detecta antes de cargar", rotas.some((r) => r.includes("casa-del-panel")), rotas.join("; "));
+  // El panel da de alta 0996 con un slug; meses después el catálogo trae el
+  // mismo perfume con otro código y el mismo slug.
+  const conAlta = [
+    ...filasDe(c).map((f) => ({ ...f, fuente: f.datos })),
+    { PK: "PRODUCTO", SK: "0996", datos: { ...alta, codigo: "0996", slug: "lattafa-del-mes" }, editadoEn: "x" },
+  ] as FilaGuardada[];
+  const csvDelMes = [...filasDe(c), { PK: "PRODUCTO" as const, SK: "0995", datos: { ...alta, codigo: "0995", slug: "lattafa-del-mes" } }];
+  const trasMes = catalogoDeFilas(filasTrasPlan(conAlta, planDeCarga(conAlta, csvDelMes)), "");
+  const nuevasRotas = incoherencias(trasMes).filter((r) => !incoherencias(catalogoDeFilas(conAlta, "")).includes(r));
+  ok("…y un slug nuevo del CSV que ya usa un alta del panel, también", nuevasRotas.some((r) => r.includes("lattafa-del-mes")), nuevasRotas.join("; "));
+
+  // El carrito no cuenta lo que esta tienda compilada no puede enseñar.
+  const fantasma = { ...alta, codigo: "9999", slug: "fantasma" } as ProductoCatalogo;
+  const vende = fuenteDeCatalogo({ ...c, productos: [...c.productos, fantasma] });
+  const conocido = visibles.find((p) => !p.agotado)!;
+  const resumen = resumenCarrito([{ productoId: conocido.codigo, ml: presentacionBase(conocido).ml, cantidad: 1 }, { productoId: "9999", ml: 100, cantidad: 1 }], null, { fuente: vende });
+  ok("lo que la disponibilidad vende pero el build no conoce no entra al total", resumen.lineas.length === 1 && resumen.piezasTotales === 1 && resumen.subtotal === presentacionBase(conocido).precio, `${resumen.piezasTotales} piezas, ${resumen.subtotal}`);
 
   // ── Publicación automática ──────────────────────────────────────────────
   const hora = (min: number) => new Date(Date.UTC(2026, 8, 23, 12, min)).toISOString();

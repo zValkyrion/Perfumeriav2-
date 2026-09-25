@@ -37,6 +37,42 @@ const TIPOS: Record<TipoRegistro, { uno: string; nuevo: string }> = {
 
 const esTipo = (x: string | null): x is TipoRegistro => x !== null && x in TIPOS;
 
+/** Cómo se llama en el formulario cada campo que el servidor puede rechazar. */
+const ETIQUETA_CAMPO: Record<string, string> = {
+  codigo: "Código",
+  nombre: "Nombre",
+  slug: "Dirección",
+  marca: "Marca",
+  linea: "Línea",
+  codigosAlternos: "Otros códigos",
+  concentracion: "Concentración",
+  genero: "Para",
+  familia: "Familia olfativa",
+  presentaciones: "Tamaños y precios",
+  rebaja: "Rebaja",
+  salida: "Notas de salida",
+  corazon: "Notas de corazón",
+  fondo: "Notas de fondo",
+  corta: "Descripción corta",
+  larga: "Descripción larga",
+  badges: "Etiquetas",
+  ocasion: "Ocasión",
+  anio: "Año",
+  origen: "Origen",
+  imagenes: "Foto",
+  nota: "Nota interna",
+  pais: "País",
+  fundada: "Fundada",
+  firma: "Firma",
+  descripcion: "Descripción",
+  precio: "Precio",
+  precioAnterior: "Precio anterior",
+  incluye: "Incluye",
+  tema: "Tema",
+  piezas: "Piezas",
+  modelos: "Modelos",
+};
+
 function buscar(d: CatalogoAdmin, tipo: TipoRegistro, id: string): RegistroCatalogo | undefined {
   const c = d.catalogo;
   switch (tipo) {
@@ -131,6 +167,7 @@ function Editor({
     null,
   );
   const [conflicto, setConflicto] = useState(false);
+  const [esperandoRecarga, setEsperandoRecarga] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
   const guardar = async (nuevoId: string, valor: RegistroCatalogo) => {
@@ -198,6 +235,24 @@ function Editor({
 
   const props = { datos, token, errores, guardando };
 
+  // El formulario arma su borrador una sola vez, con `inicial`. Va atado a la
+  // huella con que se armó: si cambia —«Recargar» tras un 409—, se vuelve a
+  // armar con la versión nueva. Si no, el siguiente guardado mandaría el
+  // borrador viejo con la huella nueva y desharía sin aviso lo que guardó el
+  // otro (un agotado, un precio).
+  const version = estado?.huella ?? "nuevo";
+  const [versionVista, setVersionVista] = useState(version);
+  if (version !== versionVista) {
+    setVersionVista(version);
+    if (esperandoRecarga) {
+      setEsperandoRecarga(false);
+      setMensaje({
+        tono: "aviso",
+        texto: "Ya está la versión actual. Lo que habías cambiado no se guardó: vuelve a hacerlo sobre esta.",
+      });
+    }
+  }
+
   return (
     <main className="p-4 pb-28">
       <header className="mb-4">
@@ -222,11 +277,28 @@ function Editor({
         <div className="mb-4">
           <Mensaje tono={mensaje.tono}>
             {mensaje.texto}
-            {errores.length > 0 && " Están marcados abajo."}
-            {conflicto && (
+            {/* Además de debajo de cada campo, aquí: un error de un campo que
+                el formulario no marcara quedaría escondido y el guardado
+                bloqueado sin explicación. */}
+            {errores.length > 0 && (
+              <ul className="mt-1 list-disc pl-5 text-[13px]">
+                {errores.map((e, i) => (
+                  <li key={i}>
+                    {ETIQUETA_CAMPO[e.campo] ?? e.campo}: {e.mensaje}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {conflicto && id && (
               <button
                 type="button"
-                onClick={recargar}
+                onClick={() => {
+                  setMensaje(null);
+                  setErrores([]);
+                  setConflicto(false);
+                  setEsperandoRecarga(true);
+                  recargar();
+                }}
                 className="ml-2 font-semibold text-info underline"
               >
                 Recargar
@@ -237,16 +309,16 @@ function Editor({
       )}
 
       {tipo === "producto" && (
-        <FormProducto {...props} inicial={registro as DatosDe<"producto"> | null} onGuardar={guardar} />
+        <FormProducto key={version} {...props} inicial={registro as DatosDe<"producto"> | null} onGuardar={guardar} />
       )}
       {tipo === "marca" && (
-        <FormMarca {...props} inicial={registro as DatosDe<"marca"> | null} onGuardar={guardar} />
+        <FormMarca key={version} {...props} inicial={registro as DatosDe<"marca"> | null} onGuardar={guardar} />
       )}
       {tipo === "set" && (
-        <FormSet {...props} inicial={registro as DatosDe<"set"> | null} onGuardar={guardar} />
+        <FormSet key={version} {...props} inicial={registro as DatosDe<"set"> | null} onGuardar={guardar} />
       )}
       {tipo === "lote" && (
-        <FormLote {...props} inicial={registro as DatosDe<"lote"> | null} onGuardar={guardar} />
+        <FormLote key={version} {...props} inicial={registro as DatosDe<"lote"> | null} onGuardar={guardar} />
       )}
 
       {id && estado && (

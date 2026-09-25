@@ -206,15 +206,22 @@ export function precioMinimo(p: Pick<ProductoCatalogo, "presentaciones">): numbe
 /**
  * Lo que vale un lote a precio de lista: sus piezas repartidas entre los
  * modelos, ciclando la lista. Es la referencia del ahorro que se le promete al
- * revendedor; un modelo que ya no existe cuenta cero.
+ * revendedor, y el tope de descuento se mide contra ella.
+ *
+ * **Un modelo oculto cuenta cero**, igual que uno que ya no existe. El
+ * servidor tiene el catálogo completo y la tienda solo lo publicado: si el
+ * oculto contara en uno y no en otro, el checkout enseñaría un total y el
+ * servidor cobraría otro. Lo agotado sí cuenta: sigue publicado con su precio.
  */
 export function valorLote(
   lote: LotePrecio,
-  porCodigo: ReadonlyMap<string, Pick<ProductoCatalogo, "presentaciones">>,
+  productos: Iterable<Pick<ProductoCatalogo, "codigo" | "presentaciones" | "visible">>,
 ): number {
+  const publicados = new Map<string, Pick<ProductoCatalogo, "presentaciones">>();
+  for (const p of productos) if (p.visible) publicados.set(p.codigo, p);
   let suma = 0;
   for (let i = 0; i < lote.piezas; i++) {
-    const producto = porCodigo.get(lote.modelos[i % lote.modelos.length]!);
+    const producto = publicados.get(lote.modelos[i % lote.modelos.length]!);
     if (producto) suma += precioMinimo(producto);
   }
   return suma;
@@ -297,7 +304,6 @@ export function fuenteDeCatalogo(c: {
   sets: readonly SetPrecio[];
   lotes: readonly LotePrecio[];
 }): FuentePrecios {
-  const todos = new Map(c.productos.map((p) => [p.codigo, p]));
   const vendibles = new Map(
     c.productos.filter((p) => p.visible && !p.agotado).map((p) => [p.codigo, p]),
   );
@@ -324,7 +330,7 @@ export function fuenteDeCatalogo(c: {
     paquete(id) {
       const lote = lotes.get(id);
       if (lote) {
-        return { precio: lote.precio, referencia: valorLote(lote, todos), piezas: lote.piezas };
+        return { precio: lote.precio, referencia: valorLote(lote, c.productos), piezas: lote.piezas };
       }
       const set = sets.get(id);
       if (set) {

@@ -18,6 +18,7 @@ import {
   aTextoLista,
   deTextoLista,
   numeroOVacio,
+  numeroOpcional,
 } from "@/components/catalogo/comun";
 import {
   autorizarImagen,
@@ -285,8 +286,8 @@ function borradorProducto(p: ProductoCatalogo | null, codigo: string): BorradorP
 }
 
 function productoDe(b: BorradorProducto): ProductoCatalogo {
-  const rebaja = numeroOVacio(b.rebaja);
-  const anio = numeroOVacio(b.anio);
+  const rebaja = numeroOpcional(b.rebaja, 100);
+  const anio = numeroOpcional(b.anio);
   // El servidor revisa cada campo; aquí solo se pasa del texto a la forma.
   return {
     codigo: b.codigo.trim(),
@@ -301,7 +302,7 @@ function productoDe(b: BorradorProducto): ProductoCatalogo {
     presentaciones: b.presentaciones
       .filter((v) => v.ml.trim() !== "" || v.precio.trim() !== "")
       .map((v) => ({ ml: Number(v.ml), precio: numeroOVacio(v.precio) ?? 0 })),
-    ...(rebaja ? { rebaja: rebaja / 100 } : {}),
+    ...(rebaja !== undefined ? { rebaja } : {}),
     salida: deTextoLista(b.salida),
     corazon: deTextoLista(b.corazon),
     fondo: deTextoLista(b.fondo),
@@ -312,7 +313,7 @@ function productoDe(b: BorradorProducto): ProductoCatalogo {
     estela: b.estela,
     ocasion: b.ocasion,
     destacado: b.destacado,
-    ...(anio ? { anio } : {}),
+    ...(anio !== undefined ? { anio } : {}),
     ...(b.origen.trim() ? { origen: b.origen } : {}),
     agotado: b.agotado,
     visible: b.visible,
@@ -383,7 +384,10 @@ export function FormProducto({
           />
           <ErroresDe errores={errores} campo="slug" />
         </div>
-        <Campo etiqueta="Línea (opcional)" value={b.linea} onChange={(e) => poner("linea", e.target.value)} />
+        <div>
+          <Campo etiqueta="Línea (opcional)" value={b.linea} onChange={(e) => poner("linea", e.target.value)} />
+          <ErroresDe errores={errores} campo="linea" />
+        </div>
         <div>
           <Campo etiqueta="Otros códigos (opcional)" value={b.codigosAlternos} onChange={(e) => poner("codigosAlternos", e.target.value)} pista="Si aparece con otro número en el PDF. Separados por coma." />
           <ErroresDe errores={errores} campo="codigosAlternos" />
@@ -452,8 +456,14 @@ export function FormProducto({
           <Campo etiqueta="Notas de salida" value={b.salida} onChange={(e) => poner("salida", e.target.value)} pista="Separadas por coma: bergamota, pimienta rosa" />
           <ErroresDe errores={errores} campo="salida" />
         </div>
-        <Campo etiqueta="Notas de corazón" value={b.corazon} onChange={(e) => poner("corazon", e.target.value)} />
-        <Campo etiqueta="Notas de fondo" value={b.fondo} onChange={(e) => poner("fondo", e.target.value)} />
+        <div>
+          <Campo etiqueta="Notas de corazón" value={b.corazon} onChange={(e) => poner("corazon", e.target.value)} />
+          <ErroresDe errores={errores} campo="corazon" />
+        </div>
+        <div>
+          <Campo etiqueta="Notas de fondo" value={b.fondo} onChange={(e) => poner("fondo", e.target.value)} />
+          <ErroresDe errores={errores} campo="fondo" />
+        </div>
         <div>
           <AreaTexto etiqueta="Descripción corta" value={b.corta} onChange={(e) => poner("corta", e.target.value)} />
           <ErroresDe errores={errores} campo="corta" />
@@ -467,7 +477,10 @@ export function FormProducto({
             <Campo etiqueta="Año (opcional)" inputMode="numeric" value={b.anio} onChange={(e) => poner("anio", e.target.value)} />
             <ErroresDe errores={errores} campo="anio" />
           </div>
-          <Campo etiqueta="Origen (opcional)" value={b.origen} onChange={(e) => poner("origen", e.target.value)} />
+          <div>
+            <Campo etiqueta="Origen (opcional)" value={b.origen} onChange={(e) => poner("origen", e.target.value)} />
+            <ErroresDe errores={errores} campo="origen" />
+          </div>
         </div>
       </Seccion>
 
@@ -503,15 +516,16 @@ export function FormMarca({ inicial, errores, guardando, onGuardar }: PropsFormu
       className="grid gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        const fundada = numeroOVacio(b.fundada);
+        const fundada = numeroOpcional(b.fundada);
+        // Un año mal tecleado viaja como texto para que el servidor lo rechace.
         onGuardar(slug, {
           slug,
           nombre: b.nombre,
           pais: b.pais,
-          ...(fundada ? { fundada } : {}),
+          ...(fundada !== undefined ? { fundada } : {}),
           firma: b.firma,
           descripcion: b.descripcion,
-        });
+        } as MarcaCatalogo);
       }}
     >
       <Seccion titulo="La casa">
@@ -524,13 +538,19 @@ export function FormMarca({ inicial, errores, guardando, onGuardar }: PropsFormu
           <ErroresDe errores={errores} campo="slug" />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Campo etiqueta="País" value={b.pais} onChange={(e) => poner("pais", e.target.value)} />
+          <div>
+            <Campo etiqueta="País" value={b.pais} onChange={(e) => poner("pais", e.target.value)} />
+            <ErroresDe errores={errores} campo="pais" />
+          </div>
           <div>
             <Campo etiqueta="Fundada (opcional)" inputMode="numeric" value={b.fundada} onChange={(e) => poner("fundada", e.target.value)} />
             <ErroresDe errores={errores} campo="fundada" />
           </div>
         </div>
-        <Campo etiqueta="Firma" value={b.firma} onChange={(e) => poner("firma", e.target.value)} pista="Una línea: por qué es conocida." />
+        <div>
+          <Campo etiqueta="Firma" value={b.firma} onChange={(e) => poner("firma", e.target.value)} pista="Una línea: por qué es conocida." />
+          <ErroresDe errores={errores} campo="firma" />
+        </div>
         <div>
           <AreaTexto etiqueta="Descripción" value={b.descripcion} onChange={(e) => poner("descripcion", e.target.value)} />
           <ErroresDe errores={errores} campo="descripcion" />
@@ -567,21 +587,23 @@ export function FormSet({ inicial, datos, token, errores, guardando, onGuardar }
       className="grid gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        const precioAnterior = numeroOVacio(b.precioAnterior);
+        const precioAnterior = numeroOpcional(b.precioAnterior);
         onGuardar(b.codigo.trim(), {
           codigo: b.codigo.trim(),
           slug,
           nombre: b.nombre,
           marca: b.marca,
           precio: numeroOVacio(b.precio) ?? 0,
-          ...(precioAnterior ? { precioAnterior } : {}),
+          ...(precioAnterior !== undefined ? { precioAnterior } : {}),
           incluye: deTextoLista(b.incluye),
           descripcion: b.descripcion,
           agotado: b.agotado,
           visible: b.visible,
           imagenes: b.imagenes,
           ...(b.nota.trim() ? { nota: b.nota } : {}),
-        });
+          // Un precio anterior mal tecleado viaja como texto para que el
+          // servidor lo rechace.
+        } as SetCatalogo);
       }}
     >
       <Seccion titulo="El set">
@@ -620,8 +642,14 @@ export function FormSet({ inicial, datos, token, errores, guardando, onGuardar }
         <CampoFoto tipo="set" codigo={b.codigo} imagenes={b.imagenes} onChange={(x) => poner("imagenes", x)} token={token} errores={errores} />
       </Seccion>
       <Seccion titulo="Qué trae">
-        <Campo etiqueta="Incluye" value={b.incluye} onChange={(e) => poner("incluye", e.target.value)} pista="Separado por coma: perfume 100 ml, desodorante 150 ml" />
-        <AreaTexto etiqueta="Descripción" value={b.descripcion} onChange={(e) => poner("descripcion", e.target.value)} />
+        <div>
+          <Campo etiqueta="Incluye" value={b.incluye} onChange={(e) => poner("incluye", e.target.value)} pista="Separado por coma: perfume 100 ml, desodorante 150 ml" />
+          <ErroresDe errores={errores} campo="incluye" />
+        </div>
+        <div>
+          <AreaTexto etiqueta="Descripción" value={b.descripcion} onChange={(e) => poner("descripcion", e.target.value)} />
+          <ErroresDe errores={errores} campo="descripcion" />
+        </div>
         <AreaTexto etiqueta="Nota interna (no se publica)" value={b.nota} onChange={(e) => poner("nota", e.target.value)} />
         <ErroresDe errores={errores} campo="nota" />
       </Seccion>
@@ -677,7 +705,10 @@ export function FormLote({ inicial, datos, errores, guardando, onGuardar }: Prop
           <Campo etiqueta="Dirección" value={slug} disabled={!nuevo} onChange={(e) => poner("slug", e.target.value)} pista={nuevo ? `Quedará en /lotes/${slug || "…"}/` : undefined} />
           <ErroresDe errores={errores} campo="slug" />
         </div>
-        <Campo etiqueta="Tema" value={b.tema} placeholder="Mixto" onChange={(e) => poner("tema", e.target.value)} />
+        <div>
+          <Campo etiqueta="Tema" value={b.tema} placeholder="Mixto" onChange={(e) => poner("tema", e.target.value)} />
+          <ErroresDe errores={errores} campo="tema" />
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Campo etiqueta="Piezas" inputMode="numeric" value={b.piezas} onChange={(e) => poner("piezas", e.target.value)} />
@@ -705,8 +736,14 @@ export function FormLote({ inicial, datos, errores, guardando, onGuardar }: Prop
           )}
         </div>
         <Interruptor etiqueta="Más vendido" valor={b.masVendido} onChange={(x) => poner("masVendido", x)} />
-        <Campo etiqueta="Incluye" value={b.incluye} onChange={(e) => poner("incluye", e.target.value)} pista="Separado por coma." />
-        <AreaTexto etiqueta="Descripción" value={b.descripcion} onChange={(e) => poner("descripcion", e.target.value)} />
+        <div>
+          <Campo etiqueta="Incluye" value={b.incluye} onChange={(e) => poner("incluye", e.target.value)} pista="Separado por coma." />
+          <ErroresDe errores={errores} campo="incluye" />
+        </div>
+        <div>
+          <AreaTexto etiqueta="Descripción" value={b.descripcion} onChange={(e) => poner("descripcion", e.target.value)} />
+          <ErroresDe errores={errores} campo="descripcion" />
+        </div>
       </Seccion>
       <BarraGuardar guardando={guardando} nuevo={nuevo} />
     </form>

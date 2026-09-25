@@ -10,6 +10,7 @@ import type {
 } from "../../../compartido/catalogo-admin";
 import type { ErrorCampo, TipoRegistro } from "../../../compartido/validar-catalogo";
 import { pedir } from "@/lib/api";
+import { tokenVigente } from "@/lib/sesion";
 
 /**
  * Cliente de `/admin/*`: el catálogo de la tienda visto desde el panel.
@@ -33,7 +34,10 @@ export function olvidarCopia() {
 
 export async function leerCatalogoAdmin(token: string, fresco = false): Promise<CatalogoAdmin> {
   if (!fresco && copia && copia.hasta > Date.now()) return copia.datos;
-  const datos = await pedir<CatalogoAdmin>("/admin/catalogo", { token, msCorte: 30000 });
+  const datos = await pedir<CatalogoAdmin>("/admin/catalogo", {
+    token: await tokenVigente(token),
+    msCorte: 30000,
+  });
   copia = { datos, hasta: Date.now() + 30_000 };
   return datos;
 }
@@ -58,13 +62,14 @@ const BASE = process.env.NEXT_PUBLIC_API ?? "";
  */
 async function escribir<T>(ruta: string, token: string, init: RequestInit): Promise<T> {
   if (!BASE) throw new ErrorGuardado("La app no tiene API configurada");
+  const vigente = await tokenVigente(token);
   const ctrl = new AbortController();
   const corte = setTimeout(() => ctrl.abort(), 20000);
   try {
     const res = await fetch(`${BASE}${ruta}`, {
       ...init,
       signal: ctrl.signal,
-      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      headers: { "content-type": "application/json", authorization: `Bearer ${vigente}` },
     });
     const cuerpo = (await res.json().catch(() => null)) as
       | (T & { error?: string; errores?: ErrorCampo[] })
@@ -110,18 +115,18 @@ export function borrarRegistro(token: string, tipo: TipoRegistro, id: string, hu
   );
 }
 
-export function estadoPublicacion(token: string) {
-  return pedir<EstadoPublicacion>("/admin/publicacion", { token });
+export async function estadoPublicacion(token: string) {
+  return pedir<EstadoPublicacion>("/admin/publicacion", { token: await tokenVigente(token) });
 }
 
-export function publicar(token: string) {
-  return pedir<EstadoPublicacion>("/admin/publicar", { method: "POST", token });
+export async function publicar(token: string) {
+  return pedir<EstadoPublicacion>("/admin/publicar", { method: "POST", token: await tokenVigente(token) });
 }
 
-export function autorizarImagen(token: string, solicitud: SolicitudImagen) {
+export async function autorizarImagen(token: string, solicitud: SolicitudImagen) {
   return pedir<ImagenAutorizada>("/admin/imagenes", {
     method: "POST",
-    token,
+    token: await tokenVigente(token),
     body: JSON.stringify(solicitud),
   });
 }
@@ -154,7 +159,7 @@ export async function exportarCsv(
 ): Promise<void> {
   if (!BASE) throw new Error("La app no tiene API configurada");
   const res = await fetch(`${BASE}/admin/exportar?archivo=${archivo}`, {
-    headers: { authorization: `Bearer ${token}` },
+    headers: { authorization: `Bearer ${await tokenVigente(token)}` },
   });
   if (!res.ok) throw new Error(`No se pudo exportar (${res.status})`);
   const url = URL.createObjectURL(await res.blob());

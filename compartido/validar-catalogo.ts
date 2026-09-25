@@ -206,7 +206,9 @@ function imagenes(r: Revisor, carpeta: "productos" | "sets", codigo: string): Im
       r.error("imagenes", "las medidas de la foto no son válidas");
       continue;
     }
-    if (blur.length > 4000 || !PATRON_BLUR.test(blur)) {
+    // Vacía vale: una foto cargada por su clave desde un CSV exportado puede no
+    // traer miniatura, y la tienda la enseña sin difuminado mientras carga.
+    if (blur.length > 4000 || (blur !== "" && !PATRON_BLUR.test(blur))) {
       r.error("imagenes", "la miniatura de la foto no es válida");
       continue;
     }
@@ -225,7 +227,9 @@ function presentaciones(r: Revisor): PresentacionCatalogo[] {
   const salida: PresentacionCatalogo[] = [];
   for (const p of v as Record<string, unknown>[]) {
     const ml = Number(p?.ml);
-    const precio = Number(p?.precio);
+    // Se redondea antes de validar: 0.004 pasaría «mayor que cero» y se
+    // guardaría como un precio de $0.
+    const precio = Math.round(Number(p?.precio) * 100) / 100;
     if (!Number.isInteger(ml) || ml < 1 || ml > 1000) {
       r.error("presentaciones", "cada tamaño va en mililitros enteros, de 1 a 1000");
       continue;
@@ -238,24 +242,32 @@ function presentaciones(r: Revisor): PresentacionCatalogo[] {
       r.error("presentaciones", `el tamaño de ${ml} ml está repetido`);
       continue;
     }
-    salida.push({ ml, precio: Math.round(precio * 100) / 100 });
+    salida.push({ ml, precio });
   }
   return salida.sort((a, b) => a.ml - b.ml);
 }
 
+/**
+ * Productos, sets y lotes comparten un solo espacio de direcciones. Sets y
+ * lotes, además, viajan en el carrito con el slug como identificador: si un
+ * lote tomara el slug de un set, el cobro encontraría el lote y el set se
+ * vendería al precio del lote.
+ */
 function slugLibre(
   r: Revisor,
   slug: string,
   catalogo: Catalogo,
-  propio: { tipo: "producto" | "set"; codigo: string },
+  propio: { tipo: "producto" | "set" | "lote"; codigo: string },
 ) {
   const ocupado =
     catalogo.productos.find(
       (p) => p.slug === slug && !(propio.tipo === "producto" && p.codigo === propio.codigo),
     ) ??
-    catalogo.sets.find((s) => s.slug === slug && !(propio.tipo === "set" && s.codigo === propio.codigo));
+    catalogo.sets.find((s) => s.slug === slug && !(propio.tipo === "set" && s.codigo === propio.codigo)) ??
+    // Un lote es su slug: el único lote con ese slug es él mismo.
+    catalogo.lotes.find((l) => l.slug === slug && propio.tipo !== "lote");
   if (ocupado) {
-    r.error("slug", `la dirección «${slug}» ya es de ${"nombre" in ocupado ? ocupado.nombre : slug}`);
+    r.error("slug", `la dirección «${slug}» ya es de ${ocupado.nombre}`);
   }
 }
 
@@ -416,6 +428,7 @@ export function validarLote(
 ): Validacion<LoteCatalogo> {
   const r = new Revisor(entrada);
   revisarSlug(r, slug);
+  slugLibre(r, slug, catalogo, { tipo: "lote", codigo: slug });
   if (r.texto("slug") !== slug) r.error("slug", "no coincide con el registro que se guarda");
   const nombre = r.texto("nombre", { obligatorio: true, max: 120 });
   const tema = r.texto("tema", { max: 60 });
@@ -457,6 +470,41 @@ export function validarRegistro(
     case "lote":
       return validarLote(entrada, catalogo, id);
   }
+}
+
+/**
+ * Referencias rotas y direcciones repetidas en un catálogo ya armado.
+ *
+ * El panel revisa registro por registro y el lector del CSV, el CSV contra sí
+ * mismo. Ninguno ve la mezcla de los dos: un producto dado de alta en el panel
+ * con una marca que después se quita del CSV, o un slug del CSV que ya usa algo
+ * creado en el panel. Esto revisa el resultado.
+ */
+export function incoherencias(c: Catalogo): string[] {
+  const salida: string[] = [];
+  const marcas = new Set(c.marcas.map((m) => m.slug));
+  const codigos = new Set(c.productos.map((p) => p.codigo));
+  for (const p of c.productos) {
+    if (!marcas.has(p.marca)) salida.push(`perfume ${p.codigo}: la marca «${p.marca}» no existe`);
+  }
+  for (const s of c.sets) {
+    if (s.marca && !marcas.has(s.marca)) salida.push(`set ${s.codigo}: la marca «${s.marca}» no existe`);
+  }
+  for (const l of c.lotes) {
+    const faltan = l.modelos.filter((m) => !codigos.has(m));
+    if (faltan.length > 0) salida.push(`lote ${l.slug}: sus modelos ${faltan.join(", ")} no existen`);
+  }
+  const duenos = new Map<string, string>();
+  for (const [slug, quien] of [
+    ...c.productos.map((p) => [p.slug, `el perfume ${p.codigo}`] as const),
+    ...c.sets.map((s) => [s.slug, `el set ${s.codigo}`] as const),
+    ...c.lotes.map((l) => [l.slug, `el lote ${l.slug}`] as const),
+  ]) {
+    const otro = duenos.get(slug);
+    if (otro) salida.push(`«${slug}» es la dirección de dos registros: ${otro} y ${quien}`);
+    else duenos.set(slug, quien);
+  }
+  return salida;
 }
 
 /**

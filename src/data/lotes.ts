@@ -14,7 +14,7 @@ import { CATALOGO } from "./catalogo";
 const TODOS = new Map(CATALOGO.productos.map((p) => [p.codigo, p]));
 
 function construirLote(l: LoteCatalogo): Lote {
-  const valorMenudeo = valorLote(l, TODOS);
+  const valorMenudeo = valorLote(l, CATALOGO.productos);
   return {
     id: l.slug,
     slug: l.slug,

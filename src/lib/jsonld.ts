@@ -22,9 +22,22 @@ import { SITIO_URL, urlAbsoluta } from "./sitio";
  *   contacto de `src/data/contenido.ts` son marcadores de posición.
  */
 
-/** Serializa el JSON-LD para inyectarlo en un `<script>`. */
+/**
+ * `<` escrito como escape de JSON. Se arma en dos partes para que ningún editor
+ * lo convierta en el carácter y el arreglo desaparezca sin que nadie lo note.
+ */
+const MENOR_QUE = "\\" + "u003c";
+
+/**
+ * Serializa el JSON-LD para inyectarlo en un `<script>`.
+ *
+ * **Escapa `<`.** Los textos del catálogo se editan desde el panel, y un
+ * `</script>` dentro de una descripción cerraría la etiqueta y dejaría correr
+ * lo que siga en cada visita — en el mismo origen que el panel, donde viven los
+ * tokens de sesión. El escape es JSON válido: Google lee el mismo texto.
+ */
 export function jsonLd(datos: object): string {
-  return JSON.stringify(datos);
+  return JSON.stringify(datos).replace(/</g, MENOR_QUE);
 }
 
 /* ── Identidad del sitio ──────────────────────────────────────────────── */

@@ -208,4 +208,31 @@ export function useSesion(): Sesion {
   };
 }
 
+/**
+ * Un token que todavía sirve para llamar a la API.
+ *
+ * `useSesion` renueva el de Cognito al montarse, y dura una hora: con el
+ * editor del catálogo abierto más de eso, guardar daba 401 y la única salida
+ * —recargar la página— perdía lo tecleado. Esto se llama justo antes de cada
+ * llamada del panel y renueva sin tocar el estado de React, así que el
+ * borrador sigue ahí. Si otra pestaña ya lo renovó, se usa ese.
+ */
+export async function tokenVigente(actual: string): Promise<string> {
+  const guardado = localStorage.getItem(CLAVE_TOKEN);
+  const vence = Number(localStorage.getItem(CLAVE_VENCE) ?? 0);
+  if (guardado && vence > Date.now() + 60_000) return guardado;
+  const refresco = localStorage.getItem(CLAVE_REFRESCO);
+  // Sesión por PIN: no hay nada que renovar.
+  if (!refresco) return actual;
+  try {
+    const t = await refrescar(refresco);
+    localStorage.setItem(CLAVE_TOKEN, t.idToken);
+    localStorage.setItem(CLAVE_VENCE, String(t.vence));
+    return t.idToken;
+  } catch {
+    // Sin red o con el refresco vencido: que la API diga lo que tenga que decir.
+    return actual;
+  }
+}
+
 export { hayCognito };

@@ -65,8 +65,18 @@ export interface Lectura {
   catalogo: Catalogo;
   fotos: FotoFuente[];
   problemas: Problema[];
-  /** Cosas que no detienen la carga pero conviene saber (fotos que faltan). */
+  /** Cosas que no detienen la carga pero conviene arreglar (fotos que faltan). */
   avisos: string[];
+  /**
+   * Estados válidos que conviene tener a la vista, como un modelo de lote
+   * agotado u oculto: desde el panel son una decisión normal y no un error.
+   */
+  informativos: string[];
+  /**
+   * Claves de la columna `foto` sin archivo en `fotos/` ni miniatura conocida:
+   * quien carga tiene que comprobar que existen en el bucket.
+   */
+  clavesPorComprobar: string[];
 }
 
 const EXTENSIONES = [".jpg", ".jpeg", ".png", ".webp"];
@@ -99,6 +109,8 @@ export async function leerCatalogo(opciones: {
   const { carpeta, previo } = opciones;
   const problemas: Problema[] = [];
   const avisos: string[] = [];
+  const informativos: string[] = [];
+  const clavesPorComprobar: string[] = [];
   const fotos: FotoFuente[] = [];
   const carpetaFotos = join(carpeta, "fotos");
 
@@ -109,9 +121,35 @@ export async function leerCatalogo(opciones: {
     for (const i of p.imagenes ?? []) imagenesPrevias.set(i.clave, i);
   }
 
-  async function imagenDe(tipo: TipoImagen, codigo: string): Promise<ImagenCatalogo[]> {
+  /**
+   * La foto de un registro. **Manda el archivo de `fotos/`**: dejar ahí una
+   * foto nueva la cambia, como siempre. Si no hay archivo, cuenta la columna
+   * `foto` —las claves en S3 que escribe «Exportar» para lo subido desde el
+   * panel—: esas ya están en el bucket y no se procesan ni se suben.
+   */
+  async function imagenDe(
+    tipo: TipoImagen,
+    codigo: string,
+    columna: string[],
+    donde: { archivo: string; fila: number },
+  ): Promise<ImagenCatalogo[]> {
     const ruta = buscarFoto(carpetaFotos, codigo);
-    if (!ruta) return [];
+    if (!ruta) {
+      const prefijo = `${tipo === "producto" ? "productos" : "sets"}/${codigo}/`;
+      const salida: ImagenCatalogo[] = [];
+      for (const clave of columna) {
+        // Solo fotos de este registro y con nombre de huella, igual que el panel.
+        if (!clave.startsWith(prefijo) || !/^[0-9a-f]{12,64}\.(webp|jpg)$/.test(clave.slice(prefijo.length))) {
+          problemas.push({ ...donde, columna: "foto", mensaje: `«${clave}» no es una foto de ${codigo}` });
+          continue;
+        }
+        const guardada = imagenesPrevias.get(clave);
+        if (!guardada) clavesPorComprobar.push(clave);
+        // Sin miniatura conocida, la foto se enseña sin difuminado mientras carga.
+        salida.push(guardada ?? { clave, ...medidas(tipo), blur: "" });
+      }
+      return salida;
+    }
     const origen = await readFile(ruta);
     const clave = claveImagen(tipo, codigo, origen);
     const guardada = imagenesPrevias.get(clave);
@@ -237,7 +275,10 @@ export async function leerCatalogo(opciones: {
       if (!concentracion || !genero || !familia) continue;
 
       const visible = l.siNoConDefecto(fila, "visible", true);
-      const imagenes = await imagenDe("producto", codigo);
+      const imagenes = await imagenDe("producto", codigo, l.lista(fila, "foto"), {
+        archivo: "productos.csv",
+        fila: n,
+      });
       if (imagenes.length === 0 && visible) {
         avisos.push(`productos.csv fila ${n}: ${codigo} (${nombre}) no tiene foto en catalogo/fotos/`);
       }
@@ -306,7 +347,10 @@ export async function leerCatalogo(opciones: {
       }
       const precioAnterior = l.numero(fila, "precio_anterior", n, { min: 1 });
       const visible = l.siNoConDefecto(fila, "visible", true);
-      const imagenes = await imagenDe("set", codigo);
+      const imagenes = await imagenDe("set", codigo, l.lista(fila, "foto"), {
+        archivo: "sets.csv",
+        fila: n,
+      });
       if (imagenes.length === 0 && visible) {
         avisos.push(`sets.csv fila ${n}: ${codigo} (${nombre}) no tiene foto en catalogo/fotos/`);
       }
@@ -335,10 +379,18 @@ export async function leerCatalogo(opciones: {
     const cabecera = filasLote.shift() ?? [];
     const l = new Lector(cabecera, problemas, "lotes.csv");
     l.exigirColumnas(["slug", "nombre", "piezas", "precio", "modelos"]);
+    const vistos = new Set<string>();
     for (const [i, fila] of filasLote.entries()) {
       const n = i + 2;
       const nombre = l.texto(fila, "nombre", n, true);
       const slug = l.texto(fila, "slug", n) || aSlug(nombre);
+      // Un solo espacio de direcciones, como en el panel: un lote con el slug
+      // de un set se cobraría en lugar del set.
+      if (vistos.has(slug) || sets.some((s) => s.slug === slug) || productos.some((p) => p.slug === slug)) {
+        problemas.push({ archivo: "lotes.csv", fila: n, columna: "slug", mensaje: `«${slug}» está repetido` });
+        continue;
+      }
+      vistos.add(slug);
       const piezas = l.numero(fila, "piezas", n, { obligatorio: true, min: 1 });
       const precio = l.numero(fila, "precio", n, { obligatorio: true, min: 1 });
       const modelos = l.lista(fila, "modelos");
@@ -350,7 +402,11 @@ export async function leerCatalogo(opciones: {
         if (!p) {
           problemas.push({ archivo: "lotes.csv", fila: n, columna: "modelos", mensaje: `el código «${m}» no está en productos.csv` });
         } else if (!p.visible || p.agotado) {
-          avisos.push(`lotes.csv fila ${n}: el modelo ${m} (${p.nombre}) está ${p.agotado ? "agotado" : "oculto"}`);
+          // Desde el panel es una decisión normal: un oculto deja de contar en
+          // el valor del lote y un agotado sigue contando con su precio.
+          informativos.push(
+            `lotes.csv fila ${n}: el modelo ${m} (${p.nombre}) está ${p.agotado ? "agotado" : "oculto"}`,
+          );
         }
       }
       if (!slug || piezas === undefined || precio === undefined) continue;
@@ -380,6 +436,8 @@ export async function leerCatalogo(opciones: {
     fotos,
     problemas,
     avisos,
+    informativos,
+    clavesPorComprobar,
   };
 }
 

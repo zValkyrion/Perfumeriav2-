@@ -33,12 +33,12 @@ async function leerJsonLocal(): Promise<Catalogo | undefined> {
 
 async function importar() {
   const previo = await leerJsonLocal();
-  const { catalogo, fotos, problemas, avisos } = await leerCatalogo({
+  const { catalogo, fotos, problemas, avisos, informativos } = await leerCatalogo({
     carpeta: CARPETA,
     previo,
   });
 
-  for (const a of avisos) console.log(`· ${a}`);
+  for (const a of [...avisos, ...informativos]) console.log(`· ${a}`);
 
   if (problemas.length > 0) {
     console.error(`\n✗ ${problemas.length} problema(s). No se escribió nada.\n`);

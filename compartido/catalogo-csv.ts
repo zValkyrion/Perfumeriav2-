@@ -38,6 +38,7 @@ export const COLUMNAS_PRODUCTO = [
   "agotado",
   "visible",
   "nota",
+  "foto",
 ] as const;
 
 export const COLUMNAS_MARCA = ["slug", "nombre", "pais", "fundada", "firma", "descripcion"] as const;
@@ -54,6 +55,7 @@ export const COLUMNAS_SET = [
   "agotado",
   "visible",
   "nota",
+  "foto",
 ] as const;
 
 export const COLUMNAS_LOTE = [
@@ -73,6 +75,12 @@ export const ARCHIVOS_CSV: readonly ArchivoCsv[] = ["productos", "marcas", "sets
 
 const lista = (v: readonly string[] | undefined) => (v ?? []).join("|");
 const siNo = (v: boolean) => (v ? "si" : "");
+/**
+ * La columna oto: las claves en S3 de las fotos. Es lo que hace que un CSV
+ * exportado vuelva a cargar sin perder la foto de algo dado de alta en el
+ * panel, que no tiene archivo en catalogo/fotos/.
+ */
+const claves = (imagenes: readonly { clave: string }[]) => imagenes.map((i) => i.clave).join("|");
 
 /** Las filas de un archivo, con la cabecera primero. */
 export function filasCsv(c: Catalogo, archivo: ArchivoCsv): string[][] {
@@ -112,6 +120,7 @@ export function filasCsv(c: Catalogo, archivo: ArchivoCsv): string[][] {
             siNo(p.agotado),
             p.visible ? "si" : "no",
             p.nota ?? "",
+            claves(p.imagenes),
           ];
         }),
       ];
@@ -142,6 +151,7 @@ export function filasCsv(c: Catalogo, archivo: ArchivoCsv): string[][] {
           siNo(s.agotado),
           s.visible ? "si" : "no",
           s.nota ?? "",
+          claves(s.imagenes),
         ]),
       ];
     case "lotes":

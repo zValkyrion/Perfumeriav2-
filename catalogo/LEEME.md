@@ -112,10 +112,17 @@ categoría y los filtros.
 | `ocasion` | `Diario`, `Noche`, `Oficina`, `Cita`, `Evento`, `Verano`, `Invierno` | Sin filtro por ocasión |
 | `anio`, `origen` | Año de lanzamiento y país | No se muestran: mejor nada que un dato inventado |
 | `nota` | Para el equipo: de dónde salió el dato o qué falta confirmar. **No se publica** | Vacía |
+| `foto` | La lleva el CSV que baja **Exportar**: la clave en S3 de la foto (`productos/0001/…webp`). No se escribe a mano | Se usa la de `fotos/` |
+
+**La foto de `fotos/` manda sobre la columna `foto`.** Para cambiar una foto
+basta con dejar el archivo nuevo en `fotos/`, aunque el CSV venga exportado. La
+columna solo cuenta cuando no hay archivo, que es el caso de lo que se subió
+desde el panel: así un CSV exportado vuelve a cargar sin perder esas fotos.
 
 `sets.csv` lleva `codigo`, `nombre`, `precio` y opcionalmente `slug`, `marca`,
 `precio_anterior`, `incluye` (separado por `|`), `descripcion`, `agotado`,
-`visible` y `nota`. `lotes.csv` lleva `slug`, `nombre`, `piezas`, `precio` y
+`visible`, `nota` y `foto`. Productos, sets y lotes no pueden repetir `slug`
+entre sí. `lotes.csv` lleva `slug`, `nombre`, `piezas`, `precio` y
 `modelos` (códigos de productos separados por `|`); las piezas se reparten entre
 los modelos.
 
@@ -132,9 +139,14 @@ enlace viejo daría 404 y se perdería el posicionamiento en Google.
 
 **Borrar una fila la borra de la tienda en el siguiente despliegue.** Si solo
 quieres que deje de verse, pon `visible` en `no`: el producto sigue en la base,
-no se publica y no se puede cobrar. Lo que se dio de alta en el panel no está en
-el CSV y la carga no lo toca; lo que se borró en el panel no vuelve aunque siga
-aquí (la carga avisa para que lo quites).
+no se publica y no se puede cobrar. Lo que se dio de alta en el panel no lo
+borra la carga aunque no esté en el CSV (si exportaste, ya está, con su foto en
+la columna `foto`); lo que se borró en el panel no vuelve aunque siga aquí (la
+carga avisa para que lo quites).
+
+**Un modelo de lote agotado u oculto no es un error.** La carga lo menciona,
+pero no se detiene: un agotado sigue contando en el valor del lote con su
+precio, y uno oculto deja de contar.
 
 **Una foto nueva se detecta sola.** El nombre del archivo publicado lleva la
 huella de la foto, así que cambiar `fotos/0001.jpg` sube la nueva y la tienda la

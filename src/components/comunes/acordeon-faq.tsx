@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { jsonLd } from "@/lib/jsonld";
 
 export interface ItemFAQ {
   p: string;
@@ -67,7 +68,8 @@ export function FAQJsonLd({ items }: { items: readonly ItemFAQ[] }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(datos) }}
+      // Con `jsonLd`, que escapa `<`, como todo el JSON-LD del sitio.
+      dangerouslySetInnerHTML={{ __html: jsonLd(datos) }}
     />
   );
 }

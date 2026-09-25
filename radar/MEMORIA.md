@@ -204,10 +204,12 @@ con roaming, mandar la imagen por API Gateway es pagar dos veces la misma
 transferencia y arriesgarse al límite de 6 MB de payload.
 
 > **El cliente de S3 va con `requestChecksumCalculation: "WHEN_REQUIRED"`.**
-> Sin eso, el SDK mete en cada URL prefirmada de subida la suma CRC32 de un
-> cuerpo vacío (`x-amz-checksum-crc32=AAAAAA==`) y S3 rechaza la foto real que
-> llega por ella. Afecta a las dos subidas: la del panel de catálogo y la de las
-> fotos de proveedores.
+> Sin eso, el SDK (≥ 3.729) mete en cada URL prefirmada de subida la suma CRC32
+> de un cuerpo vacío (`x-amz-checksum-crc32=AAAAAA==`). Se creyó que S3
+> rechazaría la foto real por eso, pero **no pasa**: la prueba de humo de la CI
+> subió y bajó siete fotos por esas URL en producción, entre agosto y
+> septiembre, y S3 las aceptó todas. El ajuste se queda porque quita un
+> parámetro que no sirve de nada, no porque arregle algo.
 
 ---
 
@@ -262,7 +264,16 @@ Excel suba el precio. Si los dos cambiaron el mismo campo gana el CSV y la carga
 lo avisa. Lo creado en el panel (sin `fuente`) nunca lo borra la carga; lo que
 vino del CSV y se quitó de él, sí. Borrar en el panel algo del CSV deja la fila
 con `borrado` para que la carga no lo resucite. `huella` es la de `datos` con
-las claves ordenadas (`estable`), para que el panel y el CSV coincidan.
+las claves ordenadas (`estable`), para que el panel y el CSV coincidan. Antes
+de escribir, la carga revisa el catálogo **ya mezclado** (`filasTrasPlan` +
+`incoherencias`): si dejaría un perfume sin su marca, un lote con modelos que
+no existen o dos registros con la misma dirección, no escribe nada.
+
+Productos, sets y lotes comparten un solo espacio de `slug`: sets y lotes viajan
+en el carrito por slug, y uno repetido haría cobrar el lote en lugar del set.
+En el valor de un lote, **un modelo oculto cuenta cero** (igual que uno que ya
+no existe); si contara en el servidor y no en la tienda, el tope de descuento
+daría dos totales distintos.
 
 Las filas `USER#` **no llevan `GSI1PK`**. El índice es disperso, así que no las
 ve: `GET /proveedores` sigue devolviendo solo fichas. Es lo que mantiene
@@ -461,6 +472,51 @@ del módulo.
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
 
+### 2026-09-24 · Revisión adversarial de la fase 3: once defectos corregidos
+
+- **Por qué:** la fase 3 salió a producción el mismo día que se escribió. Se
+  revisó después, en cuatro frentes (API y seguridad, fusión del CSV, tienda y
+  cobro, panel) y cada hallazgo pasó por un verificador que intentó refutarlo
+  con el código real. De 21 hallazgos quedaron 11 reales; nadie había usado el
+  panel en producción todavía.
+- **Seguridad:** un `</script>` en un texto del catálogo cerraba la etiqueta del
+  JSON-LD de la ficha y corría en cada visita, en el mismo origen que el panel
+  y sus tokens. `jsonLd` escapa `<` (también el FAQ).
+- **Cobro:** con un modelo de lote oculto, el servidor y la tienda calculaban
+  distinto el valor del lote y el tope del 40% daba dos totales (se cobraban
+  $46.80 más de lo enseñado); ahora el oculto cuenta cero en los dos. Un lote
+  podía tomar el slug de un set y cobrarse en su lugar. Un precio de 0.004 pasaba
+  la validación y se guardaba como $0. El carrito contaba en el total algo que la
+  disponibilidad vendía pero la tienda compilada no podía enseñar ni mandar.
+- **Datos:** «Exportar» no llevaba las fotos, así que el CSV exportado tumbaba
+  la CI y la carga a mano borraba la foto de lo dado de alta en el panel: nueva
+  columna `foto` (manda el archivo de `fotos/`; la columna, cuando no hay). La
+  larga que deduce el lector (= corta) se tomaba por un cambio del CSV y pisaba
+  la del panel. La carga no revisaba el resultado mezclado (ver §4). Los avisos
+  de «modelo de lote agotado u oculto» pasan a informativos: desde el panel es
+  un estado válido y bloqueaban la CI.
+- **Panel:** «Recargar» tras un 409 renovaba la huella pero no el formulario, y
+  el siguiente guardado deshacía en silencio el cambio del otro administrador;
+  el formulario va atado a la huella y avisa que hay que rehacer lo propio. Con
+  el editor abierto más de una hora, guardar daba 401 y la única salida perdía
+  lo tecleado: cada llamada renueva el token antes (`tokenVigente`). Errores
+  del servidor en campos que el formulario no marcaba quedaban escondidos: se
+  listan en el aviso y se pintan en todos los campos. Un número opcional mal
+  tecleado se descartaba en silencio: ahora lo rechaza el servidor.
+- **Refutados** (con el código y el flujo real): la confirmación que recotiza,
+  la línea del carrito con datos compilados, etiquetas de precio no aplicadas en
+  vivo, el pixel con agotados, la copia de 30 s tras un 409 y la coma en las
+  listas.
+- **En producción (solo lectura):** la primera carga tras el despliegue anotó la
+  `fuente` de las 393 filas sin mover `generado` (no hubo recompilación); META
+  quedó con `publicado`; `probar-tienda` pasó en la CI. La suma CRC32 de las URL
+  prefirmadas **no** rompía las subidas (§3): se corrige lo dicho el 2026-09-23.
+- **Verificado:** 65 pruebas del catálogo (cada defecto de datos, cobro y
+  seguridad tiene la suya) y 24 de precio; la prueba de punta a punta con servicios falsos, 48 de 48, incluida la
+  columna `foto` contra el bucket; los dos builds. En el navegador: el 409 con
+  «Recargar» conserva el agotado del otro y el nombre corregido del propio, y
+  los errores del servidor salen en el aviso y bajo su campo.
+
 ### 2026-09-23 · El catálogo se edita desde el panel
 
 Fase 3 de tres. Las fases 1 y 2 quedaron en producción el mismo día: `GET
@@ -491,13 +547,13 @@ salen de CloudFront con caché de un año.
   META qué catálogo compiló (`catalogo:publicado`). Hace falta
   `Elrey_github_token`; sin él, todo lo demás funciona y publica el siguiente
   push.
-- **Encontrado de paso:** las URL prefirmadas de subida llevaban la suma CRC32
-  de un cuerpo vacío (comportamiento nuevo del SDK de S3) y S3 habría rechazado
-  cualquier foto real. El cliente pasa a `WHEN_REQUIRED`; arregla también la
-  subida de fotos de proveedores, que usa el mismo cliente.
+- **De paso:** las URL prefirmadas de subida llevaban la suma CRC32 de un
+  cuerpo vacío (comportamiento nuevo del SDK de S3). El cliente pasa a
+  `WHEN_REQUIRED`. *Corrección del 2026-09-24:* aquí se decía que S3 habría
+  rechazado las fotos; la verificación en producción lo desmintió (§3).
 - **Verificado:** 49 pruebas del catálogo, 24 de precio y las de la tienda en
   verde. De punta a punta, con la Lambda empaquetada contra DynamoDB y S3 falsos
-  (51 comprobaciones): la puerta (sin sesión 401; proveedores y PIN 403), el
+  (46 comprobaciones; el mensaje del commit dice 51 por un error de conteo): la puerta (sin sesión 401; proveedores y PIN 403), el
   guardado con huella vieja (409), datos inválidos (422 con su campo), el alta
   con foto subida por la URL prefirmada, borrar lo que se usa (409), la marca de
   borrado, la exportación, y la carga del CSV respetando el agotado del panel

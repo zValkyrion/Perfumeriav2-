@@ -217,7 +217,13 @@ export function resumenCarrito(
   cupon: string | null = null,
   opciones: OpcionesResumen = {},
 ): ResumenCarrito {
-  const c = cotizar(items, opciones.fuente ?? fuenteVigente(), {
+  // Lo que esta tienda compilada no conoce no tiene línea que pintar ni viaja
+  // en el pedido (que sale de `lineas`), así que tampoco entra a la cuenta.
+  // Pasa con algo que se ocultó, se publicó y se volvió a mostrar: la
+  // disponibilidad ya lo vende, pero hasta la siguiente publicación no hay
+  // ficha. Contarlo haría que el checkout enseñe un total y se cobre otro.
+  const conocidos = items.filter((i) => nombreDe(i) !== null);
+  const c = cotizar(conocidos, opciones.fuente ?? fuenteVigente(), {
     cupon,
     metodo: opciones.metodo ?? null,
     envio: opciones.envio ?? null,
