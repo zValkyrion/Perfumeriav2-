@@ -144,6 +144,12 @@ export default $config({
           // sigue entrando por invitación, porque el grupo no se lo puede
           // poner nadie más que un admin.
           adminCreateUserConfig: { allowAdminCreateUserOnly: false },
+          // Quien cambia su correo desde la cuenta sigue entrando con el
+          // anterior hasta confirmar el nuevo con el código. Sin esto, un correo
+          // mal escrito dejaba la cuenta atada a una dirección que nadie lee.
+          userAttributeUpdateSettings: {
+            attributesRequireVerificationBeforeUpdates: ["email"],
+          },
           // Solo el correo sirve para recuperar la contraseña: no hay SMS.
           accountRecoverySetting: {
             recoveryMechanisms: [{ name: "verified_email", priority: 1 }],

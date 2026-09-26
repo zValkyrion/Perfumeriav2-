@@ -109,6 +109,15 @@ export function leerPedidosRemotos() {
 }
 
 /**
+ * Borra el carrito, las direcciones y «Mis pedidos» del servidor. Se llama
+ * antes de eliminar la cuenta, mientras el token todavía sirve. Los pedidos del
+ * negocio se conservan: son ventas.
+ */
+export function borrarDatosRemotos() {
+  return pedir<{ ok: true }>("/cuenta", { method: "DELETE" });
+}
+
+/**
  * Registra el pedido en el servidor, que pone el folio y el total.
  *
  * A diferencia del resto de este archivo **no exige sesión**: casi todos los

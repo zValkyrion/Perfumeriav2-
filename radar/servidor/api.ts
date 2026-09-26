@@ -246,7 +246,12 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
     // son de quien inició sesión, sea cliente o del equipo. Lo que se exige aquí
     // no es un grupo sino una identidad propia — el carrito se guarda bajo el
     // `sub`, y el PIN compartido no identifica a nadie.
-    if (ruta === "/carrito" || ruta === "/pedidos" || ruta === "/direcciones") {
+    if (
+      ruta === "/carrito" ||
+      ruta === "/pedidos" ||
+      ruta === "/direcciones" ||
+      ruta === "/cuenta"
+    ) {
       if (!tieneIdentidadPropia(sesion)) {
         return json(403, {
           error: "El carrito necesita una cuenta propia, no el código del equipo",
@@ -263,6 +268,7 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
         return ponerDirecciones(evento, sesion.sub);
       }
       if (metodo === "GET" && ruta === "/pedidos") return verPedidos(sesion.sub);
+      if (metodo === "DELETE" && ruta === "/cuenta") return borrarCuenta(sesion.sub);
       return json(405, { error: `${metodo} no va en ${ruta}` });
     }
 
@@ -434,6 +440,39 @@ async function ponerDirecciones(evento: Evento, sub: string) {
 
 async function verPedidos(sub: string) {
   return json(200, { pedidos: await listarPedidos(dynamo, TABLA, sub) });
+}
+
+/**
+ * Borra lo que la tienda guarda de una cuenta: carrito, direcciones y su copia
+ * de «Mis pedidos», todo lo que vive bajo `USER#<sub>`.
+ *
+ * Los pedidos del negocio (`PEDIDO#<folio>`) **se quedan**: son ventas, y la
+ * tienda tiene que poder rastrearlas y facturarlas aunque el cliente ya no
+ * tenga cuenta. La tienda llama a esto justo antes de borrar la cuenta de
+ * Cognito, mientras el token todavía vale.
+ */
+async function borrarCuenta(sub: string) {
+  let borrados = 0;
+  let desde: Record<string, unknown> | undefined;
+  do {
+    const r = await dynamo.send(
+      new QueryCommand({
+        TableName: TABLA,
+        KeyConditionExpression: "PK = :pk",
+        ExpressionAttributeValues: { ":pk": `USER#${sub}` },
+        ProjectionExpression: "PK, SK",
+        ExclusiveStartKey: desde,
+      }),
+    );
+    for (const item of r.Items ?? []) {
+      await dynamo.send(
+        new DeleteCommand({ TableName: TABLA, Key: { PK: item.PK, SK: item.SK } }),
+      );
+      borrados++;
+    }
+    desde = r.LastEvaluatedKey;
+  } while (desde);
+  return json(200, { ok: true, borrados });
 }
 
 /** Fecha de calendario en México: un pedido de las 8 pm no es de mañana. */

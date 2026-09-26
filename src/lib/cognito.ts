@@ -71,6 +71,8 @@ function traducir(tipo: string, mensaje?: string): string {
       return "Falta confirmar tu correo con el código que te enviamos";
     case "UsernameExistsException":
       return "Ya hay una cuenta con ese correo. Inicia sesión o recupera tu contraseña.";
+    case "AliasExistsException":
+      return "Ese correo ya es de otra cuenta";
     case "CodeMismatchException":
       return "El código no es correcto";
     case "ExpiredCodeException":
@@ -94,13 +96,24 @@ function traducir(tipo: string, mensaje?: string): string {
 
 export type Tokens = {
   idToken: string;
+  /**
+   * El de acceso. La API de la tienda no lo usa, pero Cognito lo exige para
+   * que el usuario toque su propia cuenta: editar datos, cambiar contraseña o
+   * borrarla.
+   */
+  accessToken: string;
   refreshToken: string;
-  /** Momento (ms) en que caduca el idToken. */
+  /** Momento (ms) en que caducan los dos: Cognito los emite con la misma vida. */
   vence: number;
 };
 
 type RespuestaAuth = {
-  AuthenticationResult?: { IdToken: string; RefreshToken?: string; ExpiresIn: number };
+  AuthenticationResult?: {
+    IdToken: string;
+    AccessToken: string;
+    RefreshToken?: string;
+    ExpiresIn: number;
+  };
   ChallengeName?: string;
   Session?: string;
 };
@@ -110,6 +123,7 @@ function tokensDe(r: RespuestaAuth): Tokens {
   if (!a?.IdToken) throw new ErrorCognito("El servidor no devolvió la sesión", "SinSesion");
   return {
     idToken: a.IdToken,
+    accessToken: a.AccessToken ?? "",
     refreshToken: a.RefreshToken ?? "",
     vence: Date.now() + a.ExpiresIn * 1000,
   };
@@ -206,4 +220,59 @@ export async function restablecerContrasena(
     ConfirmationCode: codigo,
     Password: nueva,
   });
+}
+
+/* ── La cuenta propia (piden el token de acceso) ────────────────────────── */
+
+export type Atributo = { Name: string; Value: string };
+
+/**
+ * Cambia atributos de la cuenta.
+ *
+ * Si entre ellos va el correo, Cognito **no lo cambia todavía**: manda un
+ * código al correo nuevo y el anterior sigue siendo el de la cuenta hasta que
+ * se confirme. Así nadie se queda fuera por escribir mal su correo nuevo.
+ */
+export async function actualizarAtributos(acceso: string, atributos: Atributo[]) {
+  await llamar("UpdateUserAttributes", { AccessToken: acceso, UserAttributes: atributos });
+}
+
+export async function borrarAtributos(acceso: string, nombres: string[]) {
+  await llamar("DeleteUserAttributes", { AccessToken: acceso, UserAttributeNames: nombres });
+}
+
+export async function verificarCorreo(acceso: string, codigo: string) {
+  await llamar("VerifyUserAttribute", {
+    AccessToken: acceso,
+    AttributeName: "email",
+    Code: codigo,
+  });
+}
+
+export async function reenviarCodigoCorreo(acceso: string) {
+  await llamar("GetUserAttributeVerificationCode", {
+    AccessToken: acceso,
+    AttributeName: "email",
+  });
+}
+
+export async function cambiarContrasenaConSesion(
+  acceso: string,
+  actual: string,
+  nueva: string,
+) {
+  await llamar("ChangePassword", {
+    AccessToken: acceso,
+    PreviousPassword: actual,
+    ProposedPassword: nueva,
+  });
+}
+
+/** Revoca las sesiones de todos los dispositivos, incluido este. */
+export async function cerrarSesionEnTodos(acceso: string) {
+  await llamar("GlobalSignOut", { AccessToken: acceso });
+}
+
+export async function eliminarCuenta(acceso: string) {
+  await llamar("DeleteUser", { AccessToken: acceso });
 }

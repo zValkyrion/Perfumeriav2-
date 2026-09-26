@@ -25,6 +25,7 @@ import { formatoFechaLarga } from "@/lib/format";
 import { useTienda } from "@/store/tienda";
 import type { Direccion, EstatusPedido, Pedido } from "@/types";
 import { NivelCliente } from "./nivel-cliente";
+import { MisDatosCuenta } from "./mis-datos";
 import { cn } from "@/lib/utils";
 
 const COLOR_ESTATUS: Record<EstatusPedido, string> = {
@@ -243,12 +244,21 @@ export function VistaCuenta() {
         </TabsContent>
 
         <TabsContent value="datos">
+          {sesion.perfil ? (
+            <MisDatosCuenta
+              key={sesion.perfil.sub}
+              sesion={sesion}
+              perfil={sesion.perfil}
+              piezas={piezasCompradas}
+            />
+          ) : (
           <MisDatos
             nombre={nombre}
             correo={correo}
             piezas={piezasCompradas}
             reales={pedidos.reales}
           />
+          )}
         </TabsContent>
       </Tabs>
     </Contenedor>

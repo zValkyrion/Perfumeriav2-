@@ -191,6 +191,9 @@ export function useSesion(): Sesion {
       CLAVE_VENCE,
       CLAVE_EVALUADOR,
       CLAVE_LOCAL,
+      // Los guarda la tienda para editar la cuenta; se van con la sesión.
+      "radar:acceso",
+      "radar:acceso_vence",
     ]) {
       localStorage.removeItem(c);
     }

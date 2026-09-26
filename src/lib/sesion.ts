@@ -3,6 +3,13 @@
 import { useEffect, useSyncExternalStore } from "react";
 import {
   ErrorCognito,
+  actualizarAtributos,
+  borrarAtributos,
+  cambiarContrasenaConSesion,
+  cerrarSesionEnTodos,
+  eliminarCuenta,
+  reenviarCodigoCorreo,
+  verificarCorreo,
   confirmarRegistro,
   fijarNuevaContrasena,
   hayCognito,
@@ -34,6 +41,10 @@ const CLAVE_TOKEN = "radar:token";
 const CLAVE_REFRESCO = "radar:refresco";
 const CLAVE_VENCE = "radar:vence";
 const CLAVE_EVALUADOR = "radar:evaluador";
+// El de acceso lleva su propia fecha: el panel renueva el de identidad y
+// `radar:vence` sin saber de este, así que no se puede fiar de ella.
+const CLAVE_ACCESO = "radar:acceso";
+const CLAVE_ACCESO_VENCE = "radar:acceso_vence";
 
 export function hayLogin(): boolean {
   return hayCognito();
@@ -43,6 +54,8 @@ export type Perfil = {
   correo: string;
   nombre: string;
   grupos: string[];
+  /** WhatsApp a 10 dígitos, sin el +52. Vacío si no lo ha dado. */
+  telefono: string;
   /**
    * El identificador estable de Cognito, el mismo con el que la API guarda el
    * carrito. Se usa el `sub` y no el correo: el correo se puede cambiar y el
@@ -66,6 +79,7 @@ export function leerPerfil(idToken: string): Perfil | null {
       correo: carga.email ?? "",
       nombre: carga.name ?? carga.email ?? "",
       grupos: carga["cognito:groups"] ?? [],
+      telefono: String(carga.phone_number ?? "").replace(/^\+52/, ""),
       sub: carga.sub ?? "",
     };
   } catch {
@@ -133,6 +147,10 @@ function guardar(t: Tokens): Perfil {
   localStorage.setItem(CLAVE_TOKEN, t.idToken);
   if (t.refreshToken) localStorage.setItem(CLAVE_REFRESCO, t.refreshToken);
   localStorage.setItem(CLAVE_VENCE, String(t.vence));
+  if (t.accessToken) {
+    localStorage.setItem(CLAVE_ACCESO, t.accessToken);
+    localStorage.setItem(CLAVE_ACCESO_VENCE, String(t.vence));
+  }
   // El panel firma las fichas con este nombre.
   localStorage.setItem(CLAVE_EVALUADOR, p.nombre);
   avisar();
@@ -140,7 +158,14 @@ function guardar(t: Tokens): Perfil {
 }
 
 function borrar() {
-  for (const c of [CLAVE_TOKEN, CLAVE_REFRESCO, CLAVE_VENCE, CLAVE_EVALUADOR]) {
+  for (const c of [
+    CLAVE_TOKEN,
+    CLAVE_REFRESCO,
+    CLAVE_VENCE,
+    CLAVE_EVALUADOR,
+    CLAVE_ACCESO,
+    CLAVE_ACCESO_VENCE,
+  ]) {
     localStorage.removeItem(c);
   }
   avisar();
@@ -153,37 +178,57 @@ function borrar() {
  * cada llamada si está por vencer. También es lo que hace aparecer un grupo
  * recién asignado: el token nuevo ya lo trae.
  */
-let renovando: Promise<string | null> | null = null;
+let renovando: Promise<Tokens | null> | null = null;
+
+/**
+ * Pide tokens nuevos con el de refresco. `null` si no se pudo.
+ *
+ * Varias llamadas a la vez comparten una sola renovación. Si el refresco venció
+ * o lo revocaron, la sesión se acabó de verdad y se cierra; sin red, en cambio,
+ * se sigue con lo que hay.
+ */
+function renovar(): Promise<Tokens | null> {
+  const refresco = localStorage.getItem(CLAVE_REFRESCO);
+  // Sesión del código de equipo del panel: no hay nada que renovar.
+  if (!refresco) return Promise.resolve(null);
+
+  renovando ??= refrescar(refresco)
+    .then((t) => {
+      guardar(t);
+      return t;
+    })
+    .catch((e) => {
+      if (e instanceof ErrorCognito && e.tipo === "NotAuthorizedException") borrar();
+      return null;
+    })
+    .finally(() => {
+      renovando = null;
+    });
+  return renovando;
+}
 
 export async function tokenVigente(): Promise<string | null> {
   const guardado = localStorage.getItem(CLAVE_TOKEN);
   if (!guardado) return null;
   const vence = Number(localStorage.getItem(CLAVE_VENCE) ?? 0);
   if (vence > Date.now() + 60_000) return guardado;
-  const refresco = localStorage.getItem(CLAVE_REFRESCO);
-  // Sesión del código de equipo del panel: no hay nada que renovar.
-  if (!refresco) return guardado;
+  const t = await renovar();
+  if (t) return t.idToken;
+  // Sin red se sigue con el que había; si la sesión se cerró, ya no hay token.
+  return localStorage.getItem(CLAVE_TOKEN);
+}
 
-  // Varias llamadas a la vez comparten una sola renovación.
-  renovando ??= refrescar(refresco)
-    .then((t) => {
-      guardar(t);
-      return t.idToken;
-    })
-    .catch((e) => {
-      // El refresco venció o lo revocaron: la sesión se acabó de verdad. Sin
-      // red, en cambio, se sigue con lo que hay y la API dirá lo que tenga que
-      // decir.
-      if (e instanceof ErrorCognito && e.tipo === "NotAuthorizedException") {
-        borrar();
-        return null;
-      }
-      return guardado;
-    })
-    .finally(() => {
-      renovando = null;
-    });
-  return renovando;
+/** El token de acceso vigente, el que pide Cognito para tocar la cuenta. */
+async function accesoVigente(): Promise<string> {
+  const guardado = localStorage.getItem(CLAVE_ACCESO);
+  const vence = Number(localStorage.getItem(CLAVE_ACCESO_VENCE) ?? 0);
+  // El panel inicia y cierra sesión sin tocar esta clave: lo guardado puede ser
+  // de otra persona que usó este navegador. Solo vale si es de la cuenta actual.
+  const propio = guardado !== null && leerPerfil(guardado)?.sub === perfilGuardado()?.sub;
+  if (guardado && propio && vence > Date.now() + 60_000) return guardado;
+  const t = await renovar();
+  if (t?.accessToken) return t.accessToken;
+  throw new ErrorCognito("Tu sesión venció. Vuelve a iniciar sesión.", "SinSesion");
 }
 
 /* ── Acciones ───────────────────────────────────────────────────────────── */
@@ -289,6 +334,107 @@ async function restablecer(
   return "ok" in r && r.ok ? r : { ok: true, perfil: null };
 }
 
+/* ── La cuenta, con sesión iniciada ─────────────────────────────────────── */
+
+/**
+ * Hace algo con el token de acceso y trae un token de identidad nuevo, para
+ * que el perfil que se pinta refleje el cambio en el acto.
+ */
+async function conAcceso(fn: (acceso: string) => Promise<void>): Promise<Hecho> {
+  try {
+    await fn(await accesoVigente());
+    await renovar();
+    return { ok: true };
+  } catch (e) {
+    return fallo(e);
+  }
+}
+
+/** Nombre y WhatsApp. El teléfono vacío se borra de la cuenta. */
+async function actualizarPerfil(datos: { nombre: string; telefono: string }): Promise<Hecho> {
+  const nombre = datos.nombre.trim();
+  const telefono = datos.telefono.replace(/\D/g, "");
+  if (!nombre) return { ok: false, error: "Escribe tu nombre" };
+  if (telefono && telefono.length !== 10) {
+    return { ok: false, error: "El WhatsApp debe tener 10 dígitos" };
+  }
+  return conAcceso(async (acceso) => {
+    await actualizarAtributos(acceso, [{ Name: "name", Value: nombre }]);
+    if (telefono) {
+      await actualizarAtributos(acceso, [{ Name: "phone_number", Value: `+52${telefono}` }]);
+    } else if (perfilGuardado()?.telefono) {
+      await borrarAtributos(acceso, ["phone_number"]);
+    }
+  });
+}
+
+/**
+ * Pide cambiar el correo. Llega un código al correo nuevo, y hasta confirmarlo
+ * se sigue entrando con el de antes.
+ */
+function cambiarCorreo(nuevo: string): Promise<Hecho> {
+  return conAcceso((acceso) =>
+    actualizarAtributos(acceso, [{ Name: "email", Value: nuevo.trim() }]),
+  );
+}
+
+function confirmarCorreo(codigo: string): Promise<Hecho> {
+  return conAcceso((acceso) => verificarCorreo(acceso, codigo.trim()));
+}
+
+function reenviarCodigoDeCorreo(): Promise<Hecho> {
+  return conAcceso((acceso) => reenviarCodigoCorreo(acceso));
+}
+
+async function cambiarMiContrasena(actual: string, nueva: string): Promise<Hecho> {
+  const r = await conAcceso((acceso) => cambiarContrasenaConSesion(acceso, actual, nueva));
+  // Aquí «no autorizado» solo puede ser una cosa.
+  if (!r.ok && r.error === "Correo o contraseña incorrectos") {
+    return { ok: false, error: "La contraseña actual no es correcta" };
+  }
+  return r;
+}
+
+/** Cierra la sesión en todos los dispositivos, este incluido. */
+async function salirDeTodos(): Promise<Hecho> {
+  try {
+    await cerrarSesionEnTodos(await accesoVigente());
+  } catch (e) {
+    return fallo(e);
+  }
+  borrar();
+  return { ok: true };
+}
+
+/**
+ * Elimina la cuenta. Pide la contraseña otra vez: es lo único que no se puede
+ * deshacer, y una sesión olvidada abierta en otro equipo no debe bastar.
+ *
+ * Los datos de la tienda en el servidor los borra antes quien llama
+ * (`borrarDatosRemotos`), porque después ya no habría token con qué hacerlo.
+ */
+async function eliminarMiCuenta(
+  contrasena: string,
+  antes?: () => Promise<unknown>,
+): Promise<Hecho> {
+  const correo = perfilGuardado()?.correo;
+  if (!correo) return { ok: false, error: "No hay sesión" };
+  try {
+    const r = await iniciarSesion(correo, contrasena);
+    if (r.tipo !== "entrado") return { ok: false, error: "No se pudo comprobar la contraseña" };
+    guardar(r.tokens);
+    await antes?.();
+    await eliminarCuenta(r.tokens.accessToken);
+  } catch (e) {
+    const f = fallo(e);
+    return f.error === "Correo o contraseña incorrectos"
+      ? { ok: false, error: "La contraseña no es correcta" }
+      : f;
+  }
+  borrar();
+  return { ok: true };
+}
+
 const acciones = {
   entrar,
   cambiarContrasena,
@@ -298,6 +444,13 @@ const acciones = {
   recuperar,
   restablecer,
   salir: borrar,
+  actualizarPerfil,
+  cambiarCorreo,
+  confirmarCorreo,
+  reenviarCodigoDeCorreo,
+  cambiarMiContrasena,
+  salirDeTodos,
+  eliminarMiCuenta,
 };
 
 export type Sesion = typeof acciones & {
