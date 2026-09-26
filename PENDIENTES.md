@@ -109,27 +109,18 @@ el canonical no se movió cuando pasamos a CloudFront.
 
 ---
 
-## 4. Registro de clientes (fase 4 del plan de autenticación)
+## 4. Registro de clientes — ✅ hecho el 2026-09-26
 
-**Por qué.** Hoy nadie puede crearse una cuenta: el pool está en alta solo por
-administrador y la pantalla remite a WhatsApp.
+Registro abierto con código por correo, recuperación de contraseña, disparador
+post-confirmación que mete cada alta en `clientes`, y «Mis datos» para editar
+nombre, WhatsApp, correo y contraseña, cerrar sesión en todos lados o eliminar
+la cuenta. Detalle en la bitácora de [radar/MEMORIA.md](radar/MEMORIA.md).
 
-**Cómo.**
-
-1. **SES primero**, porque es lo único con espera externa: verificar el dominio y
-   pedir salir del sandbox. Tarda uno o dos días.
-2. En `radar/sst.config.ts`, quitar `allowAdminCreateUserOnly: true` y conectar
-   SES como proveedor de correo del pool.
-3. Añadir un disparador *post-confirmación* (Lambda) que meta a cada alta en el
-   grupo `clientes` — **nunca en otro**. Es lo que impide que alguien se
-   auto-asigne permisos al registrarse.
-4. En la tienda, añadir «Crear cuenta» junto al formulario de
-   `src/components/cuenta/inicio-sesion.tsx`, reutilizando el mismo cliente de
-   Cognito.
-
-**Esfuerzo:** 4–5 horas, más la espera de SES.
-
-Contexto completo en [AUTENTICACION_PLAN.md](AUTENTICACION_PLAN.md).
+**Queda pendiente — SES.** El correo del código lo manda Cognito desde su
+dirección, con un tope de **~50 correos al día**. Basta para arrancar; cuando el
+registro crezca (o con el dominio propio, §3), verificar el dominio en SES, pedir
+salir del sandbox (uno o dos días) y conectarlo al pool en `radar/sst.config.ts`
+(`email: { from: … }` del componente `Elrey_usuarios`).
 
 ---
 
@@ -201,10 +192,8 @@ una ficha de producto en un teléfono real.
   `JSON.stringify`). Si alguna vez importa, habría que empaquetarlas aparte.
 - ~~Aviso de Node 20 en la CI.~~ ✅ Las acciones subieron a su versión actual y
   la CI corre Node 22, que además hace falta para `probar-tienda`.
-- **El atajo «Panel» de la cabecera no desaparece al cerrar sesión** hasta que se
-  recarga: `src/components/comunes/acceso-panel.tsx` lee `localStorage` solo al
-  montarse. Ya existe la forma de arreglarlo —`useSesion` avisa a todas sus
-  copias desde el 2026-08-20—, es cambiarlo por el hook.
+- ~~El atajo «Panel» de la cabecera no desaparece al cerrar sesión.~~ ✅ Usa
+  `useSesion` desde el 2026-09-26: aparece y desaparece al instante.
 
 ---
 
@@ -276,8 +265,8 @@ que costó descubrir:
   los ejes de evaluación fabrica datos y falsea el puntaje.
 - **Las banderas rojas topan el score en 39**, no restan. Sin el tope, la suma
   ponderada cuela al verde a un proveedor que es un riesgo legal.
-- **El selector «Cliente / Equipo» no es un permiso**, solo un destino. El permiso
-  vive en el token y lo comprueba la API.
+- **El botón del panel no es un permiso**, solo un enlace. El permiso vive en el
+  grupo del token y lo comprueba la API; la tienda solo decide qué pintar.
 - **El canonical de la tienda no se mueve** hasta que exista el dominio.
 - **Desplegar desde la CI**, no desde una laptop con Windows: allí Next genera
   los payloads de navegación con otro nombre y provoca 403 en cada prefetch.

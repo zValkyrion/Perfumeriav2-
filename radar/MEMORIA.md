@@ -345,8 +345,11 @@ Se verifica el **ID token** y no el de acceso porque solo aquel trae el correo,
 y sin correo la ficha quedaría firmada por un identificador que no le dice nada
 a nadie — la trazabilidad es justo lo que se ganaba al salir del PIN compartido.
 
-Sin autoservicio por ahora: las cuentas las crea un admin. Alta, baja y retirada
-del PIN, en [`infra/usuarios.md`](infra/usuarios.md).
+**Registro abierto** desde la tienda: el disparador post-confirmación
+(`servidor/alta-cliente.ts`) mete cada alta en `clientes` y en nada más. Todos
+entran por la misma puerta; a `admins` y `proveedores` les aparece el panel. El
+equipo se crea por invitación o se sube de grupo a mano. Alta, baja, cambio de
+grupo y retirada del PIN, en [`infra/usuarios.md`](infra/usuarios.md).
 
 **Sin señal se sigue entrando** si ya se entró antes: el token de identidad dura
 una hora y el de refresco 90 días, así que una gira entera cabe en un solo
@@ -471,6 +474,59 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-09-26 · La cuenta se maneja entera desde «Mis datos»
+
+- **Por qué:** con el registro abierto, el cliente no tenía cómo corregir su
+  nombre, dar su WhatsApp, cambiar de correo o de contraseña, ni irse. Todo eso
+  obligaba a escribirnos.
+- **Implementación:** `src/components/cuenta/mis-datos.tsx`, un bloque por
+  acción (un formulario único obligaba a reescribir la contraseña para cambiar
+  el teléfono). Cognito exige el **token de acceso** para tocar la cuenta, así
+  que la sesión ahora también guarda `radar:acceso` con su propio vencimiento
+  (el panel renueva `radar:vence` sin saber de él) y solo lo usa si su `sub` es
+  el de la sesión actual: el panel inicia y cierra sesión sin tocar esa clave, y
+  en un navegador compartido podía quedar el de otra persona.
+- **Correo:** el pool pasa a `attributesRequireVerificationBeforeUpdates:
+  ["email"]`: hasta confirmar el código se sigue entrando con el anterior. Sin
+  eso, un correo mal escrito dejaba la cuenta atada a una dirección que nadie
+  lee.
+- **Eliminar cuenta:** pide la contraseña otra vez (una sesión olvidada abierta
+  no basta). Antes, `DELETE /cuenta` borra todo lo que vive bajo `USER#<sub>`
+  —carrito, direcciones, «Mis pedidos»—; los pedidos del negocio
+  (`PEDIDO#<folio>`) se conservan porque son ventas.
+- **Verificado:** en el navegador con Cognito simulado: datos, correo con código
+  equivocado y correcto, contraseña actual equivocada y correcta, cerrar en
+  todos los dispositivos y eliminar con contraseña equivocada y correcta.
+
+### 2026-09-26 · Registro abierto y el panel aparece al entrar
+
+- **Por qué:** los clientes no podían crearse una cuenta (el pool estaba en
+  «solo un admin crea cuentas» y la pantalla remitía a WhatsApp), en el teléfono
+  no había forma de llegar a iniciar sesión, y el botón del panel solo aparecía
+  tras recargar. Además, cualquier sesión abría `/radar/`, también la de un
+  cliente.
+- **Pool:** `allowAdminCreateUserOnly: false`, correo del código en español,
+  recuperación solo por correo y `preventUserExistenceErrors`. El disparador
+  post-confirmación `servidor/alta-cliente.ts` mete cada alta en `clientes` —el
+  grupo está escrito en el código, nada de lo que mande el navegador lo cambia—.
+  Si falla, la cuenta queda sin grupo y compra igual: la API pide identidad, no
+  `clientes`. El correo sale de Cognito (tope ~50 al día); SES queda pendiente.
+- **Tienda:** una sola puerta sin selector «Cliente/Equipo»: entrar, crear
+  cuenta, confirmar con código (entra sola con la contraseña que tiene en
+  memoria) y recuperar contraseña. Las llamadas a Cognito viven en
+  `src/lib/cognito.ts`; `src/lib/sesion.ts` comparte la sesión con
+  `useSyncExternalStore` (todas las pantallas se enteran a la vez, también otras
+  pestañas) y renueva el token antes de cada llamada a la API — antes caducaba a
+  la hora y el carrito dejaba de sincronizarse en silencio. El atajo al panel
+  (`acceso-panel.tsx`) sale del grupo del token y aparece al entrar; los admins
+  ven además una tarjeta con catálogo, proveedores y vista de conjunto.
+- **Panel:** `/radar/` enseña «Tu cuenta no abre el panel» a una sesión de
+  Cognito sin `proveedores` ni `admins`.
+- **Verificado:** registro, código equivocado y correcto, entrada automática,
+  admin con botón al instante, recuperación de contraseña y el menú móvil, con
+  Cognito simulado en el navegador. El despliegue lo hace la CI con
+  `Elrey_despliegue_github` (AdministratorAccess), que puede crear la Lambda.
 
 ### 2026-09-24 · Revisión adversarial de la fase 3: once defectos corregidos
 
