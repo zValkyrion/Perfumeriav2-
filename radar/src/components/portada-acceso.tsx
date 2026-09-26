@@ -38,6 +38,46 @@ export function PortadaAcceso({ sesion }: { sesion: Sesion }) {
         Una vez abierta, funciona sin señal. Lo que captures se guarda en este
         teléfono hasta que lo subas.
       </p>
+      <p className="text-[13px] text-fg-subtle">
+        Es la misma cuenta de la tienda. Para recuperar la contraseña,{" "}
+        <a href="/cuenta" className="font-medium text-info">
+          entra desde la tienda
+        </a>
+        .
+      </p>
+    </main>
+  );
+}
+
+/**
+ * Cuenta de cliente que llegó al panel.
+ *
+ * Todos inician sesión en el mismo sitio, así que un cliente puede terminar
+ * aquí siguiendo un enlace. No se le cierra la sesión: su cuenta sigue sirviendo
+ * en la tienda, que es donde tiene que estar.
+ */
+export function SinPermiso({ sesion }: { sesion: Sesion }) {
+  return (
+    <main className="flex min-h-dvh flex-col justify-center gap-4 p-5">
+      <Logo className="text-3xl" />
+      <Tarjeta titulo="Tu cuenta no abre el panel">
+        <p className="text-[14px] text-fg-muted">
+          Entraste como <strong>{sesion.evaluador}</strong>, que es una cuenta de
+          cliente. El panel es solo para el equipo y los administradores. Si
+          deberías tener acceso, pídele a un administrador que te agregue.
+        </p>
+        <div className="mt-4 grid gap-2">
+          {/* `<a>` a propósito: la tienda es otra app en la raíz del dominio, y
+              `Link` la resolvería dentro de `/radar`. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/">
+            <Boton className="w-full">Volver a la tienda</Boton>
+          </a>
+          <Boton variante="secundario" onClick={sesion.salir}>
+            Entrar con otra cuenta
+          </Boton>
+        </div>
+      </Tarjeta>
     </main>
   );
 }

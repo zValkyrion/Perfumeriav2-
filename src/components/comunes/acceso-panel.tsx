@@ -1,61 +1,110 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { LayoutDashboard } from "lucide-react";
-import { leerPerfil, puedeVerPanel } from "@/lib/sesion";
+import { ChartColumn, LayoutDashboard, Package, Store } from "lucide-react";
+import { esAdmin, puedeVerPanel, useSesion, type Perfil } from "@/lib/sesion";
 import { cn } from "@/lib/utils";
 
 /**
- * Puerta al panel de proveedores para quien ya trabaja en él.
+ * La puerta al panel para quien tiene permiso.
  *
- * La tienda y el panel comparten origen desde que ambos se sirven de la misma
- * distribución (`/` y `/radar`), y por eso comparten `localStorage`. Basta con
- * mirar si este dispositivo tiene una sesión del panel: si la tiene, es de
- * alguien del equipo y se le ofrece el atajo; si no, el visitante ve una tienda
- * normal y no se entera de que el panel existe.
+ * Todos entran igual, como clientes, y el panel aparece solo si el token trae
+ * `admins` o `proveedores`. Sale en cuanto se inicia sesión, sin recargar: el
+ * perfil llega por `useSesion`, que avisa a todas las pantallas a la vez.
  *
- * **Esto no es un control de acceso.** Cualquiera puede escribir `localStorage`
- * en su navegador y hacer aparecer el botón — y no ganaría nada, porque el panel
- * pide el código del equipo y la API rechaza todo lo que no traiga un token
- * firmado. Aquí solo se decide si mostrar un enlace, y ese es el único poder que
- * tiene.
- *
- * En GitHub Pages nunca aparece: es otro origen, así que allí no existe esa
- * sesión aunque la persona la tenga en el sitio de AWS.
+ * **Esto no es un control de acceso.** Aquí solo se decide si pintar un enlace.
+ * Lo que protege los datos es la API, que comprueba el grupo en un token
+ * firmado por Cognito; alterar el navegador no abre nada.
  */
+
+type Seccion = { href: string; titulo: string; texto: string; icono: typeof Package };
+
+function seccionesDe(perfil: Perfil): Seccion[] {
+  const proveedores: Seccion = {
+    href: "/radar/",
+    titulo: "Proveedores",
+    texto: "Fichas, capturas y comparación",
+    icono: Store,
+  };
+  if (!esAdmin(perfil)) return [proveedores];
+  return [
+    {
+      href: "/radar/catalogo/",
+      titulo: "Catálogo de la tienda",
+      texto: "Productos, precios, fotos y publicación",
+      icono: Package,
+    },
+    proveedores,
+    {
+      href: "/radar/admin/",
+      titulo: "Vista de conjunto",
+      texto: "Resumen de todos los proveedores",
+      icono: ChartColumn,
+    },
+  ];
+}
+
+/** Botón de la cabecera. */
 export function AccesoPanel({ className }: { className?: string }) {
-  const [quien, setQuien] = useState<string | null>(null);
+  const { perfil } = useSesion();
+  if (!puedeVerPanel(perfil)) return null;
 
-  useEffect(() => {
-    try {
-      // El token es la señal de que la sesión es real; el nombre es solo para
-      // saludar. Sin token no se muestra nada, aunque quede el nombre de antes.
-      const token = localStorage.getItem("radar:token");
-      if (!token) return;
-      // El grupo del token decide, no el simple hecho de tener sesión: un cliente
-      // de la tienda inicia sesión igual y no tiene nada que hacer en el panel.
-      const perfil = leerPerfil(token);
-      if (!puedeVerPanel(perfil)) return;
-      setQuien(perfil?.nombre ?? null);
-    } catch {
-      // Navegador con almacenamiento bloqueado: se comporta como un visitante.
-    }
-  }, []);
-
-  if (quien === null) return null;
-
+  const admin = esAdmin(perfil);
   return (
     <a
-      href="/radar/"
+      href={admin ? "/radar/catalogo/" : "/radar/"}
       className={cn(
         "inline-flex min-h-11 items-center gap-2 rounded-full border border-gold/40 px-3 text-[13px] font-semibold text-gold-light transition-colors hover:bg-gold-muted",
         className,
       )}
-      title={`Entrar al panel de proveedores como ${quien}`}
+      title={`Abrir el panel como ${perfil!.nombre}`}
     >
       <LayoutDashboard size={16} aria-hidden />
-      <span className="hidden sm:inline">Panel</span>
-      <span className="sr-only">de proveedores, como {quien}</span>
+      <span className="hidden sm:inline">{admin ? "Panel admin" : "Panel"}</span>
+      <span className="sr-only">, como {perfil!.nombre}</span>
     </a>
+  );
+}
+
+/** Tarjeta en «Mi cuenta» con cada sección del panel que su cuenta abre. */
+export function AccesoPanelCuenta({
+  perfil,
+  className,
+}: {
+  perfil: Perfil | null;
+  className?: string;
+}) {
+  if (!perfil || !puedeVerPanel(perfil)) return null;
+
+  return (
+    <section
+      aria-labelledby="titulo-panel"
+      className={cn("border-gold/40 bg-surface rounded-lg border p-4 lg:p-5", className)}
+    >
+      <div className="flex items-center gap-2">
+        <LayoutDashboard size={18} className="text-gold-light" aria-hidden />
+        <h2 id="titulo-panel" className="font-medium">
+          {esAdmin(perfil) ? "Panel de administración" : "Panel del equipo"}
+        </h2>
+      </div>
+      <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+        {seccionesDe(perfil).map((s) => {
+          const Icono = s.icono;
+          return (
+            <li key={s.href}>
+              <a
+                href={s.href}
+                className="border-border-soft hover:border-gold/50 hover:bg-gold-muted flex min-h-11 items-start gap-3 rounded-md border p-3 transition-colors"
+              >
+                <Icono size={18} className="text-gold-light mt-0.5 shrink-0" aria-hidden />
+                <span>
+                  <span className="block text-sm font-medium">{s.titulo}</span>
+                  <span className="text-fg-subtle block text-xs">{s.texto}</span>
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

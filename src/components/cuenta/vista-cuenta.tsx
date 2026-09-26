@@ -11,8 +11,9 @@ import { Contenedor } from "@/components/comunes/layout";
 import { Precio } from "@/components/comunes/precio";
 import { GridProductos } from "@/components/producto/grid-productos";
 import { DIRECCIONES, PEDIDOS, USUARIO } from "@/data/cuenta";
-import { AVISO_SIN_PANEL, InicioSesion } from "@/components/cuenta/inicio-sesion";
-import { hayLogin, puedeVerPanel, useSesion } from "@/lib/sesion";
+import { InicioSesion } from "@/components/cuenta/inicio-sesion";
+import { AccesoPanelCuenta } from "@/components/comunes/acceso-panel";
+import { hayLogin, useSesion } from "@/lib/sesion";
 import {
   guardarDireccionesRemotas,
   haySincronizacion,
@@ -79,20 +80,7 @@ export function VistaCuenta() {
   const hidratado = useTienda((s) => s.hidratado);
   const favoritos = useTienda((s) => s.favoritos);
   const sesion = useSesion();
-  const [avisoSinPanel, setAvisoSinPanel] = useState(false);
   const pedidos = usePedidos(sesion.perfil?.correo ?? null);
-
-  // Depende del perfil, no del montaje: esta pantalla ya está montada mostrando
-  // el formulario cuando se inicia sesión, así que un efecto de montaje leería la
-  // marca antes de que exista. Se borra al leerla para que el aviso no reaparezca
-  // en visitas posteriores a la cuenta.
-  useEffect(() => {
-    if (!sesion.perfil) return;
-    if (sessionStorage.getItem(AVISO_SIN_PANEL)) {
-      setAvisoSinPanel(true);
-      sessionStorage.removeItem(AVISO_SIN_PANEL);
-    }
-  }, [sesion.perfil]);
 
   const productosFavoritos = PRODUCTOS.filter((p) => favoritos.includes(p.id));
 
@@ -133,24 +121,8 @@ export function VistaCuenta() {
           </p>
         )}
 
-        {avisoSinPanel && (
-          <p className="border-border-soft text-fg-muted mt-3 max-w-lg rounded-md border px-3 py-2 text-sm">
-            Tu cuenta no tiene acceso al panel de proveedores, así que entraste
-            como cliente. Si crees que debería tenerlo, pídeselo a un
-            administrador.
-          </p>
-        )}
-
         {sesion.perfil && (
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            {puedeVerPanel(sesion.perfil) && (
-              <a
-                href="/radar/"
-                className="text-gold-light inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold"
-              >
-                Ir al panel de proveedores
-              </a>
-            )}
             <button
               type="button"
               onClick={sesion.salir}
@@ -160,6 +132,9 @@ export function VistaCuenta() {
             </button>
           </div>
         )}
+
+        {/* Solo para admins y equipo: el resto de las cuentas no lo ve. */}
+        <AccesoPanelCuenta perfil={sesion.perfil} className="mt-5" />
       </header>
 
       <Tabs defaultValue="pedidos">

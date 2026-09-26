@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { BarraSync } from "@/components/barra-sync";
-import { PortadaAcceso } from "@/components/portada-acceso";
+import { PortadaAcceso, SinPermiso } from "@/components/portada-acceso";
 import { Boton, Insignia, Tarjeta } from "@/components/ui";
 import { espacio, listarProveedores } from "@/lib/almacen";
 import {
@@ -75,6 +75,7 @@ export default function Pagina() {
 
   if (!sesion.listo) return null;
   if (!activa) return <PortadaAcceso sesion={sesion} />;
+  if (sesion.sinPermiso) return <SinPermiso sesion={sesion} />;
 
   const pendientes = proveedores?.filter((p) => p.estado !== "sincronizado").length ?? 0;
   const comparando = seleccion !== null;

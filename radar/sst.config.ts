@@ -110,13 +110,44 @@ export default $config({
       // Se entra con el correo, no con un nombre de usuario que haya que
       // recordar aparte.
       usernames: ["email"],
+      // El correo con el código de verificación del registro. Lo manda Cognito
+      // desde su propia dirección, con un tope de ~50 al día: suficiente para
+      // arrancar. Cuando el registro crezca, se pasa a SES.
+      verify: {
+        emailSubject: "Tu código de El Rey de los Perfumes",
+        emailMessage:
+          "Hola. Tu código para confirmar tu cuenta en El Rey de los Perfumes es {####}. Si no fuiste tú, ignora este correo.",
+      },
+      triggers: {
+        // Toda cuenta que se confirma sola cae en `clientes`, y en nada más.
+        // Los grupos del equipo solo los pone un admin a mano: es lo que
+        // sostiene todo el esquema.
+        postConfirmation: {
+          handler: "servidor/alta-cliente.handler",
+          name: `Elrey_alta_cliente_${$app.stage}`,
+          timeout: "10 seconds",
+          // El pool no puede referenciarse aquí —dependería de sí mismo—, así
+          // que el permiso se da sobre los pools de la cuenta y el nombre del
+          // pool llega en el propio evento.
+          permissions: [
+            {
+              actions: ["cognito-idp:AdminAddUserToGroup"],
+              resources: ["arn:aws:cognito-idp:us-east-1:*:userpool/*"],
+            },
+          ],
+        },
+      },
       transform: {
         userPool: {
           name: "Elrey_usuarios",
-          // Sin autoservicio por ahora: las cuentas del equipo las crea un
-          // admin. Se abrirá cuando entre el registro de clientes, y aun
-          // entonces el alta automática solo podrá caer en `clientes`.
-          adminCreateUserConfig: { allowAdminCreateUserOnly: true },
+          // Registro abierto: los clientes se crean su cuenta solos. El equipo
+          // sigue entrando por invitación, porque el grupo no se lo puede
+          // poner nadie más que un admin.
+          adminCreateUserConfig: { allowAdminCreateUserOnly: false },
+          // Solo el correo sirve para recuperar la contraseña: no hay SMS.
+          accountRecoverySetting: {
+            recoveryMechanisms: [{ name: "verified_email", priority: 1 }],
+          },
           passwordPolicy: {
             minimumLength: 10,
             requireLowercase: true,
@@ -143,6 +174,10 @@ export default $config({
           ],
           // Sin secreto: vive en un navegador, donde nada es secreto.
           generateSecret: false,
+          // Al entrar o al pedir recuperar la contraseña, «ese correo no
+          // existe» le diría a cualquiera qué cuentas hay. Así Cognito responde
+          // igual exista o no.
+          preventUserExistenceErrors: "ENABLED",
           accessTokenValidity: 1,
           idTokenValidity: 1,
           tokenValidityUnits: {

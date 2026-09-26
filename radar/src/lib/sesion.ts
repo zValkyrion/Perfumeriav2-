@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { acceso } from "@/lib/api";
 import {
+  esTokenCognito,
   fijarNuevaContrasena,
   hayCognito,
   iniciarSesion,
@@ -35,6 +36,12 @@ const CLAVE_LOCAL = "radar:solo_local";
 
 export type Sesion = {
   desbloqueado: boolean;
+  /**
+   * Hay sesión de Cognito pero la cuenta no es del equipo: es un cliente de la
+   * tienda que llegó aquí. Todos entran por la misma puerta, así que pasa. La
+   * API lo rechazaría igual; esto solo evita enseñarle un panel vacío.
+   */
+  sinPermiso: boolean;
   evaluador: string | null;
   /** Token que viaja a la API. De Cognito o del PIN, según cómo se entró. */
   token: string | null;
@@ -195,6 +202,11 @@ export function useSesion(): Sesion {
 
   return {
     desbloqueado: (token !== null || soloLocal) && evaluador !== null,
+    sinPermiso:
+      token !== null &&
+      esTokenCognito(token) &&
+      !grupos.includes("proveedores") &&
+      !grupos.includes("admins"),
     evaluador,
     token,
     grupos,

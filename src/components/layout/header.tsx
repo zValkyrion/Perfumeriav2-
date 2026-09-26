@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageCircle, User } from "lucide-react";
 import { AccesoPanel } from "@/components/comunes/acceso-panel";
+import { useSesion } from "@/lib/sesion";
 import { Logo } from "@/components/comunes/logo";
 import { MARCA } from "@/data/contenido";
 import type { EntradaIndice } from "@/data/productos";
@@ -16,6 +17,7 @@ import { cn } from "@/lib/utils";
 /** Cabecera sticky: se encoge de 80px a 60px al pasar de 40px de scroll (§7.2). */
 export function Header({ indice }: { indice: EntradaIndice[] }) {
   const [encogido, setEncogido] = useState(false);
+  const { perfil, listo } = useSesion();
 
   useEffect(() => {
     const alScroll = () => setEncogido(window.scrollY > 40);
@@ -68,8 +70,8 @@ export function Header({ indice }: { indice: EntradaIndice[] }) {
               a favoritos se retiraron de la cabecera. Favoritos sigue vivo en
               la barra inferior del móvil y en su propia ruta. */}
           <div className="flex items-center gap-0.5">
-            {/* Solo aparece en el dispositivo de quien ya trabaja en el panel.
-                Un cliente de la tienda no ve nada. */}
+            {/* Solo aparece si la cuenta es de un admin o del equipo. Un
+                cliente de la tienda no ve nada. */}
             <AccesoPanel className="mr-1" />
 
             <div className="lg:hidden">
@@ -89,12 +91,15 @@ export function Header({ indice }: { indice: EntradaIndice[] }) {
               <MessageCircle size={21} aria-hidden />
             </a>
 
+            {/* Sin sesión dice «Entrar»: un icono de persona solo no le decía a
+                nadie que ahí se inicia sesión o se crea la cuenta. */}
             <Link
               href="/cuenta"
-              aria-label="Mi cuenta"
-              className="text-fg-muted hover:text-fg hidden size-11 place-items-center rounded-full transition-colors lg:grid"
+              aria-label={perfil ? `Mi cuenta, ${perfil.nombre}` : "Iniciar sesión o crear cuenta"}
+              className="text-fg-muted hover:text-fg hidden min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-2 text-[13px] font-medium transition-colors lg:inline-flex"
             >
               <User size={20} aria-hidden />
+              {listo && !perfil && <span>Entrar</span>}
             </Link>
 
             <BotonCarrito />

@@ -168,6 +168,16 @@ export type Perfil = {
  * API**, que comprueba la firma contra las claves públicas de Cognito: cambiar
  * este JSON en el navegador no da acceso a nada.
  */
+/** ¿Lo firmó Cognito? El del código de equipo lo firma nuestra Lambda. */
+export function esTokenCognito(token: string): boolean {
+  try {
+    const carga = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof carga.iss === "string" && carga.iss.includes("cognito-idp");
+  } catch {
+    return false;
+  }
+}
+
 export function leerPerfil(idToken: string): Perfil | null {
   try {
     const carga = JSON.parse(atob(idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));

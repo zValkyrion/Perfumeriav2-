@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, MessageCircle } from "lucide-react";
+import { Menu, MessageCircle, User } from "lucide-react";
+import { useSesion } from "@/lib/sesion";
 import {
   Accordion,
   AccordionContent,
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 export function NavMovil() {
   const [abierto, setAbierto] = useState(false);
   const cerrar = () => setAbierto(false);
+  const { perfil, listo } = useSesion();
 
   return (
     <Sheet open={abierto} onOpenChange={setAbierto}>
@@ -113,6 +115,16 @@ export function NavMovil() {
         </div>
 
         <div className="border-border-soft space-y-3 border-t px-4 py-4">
+          {/* En el teléfono no hay icono de cuenta en la cabecera: no cabe.
+              Sin esto, en móvil no había forma de llegar a iniciar sesión. */}
+          <Link
+            href="/cuenta"
+            onClick={cerrar}
+            className="border-border flex min-h-12 items-center justify-center gap-2 rounded-full border text-sm font-medium"
+          >
+            <User size={18} aria-hidden />
+            {listo && perfil ? `Mi cuenta · ${perfil.nombre.split(" ")[0]}` : "Iniciar sesión o crear cuenta"}
+          </Link>
           <a
             href={MARCA.whatsappLink}
             target="_blank"

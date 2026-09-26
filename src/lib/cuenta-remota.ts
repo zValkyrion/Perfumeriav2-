@@ -1,6 +1,7 @@
 "use client";
 
 import type { Direccion, ItemCarrito, Pedido } from "@/types";
+import { tokenVigente } from "@/lib/sesion";
 import type {
   PedidoRegistrado,
   SolicitudPedido,
@@ -20,8 +21,6 @@ import type {
  */
 
 const BASE = process.env.NEXT_PUBLIC_API ?? "";
-/** La misma clave que usa el panel: comparten origen y comparten sesión. */
-const CLAVE_TOKEN = "radar:token";
 
 export function haySincronizacion(): boolean {
   return BASE !== "";
@@ -34,16 +33,20 @@ export type CarritoRemoto = {
   actualizadoEn: string;
 };
 
-function token(): string | null {
+/**
+ * El token de la sesión, renovado si estaba por vencer: dura una hora, y sin
+ * esto quien dejaba la pestaña abierta perdía el carrito remoto en silencio.
+ */
+async function token(): Promise<string | null> {
   try {
-    return localStorage.getItem(CLAVE_TOKEN);
+    return await tokenVigente();
   } catch {
     return null;
   }
 }
 
 async function pedir<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
-  const t = token();
+  const t = await token();
   if (!BASE || !t) throw new Error("Sin sesión");
 
   const ctrl = new AbortController();
@@ -120,7 +123,7 @@ export async function registrarPedido(
 ): Promise<PedidoRegistrado> {
   if (!BASE) throw new Error("Sin servidor");
 
-  const t = token();
+  const t = await token();
   const ctrl = new AbortController();
   const corte = setTimeout(() => ctrl.abort(), 12000);
   try {

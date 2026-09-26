@@ -1,18 +1,33 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import {
+  ErrorCognito,
+  confirmarRegistro,
+  fijarNuevaContrasena,
+  hayCognito,
+  iniciarSesion,
+  pedirRecuperacion,
+  reenviarCodigo,
+  refrescar,
+  registrar,
+  restablecerContrasena,
+  type Tokens,
+} from "./cognito";
 
 /**
- * La sesión del sitio, compartida por la tienda y el panel de proveedores.
+ * La sesión del sitio, compartida por la tienda y el panel.
+ *
+ * Una sola cuenta para todos: clientes, equipo y admins entran por la misma
+ * puerta y lo que cambia es el **grupo** que trae el token. `clientes` compra;
+ * `proveedores` abre además el panel de proveedores; `admins` abre todo el
+ * panel, incluido el catálogo de la tienda.
  *
  * Las dos apps se sirven del mismo origen (`/` y `/radar`), así que comparten
  * `localStorage`: quien inicia sesión aquí entra también allá sin volver a
- * escribir nada. Las claves llevan el prefijo `radar:` por razones históricas —
- * el panel existió primero— y se conservan a propósito: renombrarlas cerraría la
- * sesión de todos los teléfonos que ya están en la calle.
- *
- * El panel tiene su propia copia de esta lógica porque son dos aplicaciones
- * independientes y no pueden importarse entre sí.
+ * escribir nada. Las claves llevan el prefijo `radar:` por razones históricas
+ * —el panel existió primero— y se conservan a propósito: renombrarlas cerraría
+ * la sesión de todos los teléfonos que ya están en la calle.
  */
 
 const CLAVE_TOKEN = "radar:token";
@@ -20,59 +35,8 @@ const CLAVE_REFRESCO = "radar:refresco";
 const CLAVE_VENCE = "radar:vence";
 const CLAVE_EVALUADOR = "radar:evaluador";
 
-const REGION = process.env.NEXT_PUBLIC_COGNITO_REGION ?? "us-east-1";
-const CLIENTE = process.env.NEXT_PUBLIC_COGNITO_CLIENTE ?? "";
-const URL_COGNITO = `https://cognito-idp.${REGION}.amazonaws.com/`;
-
 export function hayLogin(): boolean {
-  return CLIENTE !== "";
-}
-
-async function cognito<T>(accion: string, cuerpo: unknown): Promise<T> {
-  const ctrl = new AbortController();
-  const corte = setTimeout(() => ctrl.abort(), 15000);
-  try {
-    const res = await fetch(URL_COGNITO, {
-      method: "POST",
-      signal: ctrl.signal,
-      headers: {
-        "content-type": "application/x-amz-json-1.1",
-        "x-amz-target": `AWSCognitoIdentityProviderService.${accion}`,
-      },
-      body: JSON.stringify(cuerpo),
-    });
-    const datos = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(traducir(datos));
-    return datos as T;
-  } catch (e) {
-    if (e instanceof DOMException && e.name === "AbortError") {
-      throw new Error("El servidor no respondió a tiempo");
-    }
-    throw e;
-  } finally {
-    clearTimeout(corte);
-  }
-}
-
-/** Los mensajes de Cognito llegan en inglés y con nombres de excepción. */
-function traducir(datos: { __type?: string; message?: string }): string {
-  const tipo = (datos.__type ?? "").split("#").pop();
-  switch (tipo) {
-    case "NotAuthorizedException":
-    // Mismo mensaje a propósito: decir "ese correo no existe" le confirma a
-    // cualquiera qué cuentas hay dadas de alta.
-    case "UserNotFoundException":
-      return "Correo o contraseña incorrectos";
-    case "PasswordResetRequiredException":
-      return "Hay que restablecer la contraseña. Escríbenos y lo resolvemos.";
-    case "InvalidPasswordException":
-      return "La contraseña necesita al menos 10 caracteres, con minúsculas y números";
-    case "LimitExceededException":
-    case "TooManyRequestsException":
-      return "Demasiados intentos. Espera un momento antes de reintentar.";
-    default:
-      return datos.message ?? "No se pudo iniciar sesión";
-  }
+  return hayCognito();
 }
 
 export type Perfil = {
@@ -81,8 +45,8 @@ export type Perfil = {
   grupos: string[];
   /**
    * El identificador estable de Cognito, el mismo con el que la API guarda el
-   * carrito. Se usa el `sub` y no el correo para saber "de quién es este
-   * carrito": el correo se puede cambiar y el `sub` no cambia nunca.
+   * carrito. Se usa el `sub` y no el correo: el correo se puede cambiar y el
+   * `sub` no cambia nunca.
    */
   sub: string;
 };
@@ -109,133 +73,253 @@ export function leerPerfil(idToken: string): Perfil | null {
   }
 }
 
-/** ¿Su cuenta abre el panel de proveedores? */
+export function esAdmin(perfil: Perfil | null): boolean {
+  return perfil?.grupos.includes("admins") ?? false;
+}
+
+/** ¿Su cuenta abre el panel? Admins y equipo de proveedores. */
 export function puedeVerPanel(perfil: Perfil | null): boolean {
   if (!perfil) return false;
-  return perfil.grupos.includes("proveedores") || perfil.grupos.includes("admins");
+  return esAdmin(perfil) || perfil.grupos.includes("proveedores");
 }
 
-type RespuestaAuth = {
-  AuthenticationResult?: { IdToken: string; RefreshToken?: string; ExpiresIn: number };
-  ChallengeName?: string;
-  Session?: string;
-};
-
-export type Sesion = {
-  perfil: Perfil | null;
-  listo: boolean;
-  entrar: (
-    correo: string,
-    contrasena: string,
-  ) => Promise<
-    | { ok: true; perfil: Perfil }
-    | { ok: false; error: string }
-    | { nuevaContrasena: { sesion: string; correo: string } }
-  >;
-  cambiarContrasena: (
-    reto: { sesion: string; correo: string },
-    nueva: string,
-  ) => Promise<{ ok: boolean; error?: string; perfil?: Perfil }>;
-  salir: () => void;
-};
+/* ── Estado compartido ──────────────────────────────────────────────────── */
 
 /**
- * Todas las copias de `useSesion` de esta pestaña miran el mismo perfil.
+ * Todas las copias de `useSesion` miran el mismo perfil.
  *
- * El hook se usa en varios sitios a la vez —la pantalla de cuenta, la cabecera,
- * el sincronizador del carrito— y cada llamada tenía su propio `useState`. Al
- * cerrar sesión desde la pantalla de cuenta, las demás seguían creyendo que
- * había sesión hasta la siguiente recarga: el carrito de quien acababa de salir
- * se quedaba en el navegador.
- *
- * Es una lista de avisos, no un estado global: el dato sigue viviendo en
- * `localStorage` y esto solo hace que todos se enteren a la vez.
+ * El hook se usa en varios sitios a la vez —la cuenta, la cabecera, el
+ * sincronizador del carrito— y cada uno tiene su `useState`. Al entrar o salir
+ * desde una pantalla, las demás se enteran en el acto: si no, el botón del
+ * panel no aparecía hasta recargar, y el carrito de quien acababa de salir se
+ * quedaba en el navegador.
  */
-const oyentes = new Set<(perfil: Perfil | null) => void>();
+const oyentes = new Set<() => void>();
 
-function avisar(perfil: Perfil | null) {
-  for (const oyente of oyentes) oyente(perfil);
+function avisar() {
+  for (const oyente of oyentes) oyente();
 }
 
-export function useSesion(): Sesion {
-  const [perfil, setPerfil] = useState<Perfil | null>(null);
-  const [listo, setListo] = useState(false);
+/** El perfil se recalcula solo cuando cambia el token, no en cada render. */
+let cache: { token: string | null; perfil: Perfil | null } = { token: null, perfil: null };
 
-  useEffect(() => {
-    oyentes.add(setPerfil);
-    return () => {
-      oyentes.delete(setPerfil);
-    };
-  }, []);
+function perfilGuardado(): Perfil | null {
+  let token: string | null = null;
+  try {
+    token = localStorage.getItem(CLAVE_TOKEN);
+  } catch {
+    // Almacenamiento bloqueado: se comporta como un visitante.
+  }
+  if (token !== cache.token) cache = { token, perfil: token ? leerPerfil(token) : null };
+  return cache.perfil;
+}
 
-  useEffect(() => {
-    const token = localStorage.getItem(CLAVE_TOKEN);
-    if (token) setPerfil(leerPerfil(token));
-    setListo(true);
-  }, []);
+function suscribir(oyente: () => void) {
+  oyentes.add(oyente);
+  // Otra pestaña entró o salió: esta se entera sin recargar.
+  const alCambiar = (e: StorageEvent) => {
+    if (e.key === null || e.key === CLAVE_TOKEN) oyente();
+  };
+  window.addEventListener("storage", alCambiar);
+  return () => {
+    oyentes.delete(oyente);
+    window.removeEventListener("storage", alCambiar);
+  };
+}
 
-  const guardar = useCallback((r: RespuestaAuth): Perfil => {
-    const a = r.AuthenticationResult;
-    if (!a?.IdToken) throw new Error("Cognito no devolvió la sesión");
-    const p = leerPerfil(a.IdToken);
-    localStorage.setItem(CLAVE_TOKEN, a.IdToken);
-    if (a.RefreshToken) localStorage.setItem(CLAVE_REFRESCO, a.RefreshToken);
-    localStorage.setItem(CLAVE_VENCE, String(Date.now() + a.ExpiresIn * 1000));
-    localStorage.setItem(CLAVE_EVALUADOR, p?.nombre ?? "");
-    avisar(p);
-    return p!;
-  }, []);
+function guardar(t: Tokens): Perfil {
+  const p = leerPerfil(t.idToken);
+  if (!p) throw new ErrorCognito("La sesión llegó dañada", "SinSesion");
+  localStorage.setItem(CLAVE_TOKEN, t.idToken);
+  if (t.refreshToken) localStorage.setItem(CLAVE_REFRESCO, t.refreshToken);
+  localStorage.setItem(CLAVE_VENCE, String(t.vence));
+  // El panel firma las fichas con este nombre.
+  localStorage.setItem(CLAVE_EVALUADOR, p.nombre);
+  avisar();
+  return p;
+}
 
-  const entrar = useCallback(
-    async (correo: string, contrasena: string) => {
-      try {
-        const r = await cognito<RespuestaAuth>("InitiateAuth", {
-          AuthFlow: "USER_PASSWORD_AUTH",
-          ClientId: CLIENTE,
-          AuthParameters: { USERNAME: correo.trim(), PASSWORD: contrasena },
-        });
-        // Cuenta recién creada por un administrador: Cognito exige cambiar la
-        // contraseña temporal antes de entregar ninguna sesión.
-        if (r.ChallengeName === "NEW_PASSWORD_REQUIRED" && r.Session) {
-          return { nuevaContrasena: { sesion: r.Session, correo: correo.trim() } };
-        }
-        return { ok: true as const, perfil: guardar(r) };
-      } catch (e) {
-        return {
-          ok: false as const,
-          error: e instanceof Error ? e.message : "No se pudo iniciar sesión",
-        };
+function borrar() {
+  for (const c of [CLAVE_TOKEN, CLAVE_REFRESCO, CLAVE_VENCE, CLAVE_EVALUADOR]) {
+    localStorage.removeItem(c);
+  }
+  avisar();
+}
+
+/**
+ * Un token que todavía sirve para llamar a la API, o `null` sin sesión.
+ *
+ * El de identidad dura una hora; se renueva con el de refresco justo antes de
+ * cada llamada si está por vencer. También es lo que hace aparecer un grupo
+ * recién asignado: el token nuevo ya lo trae.
+ */
+let renovando: Promise<string | null> | null = null;
+
+export async function tokenVigente(): Promise<string | null> {
+  const guardado = localStorage.getItem(CLAVE_TOKEN);
+  if (!guardado) return null;
+  const vence = Number(localStorage.getItem(CLAVE_VENCE) ?? 0);
+  if (vence > Date.now() + 60_000) return guardado;
+  const refresco = localStorage.getItem(CLAVE_REFRESCO);
+  // Sesión del código de equipo del panel: no hay nada que renovar.
+  if (!refresco) return guardado;
+
+  // Varias llamadas a la vez comparten una sola renovación.
+  renovando ??= refrescar(refresco)
+    .then((t) => {
+      guardar(t);
+      return t.idToken;
+    })
+    .catch((e) => {
+      // El refresco venció o lo revocaron: la sesión se acabó de verdad. Sin
+      // red, en cambio, se sigue con lo que hay y la API dirá lo que tenga que
+      // decir.
+      if (e instanceof ErrorCognito && e.tipo === "NotAuthorizedException") {
+        borrar();
+        return null;
       }
-    },
-    [guardar],
-  );
+      return guardado;
+    })
+    .finally(() => {
+      renovando = null;
+    });
+  return renovando;
+}
 
-  const cambiarContrasena = useCallback(
-    async (reto: { sesion: string; correo: string }, nueva: string) => {
-      try {
-        const r = await cognito<RespuestaAuth>("RespondToAuthChallenge", {
-          ClientId: CLIENTE,
-          ChallengeName: "NEW_PASSWORD_REQUIRED",
-          Session: reto.sesion,
-          ChallengeResponses: { USERNAME: reto.correo, NEW_PASSWORD: nueva },
-        });
-        return { ok: true, perfil: guardar(r) };
-      } catch (e) {
-        return {
-          ok: false,
-          error: e instanceof Error ? e.message : "No se pudo guardar la contraseña",
-        };
-      }
-    },
-    [guardar],
-  );
+/* ── Acciones ───────────────────────────────────────────────────────────── */
 
-  const salir = useCallback(() => {
-    for (const c of [CLAVE_TOKEN, CLAVE_REFRESCO, CLAVE_VENCE, CLAVE_EVALUADOR]) {
-      localStorage.removeItem(c);
+export type Reto = { sesion: string; correo: string };
+
+export type ResultadoEntrar =
+  | { ok: true; perfil: Perfil }
+  | { ok: false; error: string; sinConfirmar?: boolean }
+  | { nuevaContrasena: Reto };
+
+type Resultado = { ok: true; perfil: Perfil } | { ok: false; error: string };
+type Hecho = { ok: true } | { ok: false; error: string };
+
+function fallo(e: unknown): { ok: false; error: string } {
+  return { ok: false, error: e instanceof Error ? e.message : "Algo salió mal" };
+}
+
+async function entrar(correo: string, contrasena: string): Promise<ResultadoEntrar> {
+  try {
+    const r = await iniciarSesion(correo.trim(), contrasena);
+    if (r.tipo === "nueva_contrasena") {
+      return { nuevaContrasena: { sesion: r.sesion, correo: r.correo } };
     }
-    avisar(null);
+    return { ok: true, perfil: guardar(r.tokens) };
+  } catch (e) {
+    return {
+      ...fallo(e),
+      sinConfirmar: e instanceof ErrorCognito && e.tipo === "UserNotConfirmedException",
+    };
+  }
+}
+
+async function cambiarContrasena(reto: Reto, nueva: string): Promise<Resultado> {
+  try {
+    return { ok: true, perfil: guardar(await fijarNuevaContrasena(reto.correo, reto.sesion, nueva)) };
+  } catch (e) {
+    return fallo(e);
+  }
+}
+
+async function crearCuenta(nombre: string, correo: string, contrasena: string): Promise<Hecho> {
+  try {
+    await registrar(nombre.trim(), correo.trim(), contrasena);
+    return { ok: true };
+  } catch (e) {
+    return fallo(e);
+  }
+}
+
+/**
+ * Confirma el correo y, si se tiene la contraseña a mano, entra de una vez.
+ *
+ * La contraseña solo vive en la memoria de la pantalla de registro: quien se
+ * registra y confirma sin cerrar la página no tiene que volver a escribirla. Si
+ * recargó en medio, se confirma igual y se le pide entrar.
+ */
+async function confirmar(
+  correo: string,
+  codigo: string,
+  contrasena?: string,
+): Promise<Resultado | { ok: true; perfil: null }> {
+  try {
+    await confirmarRegistro(correo.trim(), codigo.trim());
+  } catch (e) {
+    return fallo(e);
+  }
+  if (!contrasena) return { ok: true, perfil: null };
+  const r = await entrar(correo, contrasena);
+  return "ok" in r && r.ok ? r : { ok: true, perfil: null };
+}
+
+async function reenviar(correo: string): Promise<Hecho> {
+  try {
+    await reenviarCodigo(correo.trim());
+    return { ok: true };
+  } catch (e) {
+    return fallo(e);
+  }
+}
+
+async function recuperar(correo: string): Promise<Hecho> {
+  try {
+    await pedirRecuperacion(correo.trim());
+    return { ok: true };
+  } catch (e) {
+    return fallo(e);
+  }
+}
+
+/** Fija la contraseña nueva con el código del correo y entra con ella. */
+async function restablecer(
+  correo: string,
+  codigo: string,
+  nueva: string,
+): Promise<Resultado | { ok: true; perfil: null }> {
+  try {
+    await restablecerContrasena(correo.trim(), codigo.trim(), nueva);
+  } catch (e) {
+    return fallo(e);
+  }
+  const r = await entrar(correo, nueva);
+  return "ok" in r && r.ok ? r : { ok: true, perfil: null };
+}
+
+const acciones = {
+  entrar,
+  cambiarContrasena,
+  crearCuenta,
+  confirmar,
+  reenviar,
+  recuperar,
+  restablecer,
+  salir: borrar,
+};
+
+export type Sesion = typeof acciones & {
+  perfil: Perfil | null;
+  /** `false` hasta leer `localStorage`: antes no se sabe si hay sesión. */
+  listo: boolean;
+};
+
+export function useSesion(): Sesion {
+  // En el servidor —y durante la hidratación— no hay `localStorage`: el
+  // `undefined` es lo que dice «todavía no se sabe».
+  const perfil = useSyncExternalStore<Perfil | null | undefined>(
+    suscribir,
+    perfilGuardado,
+    () => undefined,
+  );
+
+  // Renueva al abrir si ya venció. Así, además, los grupos del perfil son los
+  // de ahora y no los de hace una hora.
+  useEffect(() => {
+    tokenVigente().catch(() => {});
   }, []);
 
-  return { perfil, listo, entrar, cambiarContrasena, salir };
+  return { perfil: perfil ?? null, listo: perfil !== undefined, ...acciones };
 }

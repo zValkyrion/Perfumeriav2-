@@ -12,11 +12,28 @@ El pool es **`Elrey_usuarios`** (`us-east-1_qpU8tmkIB`) y tiene tres grupos:
 `proveedores` ni `admins`, las rutas del panel responden 403 aunque la sesión sea
 válida. Nadie puede auto-asignarse un grupo — es lo que sostiene todo el esquema.
 
-Por ahora **no hay autoservicio**: las cuentas las crea un administrador. Cuando
-se abra el registro de clientes, el alta automática solo podrá caer en
-`clientes`.
+**Registro abierto.** Cualquiera se crea la cuenta en la tienda (`/cuenta` →
+«Crear cuenta»), confirma su correo con un código y el disparador
+`servidor/alta-cliente.ts` la mete en `clientes`, y en nada más. Todos inician
+sesión en el mismo sitio; a quien está en `admins` o `proveedores` le aparece el
+panel en la cabecera y en «Mi cuenta» en cuanto entra.
 
-## Dar de alta a alguien del equipo
+El correo del código lo manda Cognito con su dirección por defecto, con un tope
+de **~50 correos al día**. Si el registro crece, hay que pasar a SES.
+
+## Hacer admin a alguien que ya tiene cuenta
+
+La forma normal: la persona se registra sola en la tienda y luego se le sube de
+grupo. Tiene que cerrar sesión y volver a entrar (o esperar una hora) para que su
+token traiga el grupo nuevo.
+
+```bash
+aws cognito-idp admin-add-user-to-group --user-pool-id us-east-1_qpU8tmkIB --username "persona@correo.com" --group-name admins
+```
+
+Para el equipo de campo, el grupo es `proveedores`.
+
+## Dar de alta a alguien del equipo sin que se registre
 
 Dos comandos. El primero crea la cuenta con una contraseña temporal; el segundo
 le da el permiso.
@@ -32,8 +49,8 @@ aws cognito-idp admin-add-user-to-group --user-pool-id us-east-1_qpU8tmkIB --use
 El atributo `name` es el que firma las fichas, así que conviene poner el nombre
 con el que esa persona se reconoce en el equipo.
 
-`email_verified=true` se pone a mano porque hoy no hay envío de correos
-configurado: sin él, Cognito esperaría una verificación que nunca llega.
+`email_verified=true` se pone a mano porque la cuenta la crea un admin y no pasa
+por el código de verificación: sin él, no podría recuperar su contraseña.
 
 ### La primera vez que entran
 
