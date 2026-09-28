@@ -201,6 +201,9 @@ for (const [metodo, ruta] of [
   ["GET", "/direcciones"],
   ["PUT", "/direcciones"],
   ["GET", "/pedidos"],
+  // El detalle y la cancelación son del dueño del pedido: tampoco con el PIN.
+  ["GET", "/pedidos/REY-1999-00001"],
+  ["POST", "/pedidos/REY-1999-00001/cancelar"],
 ]) {
   const conPin = await pedir(ruta, {
     method: metodo,
@@ -259,6 +262,45 @@ const viejoSinSesion = await pedir("/pedidos", {
   body: JSON.stringify({ folio: "AUR-2026-00001", total: 0, items: [] }),
 });
 ok("el contrato viejo (folio y total del navegador) sin sesión da 401", viejoSinSesion.estado === 401, `HTTP ${viejoSinSesion.estado}`);
+
+// El rastreo sin cuenta es público. Un folio que no existe responde lo mismo
+// que un teléfono equivocado, sin decir cuál de los dos falló. No escribe nada.
+const consulta = await pedir("/pedidos/consulta", {
+  method: "POST",
+  body: JSON.stringify({ folio: "REY-1999-00001", telefono: "5500000000" }),
+});
+ok(
+  "POST /pedidos/consulta con un folio que no existe da 404",
+  consulta.estado === 404 && consulta.cuerpo?.error === "No encontramos un pedido con ese folio y teléfono",
+  `HTTP ${consulta.estado}`,
+);
+
+// ── Administración de la tienda: la puerta ──────────────────────────────────
+// Pedidos, ventas, clientes y solicitudes son solo para cuentas del grupo
+// `admins`. Aquí solo se prueba que la puerta esté cerrada —401 sin token y
+// 403 con el PIN del equipo—: el camino feliz necesitaría una cuenta de admin y
+// lo cubre `npm run probar:local`, antes del despliegue, sin tocar AWS. Nada
+// de esto escribe: el 403 sale antes de leer el cuerpo.
+for (const [metodo, ruta] of [
+  ["GET", "/admin/pedidos"],
+  ["GET", "/admin/pedidos/REY-1999-00001"],
+  ["PUT", "/admin/pedidos/REY-1999-00001"],
+  ["GET", "/admin/ventas"],
+  ["GET", "/admin/clientes"],
+  ["GET", "/admin/clientes/detalle?clave=tel:5500000000"],
+  ["PUT", "/admin/clientes/grupos"],
+  ["GET", "/admin/solicitudes"],
+  ["PUT", "/admin/solicitudes/prueba-00000000"],
+]) {
+  const cuerpo = metodo === "GET" ? undefined : "{}";
+  const sinToken = await pedir(ruta, { method: metodo, body: cuerpo });
+  const conPin = await pedir(ruta, { method: metodo, headers: auth, body: cuerpo });
+  ok(
+    `${metodo} ${ruta}: 401 sin token y 403 con el PIN`,
+    sinToken.estado === 401 && conPin.estado === 403,
+    `HTTP ${sinToken.estado}/${conPin.estado}`,
+  );
+}
 
 console.log(`\n${fallos === 0 ? "TODO EN VERDE" : `${fallos} PRUEBAS FALLARON`}`);
 process.exit(fallos === 0 ? 0 : 1);

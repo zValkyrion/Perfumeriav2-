@@ -10,7 +10,9 @@
     "probar": "node scripts/probar-api.mjs",
     "probar-tienda": "node scripts/probar-tienda.ts",
     "desplegar": "sst deploy --stage produccion",
-    "probar-textract": "node scripts/probar-textract.mjs"
+    "probar-textract": "node scripts/probar-textract.mjs",
+    "probar:local": "node pruebas-locales/correr.mjs",
+    "servidor:local": "node pruebas-locales/servidor-local.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

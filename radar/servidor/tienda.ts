@@ -8,7 +8,14 @@ import {
 // directo, sin empaquetador, y Node no adivina extensiones. Los `import type`
 // desaparecen al quitar los tipos, así que solo el de valores la necesita.
 import type { Cotizacion } from "../../compartido/cotizacion.ts";
-import type { ContactoPedido, SolicitudPedido } from "../../compartido/pedido.ts";
+import {
+  esEstatusPedido,
+  PATRON_CLAVE,
+  PLAZOS_MSI,
+  type CambioEstatus,
+  type ContactoPedido,
+  type SolicitudPedido,
+} from "../../compartido/pedido.ts";
 import { esIdEnvio, esIdPago } from "../../compartido/reglas.ts";
 
 /**
@@ -24,6 +31,12 @@ import { esIdEnvio, esIdPago } from "../../compartido/reglas.ts";
  *   PK = USER#<sub>      SK = PEDIDO#<folio>  → copia del pedido en «Mis pedidos»
  *   PK = PEDIDO#<folio>  SK = META            → el pedido de la tienda, con o sin cuenta
  *   PK = CONTADOR        SK = PEDIDOS         → el último número de folio
+ *   PK = IDEMPOTENCIA#<clave> SK = META       → { folio }: un reintento no crea otro pedido
+ *   PK = SOLICITUD#<id>  SK = META            → distribuidor, contacto o factura
+ *
+ * `PEDIDO#…/META` es la **única fuente de verdad** del estatus. La copia bajo
+ * `USER#` es el índice de «Mis pedidos»: al listar se lee el META de cada folio,
+ * así un cambio del panel se ve en el acto sin sincronizar dos filas.
  *
  * Las filas de usuario **no llevan `GSI1PK`**, así que el índice `porFecha`
  * —que es disperso— no las ve y `GET /proveedores` sigue devolviendo solo
@@ -183,14 +196,6 @@ export function sanearDirecciones(cuerpo: unknown): Direccion[] {
   }));
 }
 
-const ESTATUS = new Set([
-  "Pendiente",
-  "Pagado",
-  "En camino",
-  "Entregado",
-  "Cancelado",
-]);
-
 /**
  * Sanea la copia de un pedido para «Mis pedidos».
  *
@@ -215,7 +220,7 @@ export function sanearPedido(cuerpo: unknown): Pedido | null {
   const pedido: Pedido = {
     folio,
     fecha: texto(p.fecha, 30) || new Date().toISOString().slice(0, 10),
-    estatus: ESTATUS.has(estatus) ? estatus : "Pendiente",
+    estatus: esEstatusPedido(estatus) ? estatus : "Pendiente",
     total: Number.isFinite(total) && total >= 0 ? Math.round(total * 100) / 100 : 0,
     piezas: piezas ?? items.reduce((n, i) => n + i.cantidad, 0),
     items,
@@ -260,13 +265,25 @@ export function sanearSolicitud(cuerpo: unknown): SolicitudPedido | null {
   if (!contacto.nombre || !contacto.telefono) return null;
 
   const cupon = texto(s.cupon, 30).trim().toUpperCase();
-  return {
+  const solicitud: SolicitudPedido = {
     items,
     cupon: cupon || null,
     metodo: s.metodo,
     envio: esIdEnvio(s.envio) ? s.envio : "estandar",
     contacto,
+    // Los meses sin intereses solo existen con Clip. Un plazo con otra forma
+    // de pago, o uno que Clip no ofrece, no se guarda: sería prometer algo que
+    // el cobro no va a respetar.
+    plazo:
+      s.metodo === "clip" && (PLAZOS_MSI as readonly unknown[]).includes(s.plazo)
+        ? (s.plazo as number)
+        : null,
   };
+  // La clave de idempotencia es opcional (las pestañas viejas no la mandan) y
+  // se descarta si no tiene la forma esperada: una basura aquí se convertiría
+  // en la clave de partición de otra fila.
+  if (typeof s.clave === "string" && PATRON_CLAVE.test(s.clave)) solicitud.clave = s.clave;
+  return solicitud;
 }
 
 /**
@@ -278,6 +295,11 @@ export function sanearSolicitud(cuerpo: unknown): SolicitudPedido | null {
  *
  * Arranca en 2000 para no chocar con los folios que ya repartió la fórmula
  * vieja (del 847 al 1346) y que viven en «Mis pedidos» de algunas cuentas.
+ *
+ * El prefijo es `REY-` (El Rey de los Perfumes). Los `AUR-` que ya se
+ * emitieron —de la plantilla anterior— siguen valiendo en todas partes: el
+ * número sale del mismo contador, así que no pueden chocar, y nada en el
+ * servidor ni en la tienda asume el prefijo al leer.
  */
 export async function siguienteFolio(
   dynamo: DynamoDBDocumentClient,
@@ -295,9 +317,27 @@ export async function siguienteFolio(
     }),
   );
   const n = Number(salida.Attributes?.valor);
-  return `AUR-${anio}-${String(n).padStart(5, "0")}`;
+  return `REY-${anio}-${String(n).padStart(5, "0")}`;
 }
 
+/** Una línea de la cuenta. `nombre` y `detalle` faltan en los pedidos de antes. */
+export type LineaGuardada = {
+  productoId: string;
+  ml: number;
+  cantidad: number;
+  unitario: number;
+  subtotal: number;
+  nombre?: string;
+  detalle?: string;
+};
+
+/**
+ * El pedido del negocio, tal como vive en `PEDIDO#<folio>/META`.
+ *
+ * Los campos opcionales llegaron después: las filas viejas no los tienen y se
+ * leen con valores por defecto (sin historial = solo «Pendiente» al crearse;
+ * sin `actualizadoEn` = nunca se cambió).
+ */
 export type PedidoTienda = {
   folio: string;
   fecha: string;
@@ -308,18 +348,32 @@ export type PedidoTienda = {
     escalon: string;
     /** Artículos que llegaron pero no existen en el catálogo: no se cobraron. */
     descartados: number;
-    lineas: {
-      productoId: string;
-      ml: number;
-      cantidad: number;
-      unitario: number;
-      subtotal: number;
-    }[];
+    lineas: LineaGuardada[];
   };
+  /**
+   * Quién compró con cuenta. `null` = compró sin sesión. **Ausente** = fila de
+   * antes de que se guardara este dato (entonces el dueño se reconoce por la
+   * copia en «Mis pedidos»).
+   */
+  cliente?: { sub: string; correo: string | null } | null;
+  historial?: CambioEstatus[];
+  guia?: string | null;
+  paqueteria?: string | null;
+  notaInterna?: string | null;
+  notaCliente?: string | null;
+  /** Sello de concurrencia (ISO): el panel lo manda de vuelta al cambiar el pedido. */
+  actualizadoEn?: string;
 };
 
-/** Lo que se guarda de la cotización: las cifras, sin estructuras de más. */
-export function cuentaDe(c: Cotizacion): PedidoTienda["cuenta"] {
+/** Nombre y presentación de una línea, como foto del momento de la compra. */
+export type Nombrador = (productoId: string, ml: number) => { nombre: string; detalle: string };
+
+/**
+ * Lo que se guarda de la cotización: las cifras, sin estructuras de más, y el
+ * nombre de cada línea tal como se llamaba al comprarla. Si mañana se renombra
+ * o se borra el perfume en el panel, el pedido sigue diciendo qué se vendió.
+ */
+export function cuentaDe(c: Cotizacion, nombrar?: Nombrador): PedidoTienda["cuenta"] {
   const { lineas, descartados, escalon, ...cifras } = c;
   return {
     ...cifras,
@@ -331,38 +385,9 @@ export function cuentaDe(c: Cotizacion): PedidoTienda["cuenta"] {
       cantidad: l.item.cantidad,
       unitario: l.unitario,
       subtotal: l.subtotal,
+      ...(nombrar ? nombrar(l.item.productoId, l.item.ml) : {}),
     })),
   };
-}
-
-/**
- * Guarda el pedido de la tienda, con o sin cuenta.
- *
- * Va en su propia partición (`PEDIDO#<folio>`) y en la partición `PEDIDOS` del
- * índice por fecha, que es la que listará el panel de administración. La
- * condición impide pisar un pedido existente si algún día el contador se
- * reiniciara por error.
- */
-export async function guardarPedidoTienda(
-  dynamo: DynamoDBDocumentClient,
-  tabla: string,
-  pedido: PedidoTienda,
-): Promise<void> {
-  const creadoEn = new Date().toISOString();
-  await dynamo.send(
-    new PutCommand({
-      TableName: tabla,
-      Item: {
-        PK: `PEDIDO#${pedido.folio}`,
-        SK: "META",
-        GSI1PK: "PEDIDOS",
-        GSI1SK: `${creadoEn}#${pedido.folio}`,
-        pedido,
-        creadoEn,
-      },
-      ConditionExpression: "attribute_not_exists(PK)",
-    }),
-  );
 }
 
 /* ── Acceso a datos ─────────────────────────────────────────────────────── */
@@ -446,6 +471,11 @@ export async function guardarDirecciones(
   );
 }
 
+/**
+ * Las copias de «Mis pedidos» tal como se guardaron. La API ya no la usa
+ * (`GET /pedidos` resuelve cada copia contra su META en `pedidos.ts`); se
+ * queda para `scripts/probar-tienda.ts`, que prueba la capa de datos.
+ */
 export async function listarPedidos(
   dynamo: DynamoDBDocumentClient,
   tabla: string,
@@ -465,6 +495,14 @@ export async function listarPedidos(
     .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.folio.localeCompare(a.folio));
 }
 
+/**
+ * La copia de un pedido en «Mis pedidos».
+ *
+ * **Nunca pisa una que ya exista**: el camino antiguo de `POST /pedidos` la
+ * escribe con lo que manda el navegador, y sin la condición un usuario podía
+ * reescribir la copia de su pedido real como «Entregado» o con total cero.
+ * Lanza `ConditionalCheckFailedException` si ya estaba.
+ */
 export async function guardarPedido(
   dynamo: DynamoDBDocumentClient,
   tabla: string,
@@ -480,6 +518,7 @@ export async function guardarPedido(
         pedido,
         creadoEn: new Date().toISOString(),
       },
+      ConditionExpression: "attribute_not_exists(PK)",
     }),
   );
 }

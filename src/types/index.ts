@@ -108,23 +108,46 @@ export interface ItemCarrito {
   cantidad: number;
 }
 
-export type EstatusPedido =
-  | "Pendiente"
-  | "Pagado"
-  | "En camino"
-  | "Entregado"
-  | "Cancelado";
+// El vocabulario y las formas del pedido las fija `compartido/pedido.ts`, el
+// mismo contrato que valida la API: un estatus nuevo llega a los dos lados.
+export type {
+  CambioEstatus,
+  CifrasPedido,
+  EstatusPedido,
+  LineaPedido,
+  PedidoDetalle,
+  PedidoPublico,
+  ResumenPedido,
+} from "../../compartido/pedido";
+import type { EstatusPedido } from "../../compartido/pedido";
+import type { IdEnvio, IdPago } from "../../compartido/reglas";
 
+/**
+ * Un pedido en las listas de la tienda. Los pedidos de muestra y las copias
+ * viejas de «Mis pedidos» traen solo lo básico; lo que manda hoy el servidor
+ * (`ResumenPedido`) trae además los campos opcionales.
+ */
 export interface Pedido {
-  id: string;
+  /** Solo lo tienen los pedidos de muestra; el servidor no lo manda. */
+  id?: string;
   folio: string;
   fecha: string;
   estatus: EstatusPedido;
   total: number;
   piezas: number;
   items: ItemCarrito[];
-  guia?: string;
-  paqueteria?: string;
+  guia?: string | null;
+  paqueteria?: string | null;
+  creadoEn?: string;
+  metodo?: IdPago | null;
+  envio?: IdEnvio | null;
+  escalon?: string | null;
+  nombre?: string;
+  telefono?: string;
+  correo?: string;
+  ciudad?: string;
+  estado?: string;
+  conCuenta?: boolean;
 }
 
 export interface Reseña {

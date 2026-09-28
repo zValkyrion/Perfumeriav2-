@@ -63,6 +63,13 @@ jobs:
         working-directory: .
         run: npm run probar:catalogo
 
+      # La Lambda entera contra DynamoDB, S3 y Cognito falsos, en memoria:
+      # pedidos, «Mis pedidos», el panel de la tienda (ventas, clientes,
+      # solicitudes) y el del catálogo. Va antes de pedir credenciales a
+      # propósito: sin ellas, nada de esto puede tocar AWS aunque quisiera.
+      - name: Probar la API sin AWS
+        run: npm run probar:local
+
       - name: Pedir credenciales temporales a AWS
         uses: aws-actions/configure-aws-credentials@v6
         with:

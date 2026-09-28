@@ -13,6 +13,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { CognitoIdentityProviderClient } from "@aws-sdk/client-cognito-identity-provider";
 import { gzipSync } from "node:zlib";
 import { firmarToken, pinCorrecto } from "./jwt";
 import {
@@ -24,29 +25,37 @@ import {
 } from "./identidad";
 import { leerLista } from "./precios";
 import {
-  cuentaDe,
   guardarCarrito,
   guardarDirecciones,
-  guardarPedido,
-  guardarPedidoTienda,
   leerCarrito,
   leerDirecciones,
-  listarPedidos,
   sanearCarrito,
   sanearDirecciones,
-  sanearPedido,
-  sanearSolicitud,
-  siguienteFolio,
 } from "./tienda";
-// Mismo cálculo que la tienda (`cotizar`) y precios de DynamoDB: la tienda
-// compila el mismo catálogo que aquí se lee, así que enseña lo que se cobra.
 import {
-  catalogoPublico,
-  disponibilidadDe,
-  fuenteDeCatalogo,
-} from "../../compartido/catalogo";
-import { cotizar } from "../../compartido/cotizacion";
-import type { PedidoRegistrado } from "../../compartido/pedido";
+  cancelarPedido,
+  consultarPedido,
+  crearPedido,
+  folioDeRuta,
+  misPedidos,
+  pedidoDelCliente,
+  type ContextoTienda,
+  type Salida,
+} from "./pedidos";
+import {
+  cambiarGrupo,
+  cambiarPedidoAdmin,
+  cambiarSolicitud,
+  clientes,
+  crearSolicitud,
+  detalleCliente,
+  listarPedidosAdmin,
+  listarSolicitudes,
+  pedidoAdmin,
+  ventas,
+} from "./tienda-admin";
+import type { ContextoCuentas } from "./cuentas";
+import { catalogoPublico, disponibilidadDe } from "../../compartido/catalogo";
 import {
   ARCHIVOS_CSV,
   escribirCSV,
@@ -105,6 +114,18 @@ const CATALOGO: Contexto = {
   bucket: Resource.Elrey_imagenes.name,
 };
 
+/** Pedidos, clientes y solicitudes: la tabla de la tienda y el catálogo con que se cobra. */
+const TIENDA: ContextoTienda = { dynamo, tabla: TABLA, tablaCatalogo: TABLA_CATALOGO };
+
+/**
+ * Las cuentas de Cognito, para el panel de clientes. El cliente se crea al
+ * primer uso: la mayoría de las invocaciones (la tienda, la captura) no lo
+ * necesitan y no tienen por qué pagar su arranque.
+ */
+let cuentasCtx: ContextoCuentas | null = null;
+const CUENTAS = (): ContextoCuentas =>
+  (cuentasCtx ??= { cognito: new CognitoIdentityProviderClient({}), pool: Resource.Elrey_usuarios.id });
+
 type Evento = {
   requestContext: { http: { method: string; path: string } };
   headers: Record<string, string | undefined>;
@@ -139,6 +160,12 @@ const json = (
   headers: { "content-type": "application/json", ...CORS, ...cabeceras },
   body: JSON.stringify(cuerpo),
 });
+
+/**
+ * Lo de pedidos, clientes y ventas lleva datos personales y cambia a cada
+ * momento: nunca se guarda en ninguna caché intermedia.
+ */
+const deSalida = (s: Salida) => json(s.estado, s.cuerpo, { "cache-control": "no-store" });
 
 function leerCuerpo<T>(evento: Evento): T | null {
   if (!evento.body) return null;
@@ -225,19 +252,34 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
 
     // Los pedidos de la tienda llegan con o sin cuenta —casi nadie se registra
     // para comprar—, así que van antes del filtro de sesión. La identidad, si
-    // viene, solo sirve para guardar además la copia en «Mis pedidos».
-    if (metodo === "POST" && ruta === "/pedidos") return crearPedido(evento);
+    // viene, solo sirve para ligar el pedido a su cuenta y a «Mis pedidos».
+    if (metodo === "POST" && ruta === "/pedidos") {
+      const sesion = await sesionDe(evento).catch(() => null);
+      return deSalida(await crearPedido(TIENDA, leerCuerpo<unknown>(evento), sesion));
+    }
+
+    // Seguir un pedido sin cuenta, con su folio y el teléfono del pedido.
+    if (metodo === "POST" && ruta === "/pedidos/consulta") {
+      return deSalida(await consultarPedido(TIENDA, leerCuerpo<unknown>(evento)));
+    }
+
+    // Distribuidor, contacto y factura: formularios públicos de la tienda.
+    if (metodo === "POST" && ruta === "/solicitudes") {
+      const sesion = await sesionDe(evento).catch(() => null);
+      const sub = sesion && tieneIdentidadPropia(sesion) ? sesion.sub : null;
+      return deSalida(await crearSolicitud(TIENDA, leerCuerpo<unknown>(evento), sub));
+    }
 
     // Todo lo demás exige identidad. La app puede capturar sin ella —los datos
     // viven en el teléfono—, pero nada sube sin haber iniciado sesión.
     const sesion = await sesionDe(evento);
     if (!sesion) return json(401, { error: "Sesión inválida o vencida" });
 
-    // El catálogo se edita solo con cuenta del grupo `admins`. Va antes que
-    // todo lo demás para que ninguna otra regla lo pueda abrir por accidente.
+    // La administración es solo para cuentas del grupo `admins`. Va antes que
+    // todo lo demás para que ninguna otra regla la pueda abrir por accidente.
     if (ruta.startsWith("/admin/")) {
       if (!esAdmin(sesion)) {
-        return json(403, { error: "El catálogo solo lo edita una cuenta del grupo admins" });
+        return json(403, { error: "Esta sección es solo para administradores" });
       }
       return rutaAdmin(evento, metodo, ruta, sesion);
     }
@@ -246,11 +288,13 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
     // son de quien inició sesión, sea cliente o del equipo. Lo que se exige aquí
     // no es un grupo sino una identidad propia — el carrito se guarda bajo el
     // `sub`, y el PIN compartido no identifica a nadie.
+    const dePedido = ruta.match(/^\/pedidos\/([^/]+)(\/cancelar)?$/);
     if (
       ruta === "/carrito" ||
       ruta === "/pedidos" ||
       ruta === "/direcciones" ||
-      ruta === "/cuenta"
+      ruta === "/cuenta" ||
+      dePedido
     ) {
       if (!tieneIdentidadPropia(sesion)) {
         return json(403, {
@@ -267,8 +311,20 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
       if (metodo === "PUT" && ruta === "/direcciones") {
         return ponerDirecciones(evento, sesion.sub);
       }
-      if (metodo === "GET" && ruta === "/pedidos") return verPedidos(sesion.sub);
+      if (metodo === "GET" && ruta === "/pedidos") {
+        return deSalida({ estado: 200, cuerpo: { pedidos: await misPedidos(TIENDA, sesion.sub) } });
+      }
       if (metodo === "DELETE" && ruta === "/cuenta") return borrarCuenta(sesion.sub);
+      if (dePedido) {
+        const folio = folioDeRuta(dePedido[1]!);
+        if (!folio) return json(404, { error: "No encontramos ese pedido" });
+        if (metodo === "GET" && !dePedido[2]) {
+          return deSalida(await pedidoDelCliente(TIENDA, sesion.sub, folio));
+        }
+        if (metodo === "POST" && dePedido[2]) {
+          return deSalida(await cancelarPedido(TIENDA, sesion.sub, folio));
+        }
+      }
       return json(405, { error: `${metodo} no va en ${ruta}` });
     }
 
@@ -401,6 +457,38 @@ async function rutaAdmin(
     return json(202, await estadoPublicacion(dynamo, TABLA_CATALOGO, token));
   }
 
+  // ── La tienda: pedidos, ventas, clientes y solicitudes ──
+  const q = evento.queryStringParameters ?? {};
+
+  if (metodo === "GET" && ruta === "/admin/pedidos") return deSalida(await listarPedidosAdmin(TIENDA, q));
+
+  const pedido = ruta.match(/^\/admin\/pedidos\/([^/]+)$/);
+  if (pedido) {
+    const folio = folioDeRuta(pedido[1]!);
+    if (!folio) return json(404, { error: "No existe ese pedido" });
+    if (metodo === "GET") return deSalida(await pedidoAdmin(TIENDA, folio));
+    if (metodo === "PUT") {
+      return deSalida(await cambiarPedidoAdmin(TIENDA, folio, leerCuerpo<unknown>(evento), quien));
+    }
+    return json(405, { error: `${metodo} no va en ${ruta}` });
+  }
+
+  if (metodo === "GET" && ruta === "/admin/ventas") return deSalida(await ventas(TIENDA, q));
+
+  if (metodo === "GET" && ruta === "/admin/clientes") return deSalida(await clientes(TIENDA, CUENTAS()));
+  if (metodo === "GET" && ruta === "/admin/clientes/detalle") {
+    return deSalida(await detalleCliente(TIENDA, CUENTAS(), q.clave ?? ""));
+  }
+  if (metodo === "PUT" && ruta === "/admin/clientes/grupos") {
+    return deSalida(await cambiarGrupo(CUENTAS(), leerCuerpo<unknown>(evento), sesion));
+  }
+
+  if (metodo === "GET" && ruta === "/admin/solicitudes") return deSalida(await listarSolicitudes(TIENDA));
+  const solicitud = ruta.match(/^\/admin\/solicitudes\/([A-Za-z0-9-]{1,64})$/);
+  if (solicitud && metodo === "PUT") {
+    return deSalida(await cambiarSolicitud(TIENDA, solicitud[1]!, leerCuerpo<unknown>(evento)));
+  }
+
   return json(404, { error: `Sin ruta para ${metodo} ${ruta}` });
 }
 
@@ -438,10 +526,6 @@ async function ponerDirecciones(evento: Evento, sub: string) {
   return json(200, { direcciones });
 }
 
-async function verPedidos(sub: string) {
-  return json(200, { pedidos: await listarPedidos(dynamo, TABLA, sub) });
-}
-
 /**
  * Borra lo que la tienda guarda de una cuenta: carrito, direcciones y su copia
  * de «Mis pedidos», todo lo que vive bajo `USER#<sub>`.
@@ -473,90 +557,6 @@ async function borrarCuenta(sub: string) {
     desde = r.LastEvaluatedKey;
   } while (desde);
   return json(200, { ok: true, borrados });
-}
-
-/** Fecha de calendario en México: un pedido de las 8 pm no es de mañana. */
-function fechaMexico(ahora: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Mexico_City",
-  }).format(ahora);
-}
-
-/**
- * Registra un pedido de la tienda.
- *
- * **El total se calcula aquí**, con `cotizar` y los precios del catálogo. Lo que
- * el navegador creyó que costaba no se lee: cualquiera puede editar su propio
- * JavaScript y mandar un cero. El folio también sale de aquí, de un contador.
- */
-async function crearPedido(evento: Evento) {
-  const cuerpo = leerCuerpo<unknown>(evento);
-  const sesion = await sesionDe(evento).catch(() => null);
-  const sub = sesion && tieneIdentidadPropia(sesion) ? sesion.sub : null;
-
-  // Camino antiguo: una pestaña abierta con el JavaScript de antes todavía
-  // manda su propio folio y su total para «Mis pedidos». Se acepta como antes
-  // —solo con cuenta— para que esa compra no falle, pero no crea un pedido de
-  // la tienda: ese navegador ya le enseñó al comprador su propio folio. Se
-  // reconoce por no traer `contacto`, que el contrato nuevo siempre lleva: un
-  // `folio` metido a mano en una solicitud nueva se ignora, no la desvía aquí.
-  const bruto = (cuerpo ?? {}) as { folio?: unknown; contacto?: unknown };
-  if (typeof bruto.folio === "string" && bruto.contacto === undefined) {
-    if (!sub) return json(401, { error: "Sesión inválida o vencida" });
-    const copia = sanearPedido(cuerpo);
-    if (!copia) return json(400, { error: "Falta el folio del pedido" });
-    await guardarPedido(dynamo, TABLA, sub, copia);
-    return json(200, { ok: true, folio: copia.folio });
-  }
-
-  const solicitud = sanearSolicitud(cuerpo);
-  if (!solicitud) {
-    return json(400, {
-      error: "Pedido inválido: faltan artículos, forma de pago o nombre y teléfono",
-    });
-  }
-
-  const catalogo = await catalogoVigente(dynamo, TABLA_CATALOGO);
-  const cotizacion = cotizar(solicitud.items, fuenteDeCatalogo(catalogo), {
-    cupon: solicitud.cupon,
-    metodo: solicitud.metodo,
-    envio: solicitud.envio,
-  });
-  if (cotizacion.lineas.length === 0) {
-    return json(422, { error: "Ningún artículo del pedido existe en el catálogo" });
-  }
-
-  const fecha = fechaMexico(new Date());
-  const folio = await siguienteFolio(dynamo, TABLA, fecha.slice(0, 4));
-
-  await guardarPedidoTienda(dynamo, TABLA, {
-    folio,
-    fecha,
-    estatus: "Pendiente",
-    solicitud,
-    cuenta: cuentaDe(cotizacion),
-  });
-
-  if (sub) {
-    await guardarPedido(dynamo, TABLA, sub, {
-      folio,
-      fecha,
-      estatus: "Pendiente",
-      total: cotizacion.total,
-      piezas: cotizacion.piezasTotales,
-      items: solicitud.items,
-    });
-  }
-
-  const registrado: PedidoRegistrado = {
-    folio,
-    fecha,
-    total: cotizacion.total,
-    comision: cotizacion.comision,
-    descuentoTransferencia: cotizacion.descuentoTransferencia,
-    metodo: cotizacion.metodo ?? solicitud.metodo,
-  };
-  return json(201, registrado);
 }
 
 // ── Proveedores ─────────────────────────────────────────────────────────────

@@ -57,3 +57,9 @@ radar/.sst/
 
 # salida del sitio unificado (tienda + radar)
 radar/salida-sitio/
+
+# pruebas locales sin AWS: la Lambda empaquetada y las sesiones de prueba que
+# genera `npm --prefix radar run probar:local` (o `servidor:local`). La vieja
+# carpeta de la receta a mano (radar/.prueba) tampoco se versiona.
+radar/pruebas-locales/.generado/
+radar/.prueba/

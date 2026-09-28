@@ -64,11 +64,16 @@ const conTarjeta = cotizar([yara(20)], FUENTE, { metodo: "clip" });
 igual("con tarjeta no hay descuento extra", [conTarjeta.descuentoTransferencia, conTarjeta.total], [0, 7966]);
 
 // ── Tope del 40%: cede el cupón antes que la transferencia ─────────────────
-const tope = cotizar([yara(20)], FUENTE, { metodo: "transferencia", cupon: "AURA10" });
+const tope = cotizar([yara(20)], FUENTE, { metodo: "transferencia", cupon: "REY10" });
 igual("con el 40% alcanzado, el cupón ya no descuenta", [tope.descuentoCupon, tope.total], [0, 6828]);
 
-const cuponSolo = cotizar([yara(3)], FUENTE, { cupon: "AURA10" });
+const cuponSolo = cotizar([yara(3)], FUENTE, { cupon: "REY10" });
 igual("por debajo del tope el cupón sí aplica", cuponSolo.descuentoCupon, 153.63);
+
+// AURA10 es el cupón de la plantilla anterior: quien lo tenga guardado sigue
+// recibiendo lo mismo que con REY10, el que reparte el boletín ahora.
+const cuponViejo = cotizar([yara(3)], FUENTE, { cupon: "AURA10" });
+igual("AURA10 sigue valiendo, con la misma regla que REY10", [cuponViejo.descuentoCupon, cuponViejo.total], [cuponSolo.descuentoCupon, cuponSolo.total]);
 
 const cuponInventado = cotizar([yara(3)], FUENTE, { cupon: "GRATIS100" });
 igual("un cupón que no existe no descuenta", [cuponInventado.cupon, cuponInventado.descuentoCupon], [null, 0]);

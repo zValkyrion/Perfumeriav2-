@@ -45,6 +45,12 @@ export type Identidad = {
    * nunca.
    */
   sub: string | null;
+  /**
+   * El correo de la cuenta de Cognito, si el token lo trae. Se guarda en el
+   * pedido para que el panel sepa con qué cuenta se compró aunque el cliente
+   * haya escrito otro correo de contacto.
+   */
+  correo: string | null;
   /** De dónde salió esta sesión. */
   origen: "cognito" | "pin";
 };
@@ -66,7 +72,8 @@ async function sesionPorCognito(token: string): Promise<Identidad | null> {
       (carga.name as string | undefined) ??
       (carga.email as string | undefined) ??
       carga.sub;
-    return { evaluador: nombre, grupos, sub: carga.sub, origen: "cognito" };
+    const correo = typeof carga.email === "string" ? carga.email : null;
+    return { evaluador: nombre, grupos, sub: carga.sub, correo, origen: "cognito" };
   } catch {
     // No es de Cognito —o está vencido—: puede seguir siendo del PIN.
     return null;
@@ -79,7 +86,7 @@ function sesionPorPin(token: string): Identidad | null {
     Resource.Elrey_jwt_secreto.value,
   );
   if (!sesion) return null;
-  return { evaluador: sesion.evaluador, grupos: [], sub: null, origen: "pin" };
+  return { evaluador: sesion.evaluador, grupos: [], sub: null, correo: null, origen: "pin" };
 }
 
 /**

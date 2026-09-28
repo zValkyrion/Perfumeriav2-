@@ -132,6 +132,14 @@ export function comisionDe(metodo: IdPago): number {
 
 /* ── Cupones ──────────────────────────────────────────────────────────── */
 
+/**
+ * `REY10` es el cupón de bienvenida que reparte el boletín. `AURA10` es el de
+ * la plantilla de antes: se sigue aceptando con la misma regla para no dejar
+ * sin descuento a quien ya lo tiene guardado.
+ */
+const BIENVENIDA = { descuento: 0.1, etiqueta: "10% de bienvenida" };
+
 export const CUPONES: Record<string, { descuento: number; etiqueta: string }> = {
-  AURA10: { descuento: 0.1, etiqueta: "10% de bienvenida" },
+  REY10: BIENVENIDA,
+  AURA10: BIENVENIDA,
 };
