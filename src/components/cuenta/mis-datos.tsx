@@ -23,7 +23,8 @@ export function MisDatosCuenta({
 }: {
   sesion: Sesion;
   perfil: Perfil;
-  piezas: number;
+  /** Piezas de pedidos vendidos; `null` mientras no se sabe (sin red o cargando). */
+  piezas: number | null;
 }) {
   return (
     <div className="grid max-w-2xl gap-4">
@@ -130,7 +131,7 @@ function DatosPersonales({
 }: {
   sesion: Sesion;
   perfil: Perfil;
-  piezas: number;
+  piezas: number | null;
 }) {
   const [nombre, setNombre] = useState(perfil.nombre);
   const [telefono, setTelefono] = useState(perfil.telefono);
@@ -172,9 +173,13 @@ function DatosPersonales({
             }}
           />
         </div>
-        <p className="text-fg-muted text-sm">
-          Piezas compradas: <strong className="text-fg">{piezas}</strong>
-        </p>
+        {/* Sin la lista de pedidos no se sabe la cifra: se calla en vez de
+            decir «0», que parecería que se le borraron las compras. */}
+        {piezas !== null ? (
+          <p className="text-fg-muted text-sm">
+            Piezas compradas y pagadas: <strong className="text-fg">{piezas}</strong>
+          </p>
+        ) : null}
         <Estado estado={estado} />
         <div>
           <Button

@@ -64,13 +64,6 @@ function construirProducto(p: ProductoCatalogo): Producto {
     presentaciones: presentacionesDe(p),
     imagenes: p.imagenes.length > 0 ? p.imagenes.map(urlImagen) : [SIN_FOTO],
     badges: p.badges,
-    // No hay reseñas ni contador de visitas: antes estos tres campos salían de
-    // un número al azar por slug y la tienda los pintaba como calificación,
-    // «N reseñas» y «N personas están viendo». Nadie los lee ya; quedan en
-    // cero solo porque el tipo `Producto` todavía los exige.
-    rating: 0,
-    totalReseñas: 0,
-    viendoAhora: 0,
     duracion: p.duracion,
     estela: p.estela,
     ocasion: p.ocasion,

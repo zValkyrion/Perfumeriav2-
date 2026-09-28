@@ -64,7 +64,9 @@ export const FOOTER_TIENDA: EnlaceNav[] = [
 export const FOOTER_AYUDA: EnlaceNav[] = [
   { label: "Envíos", href: "/envios" },
   { label: "Devoluciones", href: "/devoluciones" },
-  { label: "Rastrear pedido", href: "/cuenta" },
+  // Al rastreo sin cuenta y no a /cuenta: casi todos compran sin cuenta, y
+  // para ellos /cuenta era solo una pantalla de acceso.
+  { label: "Rastrear pedido", href: "/rastreo" },
   { label: "Preguntas frecuentes", href: "/faq" },
   { label: "Contacto", href: "/contacto" },
   { label: "Nosotros", href: "/nosotros" },

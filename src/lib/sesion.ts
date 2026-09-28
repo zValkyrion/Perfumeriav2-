@@ -65,6 +65,19 @@ export type Perfil = {
 };
 
 /**
+ * El JSON de en medio del token, como texto.
+ *
+ * Cognito lo codifica en UTF-8 y `atob` devuelve bytes sueltos: sin pasar por
+ * `TextDecoder`, «Martínez» salía «MartÃ­nez» — y «Mis datos» lo guardaba así
+ * en la cuenta al primer «Guardar».
+ */
+function cargaDelToken(token: string): string {
+  const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+/**
  * Lee el token sin verificar la firma: aquí solo decide qué pintar.
  *
  * **Quien verifica de verdad es la API**, contra las claves públicas de Cognito.
@@ -72,9 +85,7 @@ export type Perfil = {
  */
 export function leerPerfil(idToken: string): Perfil | null {
   try {
-    const carga = JSON.parse(
-      atob(idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
-    );
+    const carga = JSON.parse(cargaDelToken(idToken));
     return {
       correo: carga.email ?? "",
       nombre: carga.name ?? carga.email ?? "",

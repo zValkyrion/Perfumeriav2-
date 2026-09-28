@@ -1,8 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, MapPin, Package, Pencil, Plus, Trash2, User } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import {
+  ArrowRight,
+  Heart,
+  MapPin,
+  Package,
+  Pencil,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Trash2,
+  Truck,
+  User,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,86 +23,58 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Contenedor } from "@/components/comunes/layout";
 import { Precio } from "@/components/comunes/precio";
 import { GridProductos } from "@/components/producto/grid-productos";
-import { DIRECCIONES, PEDIDOS, USUARIO } from "@/data/cuenta";
+import { piezasVendidas } from "@/data/cuenta";
 import { InicioSesion } from "@/components/cuenta/inicio-sesion";
 import { AccesoPanelCuenta } from "@/components/comunes/acceso-panel";
-import { hayLogin, useSesion } from "@/lib/sesion";
+import { hayLogin, useSesion, type Perfil, type Sesion } from "@/lib/sesion";
 import {
+  ErrorRemoto,
   guardarDireccionesRemotas,
   haySincronizacion,
   leerDireccionesRemotas,
-  leerPedidosRemotos,
+  leerPedidosCliente,
 } from "@/lib/cuenta-remota";
 import { PRODUCTOS } from "@/data/productos";
 import { formatoFechaLarga } from "@/lib/format";
 import { useTienda } from "@/store/tienda";
-import type { Direccion, EstatusPedido, Pedido } from "@/types";
+import type { Direccion, EstatusPedido, ResumenPedido } from "@/types";
+import { ESTATUS_PEDIDO, nombrePaqueteria } from "../../../compartido/pedido";
 import { NivelCliente } from "./nivel-cliente";
 import { MisDatosCuenta } from "./mis-datos";
+import { AvisoTiendaPrincipal } from "./aviso-tienda-principal";
+import { InsigniaEstatus } from "./pedido-comun";
+import { useVolverAPedir } from "./volver-a-pedir";
 import { cn } from "@/lib/utils";
 
-const COLOR_ESTATUS: Record<EstatusPedido, string> = {
-  Pendiente: "bg-warning/15 text-warning",
-  Pagado: "bg-gold-muted text-gold-light",
-  "En camino": "bg-gold-muted text-gold-light",
-  Entregado: "bg-success/15 text-success",
-  Cancelado: "bg-danger/15 text-danger",
-};
-
 /**
- * Los pedidos de la cuenta, o los de muestra si todavía no hay dónde leerlos.
+ * «Mi cuenta».
  *
- * `reales` es lo que separa las dos cosas, y separarlas importa: una lista de
- * muestra presentada como propia es peor que no tener lista, porque quien la ve
- * cree que su pedido está en camino. Cuando la sesión es real, lo que sale es lo
- * que hay —aunque sean cero pedidos— y la pantalla lo dice.
+ * Tres casos, y en ninguno se inventa nada:
+ * - Sin Cognito (GitHub Pages): no hay cuenta que enseñar; se manda a la
+ *   tienda principal. Antes salía una cuenta de muestra sin pedir entrar.
+ * - Con Cognito y sin sesión: la pantalla de acceso.
+ * - Con sesión: los datos de la cuenta. Si el servidor no contesta, se dice
+ *   que no contestó y se ofrece «Reintentar» — nunca «no hay pedidos».
  */
-function usePedidos(cuenta: string | null): {
-  lista: readonly Pedido[];
-  reales: boolean;
-  cargando: boolean;
-} {
-  // La respuesta se guarda junto a la cuenta que la pidió: si alguien cierra
-  // sesión y entra con otra, la lista anterior no se queda en pantalla como si
-  // fuera suya mientras llega la nueva.
-  const [traido, setTraido] = useState<{ cuenta: string; pedidos: Pedido[] } | null>(
-    null,
-  );
-
-  useEffect(() => {
-    if (!haySincronizacion() || !cuenta) return;
-    let vivo = true;
-    leerPedidosRemotos()
-      .then((r) => vivo && setTraido({ cuenta, pedidos: r.pedidos }))
-      // Sin red se queda sin lista en vez de enseñar la de muestra: inventar
-      // pedidos de otra persona en la cuenta de alguien es el peor error posible
-      // en esta pantalla.
-      .catch(() => vivo && setTraido({ cuenta, pedidos: [] }));
-    return () => {
-      vivo = false;
-    };
-  }, [cuenta]);
-
-  if (!haySincronizacion() || !cuenta) {
-    return { lista: PEDIDOS, reales: false, cargando: false };
-  }
-  const listo = traido?.cuenta === cuenta;
-  return { lista: listo ? traido.pedidos : [], reales: true, cargando: !listo };
-}
-
 export function VistaCuenta() {
-  const hidratado = useTienda((s) => s.hidratado);
-  const favoritos = useTienda((s) => s.favoritos);
   const sesion = useSesion();
-  const pedidos = usePedidos(sesion.perfil?.correo ?? null);
 
-  const productosFavoritos = PRODUCTOS.filter((p) => favoritos.includes(p.id));
+  if (!hayLogin()) {
+    return (
+      <AvisoTiendaPrincipal
+        titulo="Tu cuenta vive en la tienda principal"
+        texto="Esta copia de la tienda no guarda cuentas. Entra en la tienda principal para ver tus pedidos, tus direcciones y tu nivel de cliente."
+        ruta="/cuenta/"
+        cta="Ir a mi cuenta"
+      />
+    );
+  }
 
   // Antes de leer `localStorage` no se sabe si hay sesión: pintar la pantalla
   // de acceso y quitarla medio segundo después es peor que esperar.
-  if (hayLogin() && !sesion.listo) return null;
+  if (!sesion.listo) return null;
 
-  if (hayLogin() && !sesion.perfil) {
+  if (!sesion.perfil) {
     return (
       <Contenedor className="py-10 lg:py-16">
         <InicioSesion sesion={sesion} />
@@ -97,45 +82,99 @@ export function VistaCuenta() {
     );
   }
 
-  // El nombre, los pedidos y las direcciones salen de la cuenta cuando la hay.
-  const nombre = sesion.perfil?.nombre || USUARIO.nombre;
-  const correo = sesion.perfil?.correo || USUARIO.correo;
-  const piezasCompradas = pedidos.reales
-    ? pedidos.lista.reduce((n, p) => n + p.piezas, 0)
-    : USUARIO.piezasCompradas;
+  // `key`: si alguien cierra sesión y entra con otra cuenta en la misma
+  // pestaña, nada de la anterior (pedidos, libreta, filtros) sobrevive.
+  return <CuentaConSesion key={sesion.perfil.sub} sesion={sesion} perfil={sesion.perfil} />;
+}
+
+/* ── Pedidos ──────────────────────────────────────────────────────────── */
+
+type EstadoPedidos =
+  | { tipo: "cargando" }
+  | { tipo: "sinServidor" }
+  | { tipo: "error"; mensaje: string }
+  | { tipo: "listo"; pedidos: ResumenPedido[] };
+
+/** Mensaje de un fallo al leer, que distingue «sin red» de «sesión vencida». */
+function mensajeDeError(e: unknown, que: string): string {
+  if (e instanceof ErrorRemoto && e.estado === 401) {
+    return "Tu sesión venció. Cierra sesión y vuelve a entrar.";
+  }
+  if (e instanceof ErrorRemoto && e.estado === 0) {
+    return `No pudimos conectar con la tienda para traer ${que}. Revisa tu conexión y vuelve a intentarlo.`;
+  }
+  return `La tienda no pudo traer ${que} ahora. Vuelve a intentarlo en un momento.`;
+}
+
+/**
+ * «Mis pedidos» del servidor, con el estatus de ahora.
+ *
+ * La respuesta se guarda junto a la clave del intento (`intento`): «Reintentar»
+ * cambia la clave y la pantalla vuelve a «cargando» sin tener que borrar nada
+ * dentro de un efecto.
+ */
+function usePedidos(): EstadoPedidos & { reintentar: () => void } {
+  const [intento, setIntento] = useState(0);
+  const [traido, setTraido] = useState<{ intento: number; estado: EstadoPedidos } | null>(null);
+  const reintentar = () => setIntento((n) => n + 1);
+
+  useEffect(() => {
+    if (!haySincronizacion()) return;
+    let vivo = true;
+    leerPedidosCliente()
+      .then((pedidos) => vivo && setTraido({ intento, estado: { tipo: "listo", pedidos } }))
+      .catch(
+        (e) =>
+          vivo &&
+          setTraido({ intento, estado: { tipo: "error", mensaje: mensajeDeError(e, "tus pedidos") } }),
+      );
+    return () => {
+      vivo = false;
+    };
+  }, [intento]);
+
+  if (!haySincronizacion()) return { tipo: "sinServidor", reintentar };
+  if (traido?.intento !== intento) return { tipo: "cargando", reintentar };
+  return { ...traido.estado, reintentar };
+}
+
+function CuentaConSesion({ sesion, perfil }: { sesion: Sesion; perfil: Perfil }) {
+  const hidratado = useTienda((s) => s.hidratado);
+  const favoritos = useTienda((s) => s.favoritos);
+  const pedidos = usePedidos();
+
+  const productosFavoritos = PRODUCTOS.filter((p) => favoritos.includes(p.id));
+  const nombre = perfil.nombre || perfil.correo;
+  // Solo cuentan piezas de pedidos vendidos: la misma regla del panel.
+  const piezas = pedidos.tipo === "listo" ? piezasVendidas(pedidos.pedidos) : null;
 
   return (
     <Contenedor className="py-6 lg:py-10">
+      {/* `useSearchParams` pide su propio límite de Suspense en la exportación
+          estática; va aislado para que el resto de la cuenta no espere. */}
+      <Suspense fallback={null}>
+        <AvisoVolverCheckout />
+      </Suspense>
+
       <header className="mb-7">
         <p className="eyebrow mb-2">Mi cuenta</p>
         <h1 className="font-display text-[32px] leading-tight tracking-tight lg:text-[42px]">
           Hola, {nombre.split(" ")[0]}
         </h1>
-        {/* La antigüedad todavía no se guarda en ningún sitio. Con sesión real
-            se calla en vez de enseñar la del usuario de muestra: sería la fecha
-            de otra persona en la cuenta de quien está mirando. */}
-        {pedidos.reales ? (
-          <p className="text-fg-muted mt-2 text-sm">{correo}</p>
-        ) : (
-          <p className="text-fg-muted mt-2 text-sm">
-            Cliente desde {formatoFechaLarga(USUARIO.desde)}
-          </p>
-        )}
+        <p className="text-fg-muted mt-2 text-sm">{perfil.correo}</p>
 
-        {sesion.perfil && (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={sesion.salir}
-              className="text-fg-subtle hover:text-fg-muted inline-flex min-h-11 items-center text-sm"
-            >
-              Cerrar sesión
-            </button>
-          </div>
-        )}
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={sesion.salir}
+            className="text-fg-subtle hover:text-fg-muted inline-flex min-h-11 items-center text-sm"
+          >
+            Cerrar sesión
+          </button>
+        </div>
 
         {/* Solo para admins y equipo: el resto de las cuentas no lo ve. */}
-        <AccesoPanelCuenta perfil={sesion.perfil} className="mt-5" />
+        <AccesoPanelCuenta perfil={perfil} className="mt-5" />
       </header>
 
       <Tabs defaultValue="pedidos">
@@ -160,68 +199,21 @@ export function VistaCuenta() {
 
         <TabsContent value="pedidos">
           <div className="lg:grid lg:grid-cols-[1fr_340px] lg:items-start lg:gap-8">
-            {pedidos.cargando ? (
-              <div className="h-40 animate-pulse rounded-lg bg-white/5" />
-            ) : pedidos.lista.length === 0 ? (
-              <div className="border-border-soft rounded-lg border border-dashed px-6 py-14 text-center">
-                <Package size={28} className="text-fg-subtle mx-auto mb-3" aria-hidden />
-                <p className="font-display mb-2 text-xl">Todavía no hay pedidos</p>
-                <p className="text-fg-muted mb-6 text-sm">
-                  Cuando cierres una compra aparecerá aquí, con su folio y su
-                  rastreo.
-                </p>
-                <Button asChild variant="gold" size="touch">
-                  <Link href="/catalogo">Ver el catálogo</Link>
-                </Button>
-              </div>
-            ) : (
-            <ul className="space-y-3">
-              {pedidos.lista.map((p) => (
-                <li
-                  key={p.folio}
-                  className="border-border-soft bg-surface lift rounded-md border p-4 lg:p-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p data-precio className="font-medium">
-                        {p.folio}
-                      </p>
-                      <p className="text-fg-subtle mt-0.5 text-xs">
-                        {formatoFechaLarga(p.fecha)} · {p.piezas}{" "}
-                        {p.piezas === 1 ? "pieza" : "piezas"}
-                      </p>
-                    </div>
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-[11px] font-medium",
-                        COLOR_ESTATUS[p.estatus],
-                      )}
-                    >
-                      {p.estatus}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                    <Precio valor={p.total} moneda className="font-medium" />
-                    <Button asChild variant="outline" size="touch">
-                      <Link href={`/cuenta/pedido/?folio=${encodeURIComponent(p.folio)}`}>
-                        Ver detalle y rastreo
-                      </Link>
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            )}
-
+            <div className="min-w-0">
+              <ListaPedidos estado={pedidos} />
+            </div>
             <div className="mt-6 lg:mt-0">
-              <NivelCliente piezas={piezasCompradas} />
+              {piezas !== null ? (
+                <NivelCliente piezas={piezas} />
+              ) : pedidos.tipo === "cargando" ? (
+                <div className="h-48 animate-pulse rounded-lg bg-white/5" />
+              ) : null}
             </div>
           </div>
         </TabsContent>
 
         <TabsContent value="direcciones">
-          <Direcciones cuenta={sesion.perfil?.sub ?? null} nombre={nombre} />
+          <Direcciones nombre={perfil.nombre} telefono={perfil.telefono} />
         </TabsContent>
 
         <TabsContent value="favoritos">
@@ -244,54 +236,287 @@ export function VistaCuenta() {
         </TabsContent>
 
         <TabsContent value="datos">
-          {sesion.perfil ? (
-            <MisDatosCuenta
-              key={sesion.perfil.sub}
-              sesion={sesion}
-              perfil={sesion.perfil}
-              piezas={piezasCompradas}
-            />
-          ) : (
-          <MisDatos
-            nombre={nombre}
-            correo={correo}
-            piezas={piezasCompradas}
-            reales={pedidos.reales}
-          />
-          )}
+          <MisDatosCuenta sesion={sesion} perfil={perfil} piezas={piezas} />
         </TabsContent>
       </Tabs>
     </Contenedor>
   );
 }
 
-/** CRUD de direcciones en memoria (§13). */
-function Direcciones({ cuenta, nombre }: { cuenta: string | null; nombre: string }) {
-  const conCuenta = haySincronizacion() && cuenta !== null;
-  // `null` mientras se traen. Sin cuenta no hay nada que traer: se enseñan las
-  // de muestra, igual que los pedidos.
-  const [direcciones, setDirecciones] = useState<Direccion[] | null>(
-    conCuenta ? null : [...DIRECCIONES],
+/**
+ * «Vuelve a tu compra», cuando se llegó a entrar desde el checkout
+ * (`/cuenta/?volver=checkout`). No redirige solo: quien acaba de crear su
+ * cuenta puede querer mirarla antes, y el carrito no se va a ningún lado.
+ */
+function AvisoVolverCheckout() {
+  const volver = useSearchParams().get("volver") === "checkout";
+  const piezas = useTienda((s) => s.carrito.reduce((n, i) => n + i.cantidad, 0));
+  if (!volver || piezas === 0) return null;
+  return (
+    <div className="border-gold/35 bg-gold-muted mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md border px-4 py-3">
+      <p className="text-sm">Listo, ya entraste. Tu carrito te espera.</p>
+      <Button asChild variant="gold" size="touch">
+        <Link href="/checkout">
+          Volver a finalizar compra
+          <ArrowRight size={15} aria-hidden />
+        </Link>
+      </Button>
+    </div>
   );
+}
+
+/** Un estado de error con «Reintentar», el mismo para pedidos y direcciones. */
+function ErrorConReintento({
+  titulo,
+  mensaje,
+  onReintentar,
+}: {
+  titulo: string;
+  mensaje: string;
+  onReintentar: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="border-danger/30 bg-danger/5 rounded-lg border px-6 py-10 text-center"
+    >
+      <p className="font-display mb-2 text-xl">{titulo}</p>
+      <p className="text-fg-muted mx-auto mb-6 max-w-md text-sm leading-relaxed">{mensaje}</p>
+      <Button variant="goldOutline" size="touch" onClick={onReintentar}>
+        <RefreshCw size={15} aria-hidden />
+        Reintentar
+      </Button>
+    </div>
+  );
+}
+
+type Filtro = "todos" | EstatusPedido;
+
+function ListaPedidos({ estado }: { estado: ReturnType<typeof usePedidos> }) {
+  const [filtro, setFiltro] = useState<Filtro>("todos");
+  const volverAPedir = useVolverAPedir();
+
+  if (estado.tipo === "cargando") {
+    return (
+      <div className="space-y-3" aria-busy="true" aria-label="Cargando tus pedidos">
+        <div className="h-28 animate-pulse rounded-md bg-white/5" />
+        <div className="h-28 animate-pulse rounded-md bg-white/5" />
+      </div>
+    );
+  }
+
+  if (estado.tipo === "sinServidor") {
+    return (
+      <div className="border-border-soft rounded-lg border border-dashed px-6 py-14 text-center">
+        <Package size={28} className="text-fg-subtle mx-auto mb-3" aria-hidden />
+        <p className="font-display mb-2 text-xl">Tus pedidos no están disponibles aquí</p>
+        <p className="text-fg-muted text-sm">
+          Esta versión de la tienda no está conectada al servidor de pedidos.
+        </p>
+      </div>
+    );
+  }
+
+  if (estado.tipo === "error") {
+    return (
+      <ErrorConReintento
+        titulo="No pudimos cargar tus pedidos"
+        mensaje={estado.mensaje}
+        onReintentar={estado.reintentar}
+      />
+    );
+  }
+
+  const { pedidos } = estado;
+  if (pedidos.length === 0) {
+    return (
+      <div className="border-border-soft rounded-lg border border-dashed px-6 py-14 text-center">
+        <Package size={28} className="text-fg-subtle mx-auto mb-3" aria-hidden />
+        <p className="font-display mb-2 text-xl">Todavía no hay pedidos</p>
+        <p className="text-fg-muted mb-6 text-sm">
+          Los pedidos que hagas con tu sesión iniciada aparecen aquí, con su folio
+          y cómo van.
+        </p>
+        <div className="flex flex-col items-center gap-2">
+          <Button asChild variant="gold" size="touch">
+            <Link href="/catalogo">Ver el catálogo</Link>
+          </Button>
+          <Button asChild variant="goldGhost" size="touch">
+            <Link href="/rastreo">¿Compraste sin cuenta? Rastrea tu pedido</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Solo los estatus que de verdad aparecen: seis chips para dos pedidos
+  // serían ruido. «Todos» siempre.
+  const conteo = new Map<EstatusPedido, number>();
+  for (const p of pedidos) conteo.set(p.estatus, (conteo.get(p.estatus) ?? 0) + 1);
+  const chips = ESTATUS_PEDIDO.filter((e) => conteo.has(e));
+  // Si el filtro elegido se quedó sin pedidos (se canceló el último), se
+  // vuelve a «Todos» en vez de enseñar una lista vacía engañosa.
+  const activo: Filtro = filtro !== "todos" && !conteo.has(filtro) ? "todos" : filtro;
+  const visibles = activo === "todos" ? pedidos : pedidos.filter((p) => p.estatus === activo);
+
+  return (
+    <div>
+      {chips.length > 1 ? (
+        <div role="group" aria-label="Filtrar por estatus" className="mb-4 flex flex-wrap gap-2">
+          {(["todos", ...chips] as Filtro[]).map((f) => (
+            <button
+              key={f}
+              type="button"
+              aria-pressed={activo === f}
+              onClick={() => setFiltro(f)}
+              className={cn(
+                "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-sm transition-colors",
+                activo === f
+                  ? "border-gold bg-gold-muted text-gold-light"
+                  : "border-border-soft text-fg-muted hover:border-border-strong",
+              )}
+            >
+              {f === "todos" ? "Todos" : f}
+              <span data-precio className="text-fg-subtle text-xs">
+                {f === "todos" ? pedidos.length : conteo.get(f)}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <ul className="space-y-3">
+        {visibles.map((p) => {
+          const paqueteria = nombrePaqueteria(p.paqueteria);
+          return (
+            <li
+              key={p.folio}
+              className="border-border-soft bg-surface lift rounded-md border p-4 lg:p-5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p data-precio className="font-medium">
+                    {p.folio}
+                  </p>
+                  <p className="text-fg-subtle mt-0.5 text-xs">
+                    {formatoFechaLarga(p.fecha)} · {p.piezas}{" "}
+                    {p.piezas === 1 ? "pieza" : "piezas"}
+                  </p>
+                </div>
+                <InsigniaEstatus estatus={p.estatus} />
+              </div>
+
+              {p.guia && p.estatus === "En camino" ? (
+                <p className="text-fg-muted mt-2 flex items-center gap-1.5 text-xs">
+                  <Truck size={13} className="text-gold shrink-0" aria-hidden />
+                  Guía <span data-precio>{p.guia}</span>
+                  {paqueteria ? ` · ${paqueteria}` : ""}
+                </p>
+              ) : null}
+
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <Precio valor={p.total} moneda className="font-medium" />
+                <div className="flex flex-wrap gap-2">
+                  {p.items.length > 0 ? (
+                    <Button
+                      variant="goldGhost"
+                      size="touch"
+                      onClick={() => volverAPedir(p.items)}
+                    >
+                      <RotateCcw size={15} aria-hidden />
+                      Volver a pedir
+                    </Button>
+                  ) : null}
+                  <Button asChild variant="outline" size="touch">
+                    <Link href={`/cuenta/pedido/?folio=${encodeURIComponent(p.folio)}`}>
+                      Ver detalle y rastreo
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/* ── Direcciones ──────────────────────────────────────────────────────── */
+
+type EstadoLibreta =
+  | { tipo: "cargando" }
+  | { tipo: "error"; mensaje: string }
+  | { tipo: "listo"; direcciones: Direccion[] };
+
+/**
+ * La libreta de direcciones del servidor.
+ *
+ * **Si no se pudo leer, no se deja editar.** La libreta se guarda entera
+ * (`PUT` la sustituye), así que pintar una lista vacía tras un fallo de red y
+ * dejar agregar una dirección borraba sin aviso todas las demás. Ahora el fallo
+ * se dice, con «Reintentar», y los botones de edición no aparecen hasta que la
+ * libreta se leyó bien.
+ */
+function Direcciones({ nombre, telefono }: { nombre: string; telefono: string }) {
+  const [intento, setIntento] = useState(0);
+  const [traido, setTraido] = useState<{ intento: number; estado: EstadoLibreta } | null>(null);
   const [editando, setEditando] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // La que se acaba de agregar y todavía no se guarda: si se cancela, se va.
+  const [nueva, setNueva] = useState<string | null>(null);
+  const [errorGuardado, setErrorGuardado] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!conCuenta) return;
+    if (!haySincronizacion()) return;
     let vivo = true;
     leerDireccionesRemotas()
-      .then((r) => vivo && setDirecciones(r.direcciones))
-      // Sin red se muestra la libreta vacía y no las de muestra: enseñar la
-      // dirección de otra persona en la cuenta de alguien sería peor que no
-      // enseñar ninguna.
-      .catch(() => vivo && setDirecciones([]))
-      .finally(() => {
-        if (vivo && conCuenta) setError(null);
-      });
+      .then(
+        (r) => vivo && setTraido({ intento, estado: { tipo: "listo", direcciones: r.direcciones } }),
+      )
+      .catch(
+        (e) =>
+          vivo &&
+          setTraido({
+            intento,
+            estado: { tipo: "error", mensaje: mensajeDeError(e, "tus direcciones") },
+          }),
+      );
     return () => {
       vivo = false;
     };
-  }, [conCuenta, cuenta]);
+  }, [intento]);
+
+  if (!haySincronizacion()) {
+    return (
+      <div className="border-border-soft rounded-lg border border-dashed px-6 py-12 text-center">
+        <MapPin size={28} className="text-fg-subtle mx-auto mb-3" aria-hidden />
+        <p className="font-display mb-2 text-xl">La libreta no está disponible aquí</p>
+        <p className="text-fg-muted text-sm">
+          Esta versión de la tienda no está conectada al servidor de cuentas.
+        </p>
+      </div>
+    );
+  }
+
+  const estado: EstadoLibreta =
+    traido?.intento === intento ? traido.estado : { tipo: "cargando" };
+
+  if (estado.tipo === "cargando") {
+    return <div className="h-40 animate-pulse rounded-lg bg-white/5" aria-busy="true" />;
+  }
+  if (estado.tipo === "error") {
+    return (
+      <ErrorConReintento
+        titulo="No pudimos cargar tus direcciones"
+        mensaje={`${estado.mensaje} Mientras tanto no se pueden editar, para no perder las que ya tienes.`}
+        onReintentar={() => setIntento((n) => n + 1)}
+      />
+    );
+  }
+
+  const direcciones = estado.direcciones;
+  const poner = (lista: Direccion[]) =>
+    setTraido({ intento, estado: { tipo: "listo", direcciones: lista } });
 
   /**
    * Aplica un cambio y lo sube.
@@ -301,35 +526,23 @@ function Direcciones({ cuenta, nombre }: { cuenta: string | null; nombre: string
    * quien decide cuál queda como predeterminada.
    */
   function aplicar(siguiente: Direccion[]) {
-    setDirecciones(siguiente);
-    if (!conCuenta) return;
-    setError(null);
+    poner(siguiente);
+    setErrorGuardado(null);
     guardarDireccionesRemotas(siguiente)
-      .then((r) => setDirecciones(r.direcciones))
+      .then((r) => poner(r.direcciones))
       .catch(() =>
-        setError(
+        setErrorGuardado(
           "No se pudo guardar en tu cuenta. Revisa la conexión y vuelve a intentarlo.",
         ),
       );
   }
 
-  function eliminar(id: string) {
-    aplicar((direcciones ?? []).filter((x) => x.id !== id));
-  }
-
-  function predeterminar(id: string) {
-    aplicar(
-      (direcciones ?? []).map((x) => ({ ...x, predeterminada: x.id === id })),
-    );
-  }
-
   function agregar() {
     const id = `d${Date.now()}`;
-    const lista = direcciones ?? [];
     // No se sube todavía: una dirección en blanco no vale de nada guardada, y
     // se guarda sola al pulsar «Guardar» del formulario.
-    setDirecciones([
-      ...lista,
+    poner([
+      ...direcciones,
       {
         id,
         alias: "Nueva dirección",
@@ -339,22 +552,22 @@ function Direcciones({ cuenta, nombre }: { cuenta: string | null; nombre: string
         cp: "",
         ciudad: "",
         estado: "",
-        telefono: conCuenta ? "" : USUARIO.telefono,
-        predeterminada: lista.length === 0,
+        telefono,
+        predeterminada: direcciones.length === 0,
       },
     ]);
     setEditando(id);
-  }
-
-  if (direcciones === null) {
-    return <div className="h-40 animate-pulse rounded-lg bg-white/5" />;
+    setNueva(id);
   }
 
   return (
     <div>
-      {error ? (
-        <p className="border-danger/40 bg-danger/10 text-danger mb-3 rounded-md border px-3 py-2 text-sm">
-          {error}
+      {errorGuardado ? (
+        <p
+          role="alert"
+          className="border-danger/40 bg-danger/10 text-danger mb-3 rounded-md border px-3 py-2 text-sm"
+        >
+          {errorGuardado}
         </p>
       ) : null}
 
@@ -381,13 +594,16 @@ function Direcciones({ cuenta, nombre }: { cuenta: string | null; nombre: string
             {editando === d.id ? (
               <FormDireccion
                 direccion={d}
-                onGuardar={(nueva) => {
-                  aplicar(
-                    direcciones.map((x) => (x.id === nueva.id ? nueva : x)),
-                  );
+                onGuardar={(guardada) => {
+                  aplicar(direcciones.map((x) => (x.id === guardada.id ? guardada : x)));
                   setEditando(null);
+                  setNueva(null);
                 }}
-                onCancelar={() => setEditando(null)}
+                onCancelar={() => {
+                  if (nueva === d.id) poner(direcciones.filter((x) => x.id !== d.id));
+                  setEditando(null);
+                  setNueva(null);
+                }}
               />
             ) : (
               <>
@@ -395,9 +611,7 @@ function Direcciones({ cuenta, nombre }: { cuenta: string | null; nombre: string
                   <div>
                     <p className="font-medium">{d.alias}</p>
                     {d.predeterminada ? (
-                      <span className="text-gold-light text-[11px]">
-                        Predeterminada
-                      </span>
+                      <span className="text-gold-light text-[11px]">Predeterminada</span>
                     ) : null}
                   </div>
                   <div className="flex shrink-0">
@@ -405,15 +619,19 @@ function Direcciones({ cuenta, nombre }: { cuenta: string | null; nombre: string
                       type="button"
                       onClick={() => setEditando(d.id)}
                       aria-label={`Editar ${d.alias}`}
-                      className="text-fg-subtle hover:text-fg grid size-9 place-items-center rounded-full"
+                      className="text-fg-subtle hover:text-fg grid size-11 place-items-center rounded-full"
                     >
                       <Pencil size={14} aria-hidden />
                     </button>
                     <button
                       type="button"
-                      onClick={() => eliminar(d.id)}
+                      onClick={() => {
+                        if (confirm(`¿Eliminar la dirección «${d.alias}»?`)) {
+                          aplicar(direcciones.filter((x) => x.id !== d.id));
+                        }
+                      }}
                       aria-label={`Eliminar ${d.alias}`}
-                      className="text-fg-subtle hover:text-danger grid size-9 place-items-center rounded-full"
+                      className="text-fg-subtle hover:text-danger grid size-11 place-items-center rounded-full"
                     >
                       <Trash2 size={14} aria-hidden />
                     </button>
@@ -435,8 +653,10 @@ function Direcciones({ cuenta, nombre }: { cuenta: string | null; nombre: string
                 {!d.predeterminada ? (
                   <button
                     type="button"
-                    onClick={() => predeterminar(d.id)}
-                    className="text-fg-subtle hover:text-gold-light mt-3 text-xs underline underline-offset-4"
+                    onClick={() =>
+                      aplicar(direcciones.map((x) => ({ ...x, predeterminada: x.id === d.id })))
+                    }
+                    className="text-fg-subtle hover:text-gold-light mt-2 inline-flex min-h-11 items-center text-xs underline underline-offset-4"
                   >
                     Usar como predeterminada
                   </button>
@@ -447,10 +667,12 @@ function Direcciones({ cuenta, nombre }: { cuenta: string | null; nombre: string
         ))}
       </ul>
 
-      <Button variant="goldOutline" size="touch" className="mt-4" onClick={agregar}>
-        <Plus size={16} aria-hidden />
-        Agregar dirección
-      </Button>
+      {editando === null ? (
+        <Button variant="goldOutline" size="touch" className="mt-4" onClick={agregar}>
+          <Plus size={16} aria-hidden />
+          Agregar dirección
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -465,6 +687,7 @@ function FormDireccion({
   onCancelar: () => void;
 }) {
   const [d, setD] = useState(direccion);
+  const [aviso, setAviso] = useState<string | null>(null);
   const campo = (k: keyof Direccion, label: string, placeholder: string) => (
     <div>
       <Label htmlFor={`${d.id}-${k}`} className="mb-1 text-xs">
@@ -474,7 +697,10 @@ function FormDireccion({
         id={`${d.id}-${k}`}
         value={String(d[k] ?? "")}
         placeholder={placeholder}
-        onChange={(e) => setD({ ...d, [k]: e.target.value })}
+        onChange={(e) => {
+          setD({ ...d, [k]: e.target.value });
+          setAviso(null);
+        }}
         className="h-11"
       />
     </div>
@@ -484,11 +710,18 @@ function FormDireccion({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onGuardar(d);
+        // Lo mínimo para que el checkout pueda usarla: sin calle ni CP la
+        // dirección no sirve para mandar nada.
+        if (d.calle.trim().length < 5 || !/^\d{5}$/.test(d.cp.trim())) {
+          setAviso("Escribe al menos la calle con número y un código postal de 5 dígitos.");
+          return;
+        }
+        onGuardar({ ...d, cp: d.cp.trim() });
       }}
       className="space-y-3"
     >
       {campo("alias", "Alias", "Casa, Local…")}
+      {campo("nombre", "Quién recibe", "Nombre completo")}
       {campo("calle", "Calle y número", "Av. Insurgentes 233")}
       {campo("colonia", "Colonia", "Centro")}
       <div className="grid grid-cols-2 gap-3">
@@ -497,6 +730,12 @@ function FormDireccion({
       </div>
       {campo("estado", "Estado", "Guanajuato")}
       {campo("telefono", "Teléfono", "477 123 4567")}
+
+      {aviso ? (
+        <p role="alert" className="text-danger text-xs">
+          {aviso}
+        </p>
+      ) : null}
 
       <div className="flex gap-2 pt-1">
         <Button type="submit" variant="gold" size="touch" className="flex-1">
@@ -507,49 +746,5 @@ function FormDireccion({
         </Button>
       </div>
     </form>
-  );
-}
-
-function MisDatos({
-  nombre,
-  correo,
-  piezas,
-  reales,
-}: {
-  nombre: string;
-  correo: string;
-  piezas: number;
-  reales: boolean;
-}) {
-  const filas: [string, string][] = [
-    ["Nombre", nombre],
-    ["Correo", correo],
-    ["Piezas compradas", String(piezas)],
-  ];
-  // El teléfono y la antigüedad todavía no se guardan en ningún sitio: con
-  // sesión real se omiten en vez de enseñar los del usuario de muestra, que
-  // serían los datos de otra persona.
-  if (!reales) {
-    filas.splice(2, 0, ["WhatsApp", USUARIO.telefono]);
-    filas.push(["Cliente desde", formatoFechaLarga(USUARIO.desde)]);
-  }
-
-  return (
-    <div className="max-w-lg">
-      <dl className="divide-border-soft border-border-soft divide-y border-y">
-        {filas.map(([k, v]) => (
-          <div key={k} className="grid grid-cols-[140px_1fr] gap-4 py-3.5 text-sm">
-            <dt className="text-fg-subtle">{k}</dt>
-            <dd>{v}</dd>
-          </div>
-        ))}
-      </dl>
-
-      <p className="text-fg-subtle mt-5 text-xs leading-relaxed">
-        {reales
-          ? "Tu carrito, tus favoritos y tus pedidos se guardan en tu cuenta, así que los encuentras igual desde el teléfono o la computadora. El cobro todavía no es real: el checkout deja el pedido registrado, no cobrado."
-          : "Esta es una tienda de demostración: sin iniciar sesión, los pedidos y las direcciones que se ven aquí son de ejemplo."}
-      </p>
-    </div>
   );
 }

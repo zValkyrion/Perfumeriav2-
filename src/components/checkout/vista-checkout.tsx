@@ -12,6 +12,7 @@ import {
   CreditCard,
   HandCoins,
   MessageCircle,
+  UserRound,
   Zap,
   Pencil,
 } from "lucide-react";
@@ -36,15 +37,18 @@ import {
   type IdPago,
 } from "@/data/pagos";
 import { esIdEnvio, type IdEnvio } from "../../../compartido/reglas";
+import type { PedidoRegistrado, SolicitudPedido } from "../../../compartido/pedido";
 import { resumenCarrito } from "@/lib/carrito";
 import {
+  ErrorRemoto,
   haySincronizacion,
   leerDireccionesRemotas,
   registrarPedido,
 } from "@/lib/cuenta-remota";
 import { avisarPedido } from "@/lib/aviso-pedido";
 import { pixel } from "@/lib/pixel";
-import { useSesion } from "@/lib/sesion";
+import { hayLogin, useSesion } from "@/lib/sesion";
+import type { Direccion } from "@/types";
 import { precio as fmt } from "@/lib/format";
 import { mensualidad, plazosDisponibles, type PlazoMSI } from "@/lib/volumen";
 import { AvisoNoDisponibles } from "@/components/carrito/aviso-no-disponibles";
@@ -94,6 +98,57 @@ const ICONO_PAGO: Record<IdPago, typeof CreditCard> = {
   contra: HandCoins,
 };
 
+/**
+ * Clave de idempotencia para un intento de compra. `randomUUID` solo existe en
+ * contexto seguro (https o localhost); fuera de él se arma con bytes al azar,
+ * que el servidor acepta igual (`PATRON_CLAVE`).
+ */
+function nuevaClave(): string {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** YYYY-MM-DD en el calendario de México (`en-CA` formatea así). */
+function fechaMexico(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+/** Esperas entre intentos: dos reintentos, el segundo más espaciado. */
+const ESPERAS_REINTENTO = [1500, 3000];
+
+/**
+ * Registra el pedido y, si el servidor no contestó (sin red, tiempo agotado o
+ * un 5xx), lo vuelve a intentar **con la misma solicitud**, clave incluida.
+ *
+ * Por la clave, reintentar es seguro: si el primer intento sí llegó y lo que
+ * se perdió fue la respuesta, el servidor contesta el mismo pedido (mismo
+ * folio) en vez de crear otro. Sin clave, un reintento podía dejar dos pedidos
+ * iguales y quemar dos folios. Un 4xx no se reintenta: el servidor ya dijo que
+ * no, y repetir no lo va a cambiar. Sin servidor configurado tampoco.
+ */
+async function registrarConReintentos(
+  solicitud: SolicitudPedido,
+  alReintentar: () => void,
+): Promise<PedidoRegistrado> {
+  for (let i = 0; ; i++) {
+    try {
+      return await registrarPedido(solicitud);
+    } catch (e) {
+      const reintentable =
+        haySincronizacion() && e instanceof ErrorRemoto && (e.estado === 0 || e.estado >= 500);
+      if (!reintentable || i >= ESPERAS_REINTENTO.length) throw e;
+      alReintentar();
+      await new Promise((r) => setTimeout(r, ESPERAS_REINTENTO[i]));
+    }
+  }
+}
+
 export function VistaCheckout() {
   const router = useRouter();
   const hidratado = useTienda((s) => s.hidratado);
@@ -134,7 +189,21 @@ export function VistaCheckout() {
   const [metodo, setMetodo] = useState<IdPago>(inicioExpres?.metodo ?? "clip");
   const [plazo, setPlazo] = useState<PlazoMSI | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [reintentando, setReintentando] = useState(false);
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [modoExpres, setModoExpres] = useState(inicioExpres !== null);
+  // Sube con «Usar otros datos» para volver a montar el primer paso en blanco
+  // aunque estuviera abierto con los datos de la compra exprés.
+  const [versionContacto, setVersionContacto] = useState(0);
+
+  /**
+   * La clave de idempotencia de este intento de compra. Se crea al pulsar
+   * «Confirmar» la primera vez y se conserva mientras la pantalla siga abierta:
+   * si el servidor rechazó el pedido y se corrige algo, o si el comprador
+   * vuelve a pulsar, viaja la misma y el servidor no registra dos pedidos.
+   * Cada visita nueva al checkout es otro intento y lleva otra.
+   */
+  const claveIntento = useRef<string | null>(null);
 
   /**
    * La bandera vale por una sola entrada.
@@ -148,46 +217,60 @@ export function VistaCheckout() {
   }, [consumirExpres]);
 
   /**
-   * Trae la dirección predeterminada de la cuenta y rellena el primer paso.
+   * La dirección predeterminada de la cuenta, para rellenar el primer paso.
    *
    * Es para lo que sirve guardarla: la pantalla de la cuenta promete tenerla
    * lista para el siguiente pedido, y una libreta que el checkout ignora
-   * convierte esa frase en mentira.
-   *
-   * El correo sale de la sesión y no de la dirección, porque la dirección es a
-   * dónde se manda el paquete y el correo es a dónde va la guía de rastreo.
+   * convierte esa frase en mentira. Se guarda con el `sub` que la pidió: si se
+   * cambia de cuenta a media compra, la de la anterior no se ofrece.
    */
+  const perfil = sesion.perfil;
+  const [libreta, setLibreta] = useState<{ sub: string; direccion: Direccion } | null>(null);
   useEffect(() => {
-    if (modoExpres) return;
-    if (!haySincronizacion() || !sesion.perfil) return;
-    const perfil = sesion.perfil;
+    if (modoExpres || !haySincronizacion() || !perfil) return;
+    const sub = perfil.sub;
     let vivo = true;
     leerDireccionesRemotas()
       .then((r) => {
         const d = r.direcciones.find((x) => x.predeterminada) ?? r.direcciones[0];
-        if (!vivo || !d) return;
-        // Solo si no hay nada escrito ya: volver atrás en el formulario no
-        // puede pisar lo que la persona acaba de teclear.
-        setContacto((actual) =>
-          actual ?? {
-            correo: perfil.correo,
-            nombre: d.nombre || perfil.nombre,
-            telefono: d.telefono,
-            calle: d.calle,
-            colonia: d.colonia,
-            cp: d.cp,
-            ciudad: d.ciudad,
-            estado: d.estado,
-          },
-        );
+        if (vivo && d) setLibreta({ sub, direccion: d });
       })
       .catch(() => {
-        // Sin red se llena a mano, como siempre.
+        // Sin red se llena a mano; lo del perfil ya está puesto.
       });
     return () => {
       vivo = false;
     };
-  }, [sesion.perfil, modoExpres]);
+  }, [perfil, modoExpres]);
+
+  /**
+   * Lo que se sugiere en el primer paso: nombre, correo y WhatsApp del perfil
+   * **aunque no haya dirección guardada** (un cliente recién registrado no
+   * tenía por qué volver a escribirlos), y encima la dirección de la libreta
+   * cuando llegue.
+   *
+   * El correo sale de la sesión y no de la dirección: la dirección es a dónde
+   * va el paquete; el correo, de quién es la cuenta. El WhatsApp, del perfil
+   * primero: es al que se le escribe para cobrar y mandar la guía.
+   */
+  const direccion = libreta && perfil && libreta.sub === perfil.sub ? libreta.direccion : null;
+  const sugerido: Partial<DatosContacto> | null =
+    modoExpres || !perfil
+      ? null
+      : // Solo los campos con algo: un `undefined` como valor inicial no le
+        // sirve al formulario y ensucia la comparación del efecto de abajo.
+        (Object.fromEntries(
+          Object.entries({
+            correo: perfil.correo,
+            nombre: direccion?.nombre || perfil.nombre,
+            telefono: formatearTelefono(perfil.telefono || direccion?.telefono || ""),
+            calle: direccion?.calle,
+            colonia: direccion?.colonia,
+            cp: direccion?.cp,
+            ciudad: direccion?.ciudad,
+            estado: direccion?.estado,
+          }).filter(([, v]) => typeof v === "string" && v.trim() !== ""),
+        ) as Partial<DatosContacto>);
 
   const envioElegido: IdEnvio = esIdEnvio(envio) ? envio : "estandar";
   const opcion = OPCIONES_ENVIO.find((o) => o.id === envioElegido) ?? OPCIONES_ENVIO[0];
@@ -237,12 +320,18 @@ export function VistaCheckout() {
   }
 
   const elegido = METODOS.find((m) => m.id === metodoEfectivo) ?? METODOS[0]!;
+  // El plazo solo vale con Clip y si el total todavía lo alcanza: quien eligió
+  // 12 meses y luego quitó piezas no puede quedarse con un plazo que ya no se
+  // ofrece (ni mandarlo al servidor).
+  const plazoElegido: PlazoMSI | null =
+    metodoEfectivo === "clip" && plazo && plazosDisponibles(comoClip.total).includes(plazo)
+      ? plazo
+      : null;
   // El plazo entra en la etiqueta porque a la hora de cobrar cambia lo que hay
   // que hacer: no es lo mismo un cargo único que doce mensualidades.
-  const etiquetaPago =
-    metodoEfectivo === "clip" && plazo
-      ? `Clip · ${plazo} meses sin intereses`
-      : elegido.etiqueta;
+  const etiquetaPago = plazoElegido
+    ? `Clip · ${plazoElegido} meses sin intereses`
+    : elegido.etiqueta;
 
   /**
    * `InitiateCheckout` para el pixel de Meta: el evento con el que la campaña
@@ -295,6 +384,9 @@ export function VistaCheckout() {
   async function finalizar(metodoPago: string) {
     if (!contacto || enviando) return;
     setEnviando(true);
+    setReintentando(false);
+    setErrorEnvio(null);
+    const clave = (claveIntento.current ??= nuevaClave());
 
     // Solo lo que todavía se vende: lo agotado desde que se agregó ya se avisó
     // arriba y no se cobra, así que tampoco viaja en el pedido.
@@ -310,35 +402,62 @@ export function VistaCheckout() {
     }
 
     // El servidor pone el folio —con un contador, así que no se repite— y el
-    // total, que recalcula con los precios del catálogo. También guarda la copia
-    // en «Mis pedidos» si hay sesión. Si no hay servidor o no contesta, el pedido
-    // sigue adelante con la cifra de este navegador y un folio local que se
-    // reconoce por la «L»: cortar la compra por un problema de red sería
-    // castigar al comprador, y el WhatsApp de la confirmación la recoge igual.
-    const registrado = await registrarPedido({
-      items: vendibles,
-      cupon,
-      metodo: metodoEfectivo,
-      envio: envioElegido,
-      contacto: {
-        correo: contacto.correo,
-        nombre: contacto.nombre,
-        telefono: contacto.telefono,
-        calle: contacto.calle,
-        colonia: contacto.colonia,
-        cp: contacto.cp,
-        ciudad: contacto.ciudad,
-        estado: contacto.estado,
-        referencias: contacto.referencias ?? "",
-      },
-    }).catch(() => null);
+    // total, que recalcula con los precios del catálogo. También liga el pedido
+    // a la cuenta si hay sesión. Si no contesta, se reintenta con la misma
+    // clave; si sigue sin contestar (o no hay servidor), el pedido sigue
+    // adelante con la cifra de este navegador y un folio local que se reconoce
+    // por la «L»: cortar la compra por un problema de red sería castigar al
+    // comprador, y el WhatsApp de la confirmación la recoge igual.
+    let registrado: PedidoRegistrado | null = null;
+    try {
+      registrado = await registrarConReintentos(
+        {
+          items: vendibles,
+          cupon,
+          metodo: metodoEfectivo,
+          envio: envioElegido,
+          contacto: {
+            correo: contacto.correo,
+            nombre: contacto.nombre,
+            telefono: contacto.telefono,
+            calle: contacto.calle,
+            colonia: contacto.colonia,
+            cp: contacto.cp,
+            ciudad: contacto.ciudad,
+            estado: contacto.estado,
+            referencias: contacto.referencias ?? "",
+          },
+          clave,
+          // Solo con Clip; 0 = un solo pago.
+          ...(metodoEfectivo === "clip" ? { plazo: plazoElegido ?? 0 } : {}),
+        },
+        () => setReintentando(true),
+      );
+    } catch (e) {
+      // Un 4xx es el servidor diciendo que no (faltan datos, o nada del
+      // carrito existe ya). Un folio local ahí sería un pedido que la tienda
+      // rechazó: se dice y se deja corregir.
+      if (e instanceof ErrorRemoto && e.estado >= 400 && e.estado < 500 && e.estado !== 401) {
+        setErrorEnvio(
+          e.estado === 422
+            ? "Lo que hay en tu carrito ya no está a la venta. Vuelve al carrito para revisarlo."
+            : `No pudimos registrar tu pedido: ${e.message}`,
+        );
+        setEnviando(false);
+        setReintentando(false);
+        return;
+      }
+      registrado = null;
+    }
 
     const hoy = new Date();
     const pedido: PedidoConfirmado = {
       folio:
         registrado?.folio ??
-        `AUR-${hoy.getFullYear()}-L${hoy.getTime().toString(36).toUpperCase()}`,
-      fecha: registrado?.fecha ?? hoy.toISOString().slice(0, 10),
+        `REY-${fechaMexico(hoy).slice(0, 4)}-L${hoy.getTime().toString(36).toUpperCase()}`,
+      // En calendario de México, como la del servidor: con UTC un pedido de
+      // las 19:00 salía con la fecha de mañana.
+      fecha: registrado?.fecha ?? fechaMexico(hoy),
       correo: contacto.correo,
       nombre: contacto.nombre,
       telefono: contacto.telefono,
@@ -412,6 +531,25 @@ export function VistaCheckout() {
 
       <AvisoNoDisponibles lineas={resumen.noDisponibles} className="mb-5" />
 
+      {/* Invitación a entrar antes de comprar: un pedido hecho sin sesión no
+          queda en «Mis pedidos», y el servidor no lo liga después. `volver`
+          hace que «Mi cuenta» ofrezca regresar aquí; el carrito no se pierde
+          al entrar (se fusiona con el de la cuenta). */}
+      {hayLogin() && sesion.listo && !perfil ? (
+        <div className="border-border-soft bg-surface mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-md border px-4 py-3">
+          <p className="flex items-center gap-2 text-sm">
+            <UserRound size={15} className="text-gold shrink-0" aria-hidden />
+            ¿Ya tienes cuenta? Inicia sesión y el pedido quedará en tu historial.
+          </p>
+          <Link
+            href="/cuenta/?volver=checkout"
+            className="text-gold-light inline-flex min-h-11 items-center text-sm underline underline-offset-4"
+          >
+            Iniciar sesión
+          </Link>
+        </div>
+      ) : null}
+
       {/* Aviso de la compra exprés, con su salida.
           Saltarse tres formularios está muy bien hasta el día que el pedido va
           a otra dirección. Sin una forma visible de decir «estos datos no», la
@@ -429,13 +567,14 @@ export function VistaCheckout() {
               olvidarExpres();
               setModoExpres(false);
               setContacto(null);
+              setVersionContacto((n) => n + 1);
               setPaso(0);
               // También el recorrido: si no, las secciones de entrega y pago
               // seguirían plegadas «como hechas» enseñando los datos de la
               // compra anterior, que es justo lo que se acaba de descartar.
               setMaxPaso(0);
             }}
-            className="text-gold-light text-xs underline underline-offset-4"
+            className="text-gold-light inline-flex min-h-11 items-center text-xs underline underline-offset-4"
           >
             Usar otros datos
           </button>
@@ -471,11 +610,9 @@ export function VistaCheckout() {
             }
           >
             <PasoContacto
-              // Remonta una sola vez cuando llega la dirección guardada: el
-              // formulario lee sus valores iniciales al montarse, así que sin
-              // esto el prellenado no se vería nunca.
-              key={contacto ? "con-datos" : "vacio"}
+              key={versionContacto}
               inicial={contacto}
+              sugerido={sugerido}
               onListo={(datos) => {
                 setContacto(datos);
                 irA(1);
@@ -524,7 +661,7 @@ export function VistaCheckout() {
             <PasoPago
               metodo={metodoEfectivo}
               onMetodo={setMetodo}
-              plazo={plazo}
+              plazo={plazoElegido}
               onPlazo={setPlazo}
               total={comoClip.total}
               totalTransferencia={comoTransferencia.total}
@@ -544,10 +681,12 @@ export function VistaCheckout() {
                 telefono={contacto.telefono}
                 metodo={metodoEfectivo}
                 etiqueta={etiquetaPago}
-                plazo={plazo}
+                plazo={plazoElegido}
                 comision={comision}
                 total={total}
                 enviando={enviando}
+                reintentando={reintentando}
+                error={errorEnvio}
                 onAtras={() => setPaso(2)}
                 onFinalizar={finalizar}
               />
@@ -648,21 +787,48 @@ function Seccion({
 
 function PasoContacto({
   inicial,
+  sugerido,
   onListo,
 }: {
+  /** Lo ya confirmado en este checkout (o la compra exprés). Manda sobre lo sugerido. */
   inicial: DatosContacto | null;
+  /** Perfil y libreta de la cuenta. Puede llegar después de montar. */
+  sugerido: Partial<DatosContacto> | null;
   onListo: (d: DatosContacto) => void;
 }) {
   const {
     register,
     handleSubmit,
     setValue,
+    getValues,
+    getFieldState,
+    trigger,
     formState: { errors },
   } = useForm<DatosContacto>({
     resolver: zodResolver(esquemaContacto),
-    defaultValues: inicial ?? undefined,
+    defaultValues: inicial ?? sugerido ?? undefined,
     mode: "onBlur",
   });
+
+  /**
+   * Lo sugerido que llega tarde (la libreta viaja por red) rellena **solo los
+   * campos vacíos**. Antes el formulario se volvía a montar al llegar la
+   * dirección y se llevaba lo que la persona ya había empezado a teclear.
+   * Serializado para que el efecto corra cuando cambian los valores, no cada
+   * vez que el padre arma un objeto nuevo.
+   */
+  const sugeridoClave = JSON.stringify(sugerido ?? {});
+  useEffect(() => {
+    if (inicial) return;
+    const valores = JSON.parse(sugeridoClave) as Partial<DatosContacto>;
+    for (const [campo, valor] of Object.entries(valores) as [keyof DatosContacto, string | undefined][]) {
+      if (!valor || (getValues(campo) ?? "").trim() !== "") continue;
+      setValue(campo, valor);
+      // Si ya se había marcado como inválido al salir del campo vacío, que se
+      // quite el error ahora que tiene algo.
+      if (getFieldState(campo).invalid) void trigger(campo);
+    }
+  }, [sugeridoClave, inicial, getValues, setValue, getFieldState, trigger]);
 
   return (
     <form onSubmit={handleSubmit(onListo)} className="space-y-5" noValidate>
@@ -1094,6 +1260,8 @@ function PasoConfirmar({
   comision,
   total,
   enviando,
+  reintentando,
+  error,
   onAtras,
   onFinalizar,
 }: {
@@ -1104,6 +1272,10 @@ function PasoConfirmar({
   comision: number;
   total: number;
   enviando: boolean;
+  /** El servidor no contestó a la primera y se está reintentando. */
+  reintentando: boolean;
+  /** El servidor rechazó el pedido (4xx): se dice y no se inventa un folio. */
+  error: string | null;
   onAtras: () => void;
   onFinalizar: (metodoPago: string) => void;
 }) {
@@ -1142,6 +1314,28 @@ function PasoConfirmar({
         Al confirmar te escribimos por WhatsApp al {telefono} para cerrar el pago
         y darte el día de entrega.
       </p>
+
+      {error ? (
+        <div
+          role="alert"
+          className="border-danger/30 bg-danger/10 mt-4 rounded-md border px-4 py-3 text-sm"
+        >
+          <p>{error}</p>
+          <Link
+            href="/carrito"
+            className="text-gold-light mt-1 inline-flex min-h-11 items-center underline underline-offset-4"
+          >
+            Revisar mi carrito
+          </Link>
+        </div>
+      ) : null}
+
+      {enviando && reintentando ? (
+        <p role="status" className="text-fg-muted mt-4 text-[13px]">
+          La tienda tarda en contestar; lo seguimos intentando sin duplicar tu
+          pedido.
+        </p>
+      ) : null}
 
       <BotonesPago
         enviando={enviando}

@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-/** Validación del checkout. Ningún dato sale del navegador: no hay backend. */
+/**
+ * Validación de los formularios de la tienda. Es la primera puerta, no la
+ * única: lo que viaja al servidor (pedido, solicitudes) se vuelve a sanear allá.
+ */
 
 export const esquemaContacto = z.object({
   correo: z

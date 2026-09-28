@@ -48,15 +48,13 @@ export interface Producto {
   presentaciones: Presentacion[];
   imagenes: string[];
   badges: Badge[];
-  rating: number;
-  totalReseñas: number;
+  // Sin calificación, reseñas ni «N personas viendo»: no hay de dónde sacarlos
+  // y antes se inventaban al azar por slug (MEMORIA §0.3).
   duracion: Intensidad;
   estela: Intensidad;
   ocasion: Ocasion[];
   esMayoreoElegible: boolean;
   destacado: boolean;
-  /** Espectadores "en vivo": pseudo-aleatorio pero estable por producto (§10.14). */
-  viendoAhora: number;
   /** Año de lanzamiento, si se conoce. Sin él, la ficha no inventa uno. */
   anio?: number;
   /** País de origen, si se conoce. */
@@ -148,17 +146,6 @@ export interface Pedido {
   ciudad?: string;
   estado?: string;
   conCuenta?: boolean;
-}
-
-export interface Reseña {
-  id: string;
-  productoId: string;
-  autor: string;
-  rating: number;
-  fecha: string;
-  titulo: string;
-  texto: string;
-  verificada: boolean;
 }
 
 export interface Direccion {

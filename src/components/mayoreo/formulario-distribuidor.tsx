@@ -20,6 +20,13 @@ import {
   formatearTelefono,
   type DatosDistribuidor,
 } from "@/components/checkout/esquemas";
+import {
+  RespaldoWhatsApp,
+  mandarSolicitud,
+  type ResultadoSolicitud,
+} from "@/components/cuenta/solicitud-respaldo";
+import { useSesion } from "@/lib/sesion";
+import type { SolicitudEntrada } from "../../../compartido/tienda-admin";
 
 const VOLUMENES = [
   "Menos de 12 piezas al mes",
@@ -28,9 +35,23 @@ const VOLUMENES = [
   "Más de 50 piezas al mes",
 ];
 
-/** Alta de distribuidor (§11). Simulada: no hay backend, solo validación. */
+/**
+ * Alta de distribuidor (§11).
+ *
+ * Llega al panel como solicitud de tipo `distribuidor` (`POST /solicitudes`).
+ * Antes decía «Recibimos tus datos» sin mandar nada y el prospecto se perdía;
+ * ahora, si no hay servidor o no contesta, se dice que **no** se envió y se
+ * ofrece mandarlo por WhatsApp ya escrito.
+ */
 export function FormularioDistribuidor() {
+  const { perfil } = useSesion();
   const [listo, setListo] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [problema, setProblema] = useState<
+    | Extract<ResultadoSolicitud, { tipo: "invalida" }>
+    | { tipo: "respaldo"; sinServidor: boolean; entrada: SolicitudEntrada }
+    | null
+  >(null);
   // El Select ya es controlado, así que su valor vive en useState y se
   // sincroniza con el formulario por setValue. Evita `watch()`, que el
   // compilador de React no puede memoizar.
@@ -47,14 +68,17 @@ export function FormularioDistribuidor() {
 
   if (listo) {
     return (
-      <div className="border-success/30 bg-success/10 rounded-lg border px-6 py-8 text-center">
+      <div
+        role="status"
+        className="border-success/30 bg-success/10 rounded-lg border px-6 py-8 text-center"
+      >
         <div className="bg-success/20 text-success mx-auto mb-4 grid size-12 place-items-center rounded-full">
           <Check size={24} aria-hidden />
         </div>
         <p className="font-display mb-2 text-xl">Recibimos tus datos</p>
         <p className="text-fg-muted text-sm leading-relaxed">
-          Un asesor te escribe por WhatsApp hoy mismo con la lista de precios y
-          los lotes que mejor rotan en tu ciudad.
+          Te escribimos por WhatsApp al número que dejaste para resolver tus
+          dudas y ayudarte a armar tu primer pedido de mayoreo.
         </p>
       </div>
     );
@@ -62,11 +86,27 @@ export function FormularioDistribuidor() {
 
   return (
     <form
-      onSubmit={handleSubmit(() => {
-        setListo(true);
-        toast.success("¡Listo! Te contactamos hoy mismo", {
-          description: "Un asesor real, no un bot.",
-        });
+      onSubmit={handleSubmit(async (datos) => {
+        const entrada: SolicitudEntrada = {
+          tipo: "distribuidor",
+          nombre: datos.nombre.trim(),
+          telefono: datos.whatsapp.trim(),
+          ciudad: datos.ciudad.trim(),
+          volumen: datos.volumen,
+          ...(perfil?.correo ? { correo: perfil.correo } : {}),
+        };
+        setEnviando(true);
+        setProblema(null);
+        const r = await mandarSolicitud(entrada);
+        setEnviando(false);
+        if (r.tipo === "enviada") {
+          setListo(true);
+          toast.success("Recibimos tus datos", {
+            description: "Un asesor te escribe por WhatsApp.",
+          });
+        } else {
+          setProblema(r.tipo === "respaldo" ? { ...r, entrada } : r);
+        }
       })}
       noValidate
       className="border-border-soft bg-surface space-y-4 rounded-lg border p-5 lg:p-7"
@@ -77,8 +117,8 @@ export function FormularioDistribuidor() {
           Déjanos tus datos y te armamos la propuesta
         </h3>
         <p className="text-fg-muted mt-2 text-sm leading-relaxed">
-          Sin compromiso. Te mandamos la lista de precios, los lotes con mejor
-          rotación en tu zona y resolvemos dudas por WhatsApp.
+          Sin compromiso. Te escribimos por WhatsApp para resolver tus dudas
+          sobre precios por volumen, lotes y envíos.
         </p>
       </div>
 
@@ -177,8 +217,27 @@ export function FormularioDistribuidor() {
         </div>
       </div>
 
-      <Button type="submit" variant="gold" size="touch-lg" className="w-full">
-        Quiero la propuesta
+      {problema?.tipo === "invalida" ? (
+        <p role="alert" className="text-danger text-sm">
+          {problema.mensaje}
+        </p>
+      ) : null}
+      {problema?.tipo === "respaldo" ? (
+        <RespaldoWhatsApp entrada={problema.entrada} sinServidor={problema.sinServidor} />
+      ) : null}
+
+      <Button
+        type="submit"
+        variant="gold"
+        size="touch-lg"
+        className="w-full"
+        disabled={enviando}
+      >
+        {enviando
+          ? "Enviando…"
+          : problema?.tipo === "respaldo" && !problema.sinServidor
+            ? "Volver a intentar"
+            : "Quiero la propuesta"}
       </Button>
     </form>
   );

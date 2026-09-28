@@ -10,7 +10,9 @@ import { CLIP_LINK } from "@/data/pagos";
 import { enlaceWhatsAppPedido } from "@/lib/aviso-pedido";
 import { resumenCarrito } from "@/lib/carrito";
 import { formatoFechaLarga } from "@/lib/format";
+import { hayLogin, useSesion } from "@/lib/sesion";
 import { useTienda } from "@/store/tienda";
+import { esFolioLocal } from "@/components/cuenta/pedido-comun";
 
 export function VistaConfirmacion() {
   const hidratado = useTienda((s) => s.hidratado);
@@ -28,12 +30,20 @@ export function VistaConfirmacion() {
     return (
       <Contenedor className="py-20 text-center">
         <h1 className="font-display mb-3 text-3xl">No hay ningún pedido reciente</h1>
-        <p className="text-fg-muted mb-7">
-          Si acabas de comprar, revisa tu correo. Si no, empieza por aquí.
+        {/* No se manda correo de confirmación: decir «revisa tu correo» mandaba
+            a buscar algo que nunca llega. */}
+        <p className="text-fg-muted mx-auto mb-7 max-w-md">
+          Si acabas de comprar, consulta cómo va con tu folio y tu teléfono. Si no,
+          empieza por aquí.
         </p>
-        <Button asChild variant="gold" size="touch-lg">
-          <Link href="/catalogo">Ver el catálogo</Link>
-        </Button>
+        <div className="flex flex-col justify-center gap-2 sm:flex-row">
+          <Button asChild variant="gold" size="touch-lg">
+            <Link href="/rastreo">Rastrear mi pedido</Link>
+          </Button>
+          <Button asChild variant="outline" size="touch-lg">
+            <Link href="/catalogo">Ver el catálogo</Link>
+          </Button>
+        </div>
       </Contenedor>
     );
   }
@@ -61,6 +71,9 @@ export function VistaConfirmacion() {
   }[pedido.metodoId];
 
   const whatsapp = enlaceWhatsAppPedido(pedido);
+  // Folio puesto por este navegador porque el servidor no contestó: no existe
+  // en la tienda, no se puede rastrear y solo viaja por WhatsApp.
+  const local = esFolioLocal(pedido.folio);
 
   return (
     <Contenedor className="py-10 lg:py-16">
@@ -74,11 +87,23 @@ export function VistaConfirmacion() {
           <h1 className="font-display text-[32px] leading-tight tracking-tight lg:text-[42px]">
             ¡Gracias, {pedido.nombre.split(" ")[0]}!
           </h1>
-          <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
-            Guardamos tu pedido a nombre de{" "}
-            <span className="text-fg">{pedido.correo}</span>. En cuanto salga de
-            bodega te mandamos la guía de rastreo por WhatsApp.
-          </p>
+          {/* Nada de «te mandamos un correo»: no se manda ninguno. Lo que sí
+              existe es el folio, y con él y el teléfono se rastrea. */}
+          {local ? (
+            <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
+              No pudimos registrarlo en línea en este momento. Mándanos tu pedido
+              por WhatsApp con el botón de abajo para que no se pierda.
+            </p>
+          ) : (
+            <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
+              Registramos tu pedido con el folio{" "}
+              <span data-precio className="text-fg">
+                {pedido.folio}
+              </span>
+              . En cuanto salga de bodega te mandamos la guía de rastreo por
+              WhatsApp al {pedido.telefono}.
+            </p>
+          )}
         </div>
 
         {/* El paso que de verdad cierra la compra.
@@ -155,7 +180,13 @@ export function VistaConfirmacion() {
 
         <ol className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
-            { icono: Package, titulo: "Preparamos tu pedido", texto: "Hoy mismo" },
+            // Sin «hoy mismo»: se surte cuando se confirma el pago (o, contra
+            // entrega, cuando se acuerda el día), y eso no depende de la tienda.
+            {
+              icono: Package,
+              titulo: "Preparamos tu pedido",
+              texto: pedido.metodoId === "contra" ? "Al acordar la entrega" : "Al confirmar tu pago",
+            },
             { icono: Truck, titulo: "Sale de bodega", texto: "Con guía de rastreo" },
             { icono: Check, titulo: "Llega a tu puerta", texto: pedido.diasEntrega },
           ].map((paso) => {
@@ -185,18 +216,63 @@ export function VistaConfirmacion() {
           </Button>
         </div>
 
-        <p className="text-fg-subtle mt-5 text-center text-xs">
-          Puedes seguir tu pedido desde{" "}
-          <Link
-            href="/cuenta"
-            className="text-gold-light underline underline-offset-4"
-          >
-            Mi cuenta
-          </Link>
-          .
-        </p>
+        {local ? null : (
+          <SeguirPedido folio={pedido.folio} telefono={pedido.telefono} />
+        )}
       </div>
     </Contenedor>
+  );
+}
+
+/**
+ * Cómo seguir el pedido después de cerrar esta pantalla.
+ *
+ * Esta pantalla vive en el navegador y se pisa con el siguiente pedido, así
+ * que el folio tiene que quedar a un toque del rastreo. A quien compró sin
+ * cuenta se le invita a crearla —sus siguientes pedidos quedarán en su
+ * historial—, sin prometer que este se le vaya a ligar: el servidor no lo hace.
+ */
+function SeguirPedido({ folio, telefono }: { folio: string; telefono: string }) {
+  const sesion = useSesion();
+  const rastreo = `/rastreo/?folio=${encodeURIComponent(folio)}`;
+
+  return (
+    <section className="border-border-soft mt-8 rounded-lg border p-5">
+      <h2 className="font-display mb-1.5 text-lg">Sigue tu pedido</h2>
+      {sesion.perfil ? (
+        <>
+          <p className="text-fg-muted mb-4 text-sm leading-relaxed">
+            Quedó en tu cuenta: ahí ves cómo va, la guía cuando salga, y puedes
+            repetirlo o pedir factura.
+          </p>
+          <Button asChild variant="outline" size="touch" className="w-full sm:w-auto">
+            <Link href={`/cuenta/pedido/?folio=${encodeURIComponent(folio)}`}>
+              Ver mi pedido en Mi cuenta
+            </Link>
+          </Button>
+        </>
+      ) : (
+        <>
+          <p className="text-fg-muted mb-4 text-sm leading-relaxed">
+            Guarda tu folio <span data-precio className="text-fg">{folio}</span>:
+            con él y el teléfono {telefono} consultas cómo va, sin cuenta.
+          </p>
+          <Button asChild variant="outline" size="touch" className="w-full sm:w-auto">
+            <Link href={rastreo}>Rastrear mi pedido</Link>
+          </Button>
+          {hayLogin() && sesion.listo ? (
+            <p className="text-fg-subtle border-border-soft mt-4 border-t pt-4 text-sm leading-relaxed">
+              ¿Compras seguido?{" "}
+              <Link href="/cuenta" className="text-gold-light underline underline-offset-4">
+                Crea tu cuenta
+              </Link>{" "}
+              y tus próximos pedidos quedarán en tu historial: los rastreas sin
+              folio y los repites con un toque.
+            </p>
+          ) : null}
+        </>
+      )}
+    </section>
   );
 }
 

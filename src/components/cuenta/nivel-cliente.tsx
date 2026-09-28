@@ -1,7 +1,10 @@
 import { NIVELES, nivelDe } from "@/data/cuenta";
 import { cn } from "@/lib/utils";
 
-/** Nivel de cliente gamificado (§13). */
+/**
+ * Nivel de cliente gamificado (§13). `piezas` son solo las de pedidos
+ * vendidos (`piezasVendidas`): un pedido pendiente o cancelado no sube a nadie.
+ */
 export function NivelCliente({ piezas }: { piezas: number }) {
   const { actual, siguiente, progreso, faltan } = nivelDe(piezas);
 
@@ -18,7 +21,7 @@ export function NivelCliente({ piezas }: { piezas: number }) {
           <span data-precio className="text-fg font-medium">
             {piezas}
           </span>{" "}
-          piezas compradas
+          {piezas === 1 ? "pieza pagada" : "piezas pagadas"}
         </p>
       </div>
 

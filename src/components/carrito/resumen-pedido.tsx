@@ -44,7 +44,13 @@ export function ResumenPedido({
 
         {resumen.ahorroVolumen > 0 ? (
           <div className="text-success flex justify-between">
-            <dt>Descuento por volumen ({resumen.escalon.nombre})</dt>
+            {/* Sin descuento de escalón, el ahorro solo puede venir del precio
+                de un lote o un set frente a sus piezas a precio de lista. */}
+            <dt>
+              {resumen.escalon.descuento === 0
+                ? "Ahorro en paquetes"
+                : `Descuento por volumen (${resumen.escalon.nombre})`}
+            </dt>
             <dd>
               −<Precio valor={resumen.ahorroVolumen} />
             </dd>
