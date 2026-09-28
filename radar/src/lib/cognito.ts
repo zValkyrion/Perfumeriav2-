@@ -168,10 +168,22 @@ export type Perfil = {
  * API**, que comprueba la firma contra las claves públicas de Cognito: cambiar
  * este JSON en el navegador no da acceso a nada.
  */
+/**
+ * El JSON de en medio del token, como texto.
+ *
+ * Cognito lo codifica en UTF-8 y `atob` devuelve bytes sueltos: sin pasar por
+ * `TextDecoder`, «Martínez» salía «MartÃ­nez», y así firmaba las fichas.
+ */
+export function cargaDelToken(token: string): string {
+  const b64 = (token.split(".")[1] ?? "").replace(/-/g, "+").replace(/_/g, "/");
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
 /** ¿Lo firmó Cognito? El del código de equipo lo firma nuestra Lambda. */
 export function esTokenCognito(token: string): boolean {
   try {
-    const carga = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    const carga = JSON.parse(cargaDelToken(token));
     return typeof carga.iss === "string" && carga.iss.includes("cognito-idp");
   } catch {
     return false;
@@ -180,7 +192,7 @@ export function esTokenCognito(token: string): boolean {
 
 export function leerPerfil(idToken: string): Perfil | null {
   try {
-    const carga = JSON.parse(atob(idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    const carga = JSON.parse(cargaDelToken(idToken));
     return {
       correo: carga.email ?? "",
       nombre: carga.name ?? carga.email ?? "",

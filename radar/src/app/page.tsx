@@ -4,13 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ChartColumn,
   Check,
 
   Download,
+  LayoutDashboard,
   LogOut,
   MapPin,
-  Package,
   Plus,
   Scale,
   Search,
@@ -126,22 +125,16 @@ export default function Pagina() {
             </Boton>
           ) : (
             <>
-              {/* La vista de conjunto solo se le enseña a `admins`. Quien no lo
-                  sea y llegue a /admin recibe la explicación ahí mismo: esto
-                  decide qué se pinta, no qué se puede leer. */}
+              {/* El panel de la tienda (pedidos, ventas, clientes, catálogo y
+                  la vista de conjunto) solo se le enseña a `admins`. Quien no
+                  lo sea y llegue a /tienda recibe la explicación ahí mismo:
+                  esto decide qué se pinta, no qué se puede leer. */}
               {sesion.grupos.includes("admins") && (
-                <>
-                  <Link href="/catalogo/" aria-label="Catálogo de la tienda">
-                    <Boton variante="secundario" className="px-3">
-                      <Package size={18} />
-                    </Boton>
-                  </Link>
-                  <Link href="/admin/" aria-label="Vista de conjunto">
-                    <Boton variante="secundario" className="px-3">
-                      <ChartColumn size={18} />
-                    </Boton>
-                  </Link>
-                </>
+                <Link href="/tienda/" aria-label="Panel de la tienda" title="Panel de la tienda">
+                  <Boton variante="secundario" className="px-3">
+                    <LayoutDashboard size={18} />
+                  </Boton>
+                </Link>
               )}
               <ExportarCopia proveedores={proveedores ?? []} />
               <Boton
