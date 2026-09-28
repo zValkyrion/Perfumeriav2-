@@ -56,12 +56,10 @@ export function TarjetaSet({ set: compilado }: { set: SetRegalo }) {
           ) : null}
         </div>
 
+        {/* Sin «Solo quedan N»: el stock de un set es 999 o 0 (no hay conteo
+            por pieza), así que cualquier cifra de escasez sería inventada. */}
         {set.stock === 0 ? (
           <p className="text-fg-subtle mt-1.5 text-[11px]">Agotado por ahora</p>
-        ) : set.stock <= 15 ? (
-          <p className="text-danger mt-1.5 text-[11px]">
-            Solo quedan {set.stock}
-          </p>
         ) : null}
 
         <div className="mt-4 pt-1">

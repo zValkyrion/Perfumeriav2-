@@ -14,7 +14,6 @@ export interface Filtros {
   precioMin?: number;
   precioMax?: number;
   soloStock: boolean;
-  rating?: number;
   orden: Orden;
   /** Cuántos productos se muestran; sube de 24 en 24 (§9). */
   mostrar: number;
@@ -44,7 +43,6 @@ const ORDENES_VALIDOS = new Set<string>([
   "precio-asc",
   "precio-desc",
   "novedades",
-  "rating",
 ]);
 
 export function leerFiltros(params: ParamsBusqueda): Filtros {
@@ -61,7 +59,6 @@ export function leerFiltros(params: ParamsBusqueda): Filtros {
     precioMin: numeroDe(params.precioMin),
     precioMax: numeroDe(params.precioMax),
     soloStock: lista(params.stock).includes("1"),
-    rating: numeroDe(params.rating),
     orden:
       orden && ORDENES_VALIDOS.has(orden) ? (orden as Orden) : "relevancia",
     mostrar: numeroDe(params.n) ?? 24,
@@ -97,7 +94,6 @@ export function aplicarFiltros(base: Producto[], f: Filtros): Producto[] {
     if (f.precioMax !== undefined && desde > f.precioMax) return false;
 
     if (f.soloStock && !p.presentaciones.some((v) => v.stock > 0)) return false;
-    if (f.rating !== undefined && p.rating < f.rating) return false;
 
     return true;
   });
@@ -112,7 +108,11 @@ export function ordenar(productos: Producto[], orden: Orden): Producto[] {
     case "precio-desc":
       return copia.sort((a, b) => precioDesde(b) - precioDesde(a));
     case "vendidos":
-      return copia.sort((a, b) => b.totalReseñas - a.totalReseñas);
+      // No hay cifra de ventas por producto en el catálogo: lo que hay es la
+      // etiqueta «Más vendido» que pone el negocio. Esos primero y, dentro de
+      // cada grupo, el orden del catálogo (`sort` es estable). Antes ordenaba
+      // por un número de reseñas sacado al azar.
+      return copia.sort((a, b) => Number(esMasVendido(b)) - Number(esMasVendido(a)));
     case "novedades":
       // Lo marcado como «Nuevo» primero; después, el año de lanzamiento si se
       // conoce. Casi ningún producto real lo trae, así que el año solo desempata.
@@ -121,15 +121,20 @@ export function ordenar(productos: Producto[], orden: Orden): Producto[] {
           Number(b.badges.includes("Nuevo")) - Number(a.badges.includes("Nuevo")) ||
           (b.anio ?? 0) - (a.anio ?? 0),
       );
-    case "rating":
-      return copia.sort((a, b) => b.rating - a.rating);
     default:
-      // Relevancia: destacados primero, luego por reseñas.
-      return copia.sort((a, b) => {
-        if (a.destacado !== b.destacado) return a.destacado ? -1 : 1;
-        return b.totalReseñas - a.totalReseñas;
-      });
+      // «Destacados»: lo que el negocio marca como destacado, luego lo que
+      // marca como más vendido, y el resto en el orden del catálogo. Todo sale
+      // de datos del catálogo; nada de popularidad inventada.
+      return copia.sort(
+        (a, b) =>
+          Number(b.destacado) - Number(a.destacado) ||
+          Number(esMasVendido(b)) - Number(esMasVendido(a)),
+      );
   }
+}
+
+function esMasVendido(p: Producto): boolean {
+  return p.badges.includes("Más vendido");
 }
 
 /** Cuántos filtros hay activos, para el contador del botón "Filtrar" (§9). */
@@ -143,8 +148,7 @@ export function contarActivos(f: Filtros): number {
     f.ocasion.length +
     f.promo.length +
     (f.precioMin !== undefined || f.precioMax !== undefined ? 1 : 0) +
-    (f.soloStock ? 1 : 0) +
-    (f.rating !== undefined ? 1 : 0)
+    (f.soloStock ? 1 : 0)
   );
 }
 
@@ -189,13 +193,6 @@ export function chipsActivos(f: Filtros): ChipActivo[] {
   }
   if (f.soloStock) {
     chips.push({ clave: "stock", valor: "1", etiqueta: "Solo disponibles" });
-  }
-  if (f.rating !== undefined) {
-    chips.push({
-      clave: "rating",
-      valor: String(f.rating),
-      etiqueta: `${f.rating}★ o más`,
-    });
   }
 
   return chips;

@@ -255,7 +255,9 @@ export function EstadoVacio({
       <div className="flex flex-wrap justify-center gap-2">
         {[
           { label: "Más vendidos", href: "/catalogo?orden=vendidos" },
-          { label: "En 3x2", href: "/promociones" },
+          // «Promociones» y no «En 3x2»: el 3x2 depende de que el catálogo
+          // tenga modelos con esa etiqueta, y /promociones ya dice si los hay.
+          { label: "Promociones", href: "/promociones" },
           { label: "Menos de $1,000", href: "/catalogo?precioMax=1000" },
           { label: "Todo el catálogo", href: "/catalogo" },
         ].map((a) => (

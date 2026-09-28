@@ -17,12 +17,10 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Contenedor, Seccion, TituloSeccion } from "@/components/comunes/layout";
 import { DatosEstructurados } from "@/components/comunes/datos-estructurados";
-import { Estrellas } from "@/components/comunes/estrellas";
 import { BarraIntensidad, ChipFamilia } from "@/components/comunes/intensidad";
 import { CompraProducto } from "@/components/producto/compra-producto";
 import { Galeria } from "@/components/producto/galeria";
 import { PiramideOlfativa } from "@/components/producto/piramide-olfativa";
-import { ResenasProducto } from "@/components/producto/resenas-producto";
 import { CarruselProductos } from "@/components/producto/carrusel-productos";
 import { GridProductos } from "@/components/producto/grid-productos";
 import { MARCAS_POR_SLUG } from "@/data/marcas";
@@ -33,9 +31,7 @@ import {
   precioDesde,
   relacionados,
 } from "@/data/productos";
-import { resenasDe } from "@/data/resenas";
 import { FAMILIA_POR_NOMBRE } from "@/data/taxonomia";
-import { numero } from "@/lib/format";
 import { migasDePan, producto as productoJsonLd } from "@/lib/jsonld";
 import { descripcionProducto, tituloProducto } from "@/lib/seo";
 
@@ -98,15 +94,14 @@ export default async function ProductoPage({
 
   const marca = MARCAS_POR_SLUG.get(producto.marca);
   const nombreMarca = marca?.nombre ?? producto.marca;
-  const resenas = resenasDe(producto.id);
   const combina = combinaCon(producto, 4);
   const similares = relacionados(producto, 10);
 
   return (
     <>
       {/* El JSON-LD de producto no lleva precio, disponibilidad ni
-          calificación: esos tres datos son sintéticos en este catálogo y
-          marcarlos como reales es lo que Google castiga. Ver src/lib/jsonld.ts. */}
+          calificación: no hay inventario por pieza ni reseñas, y marcarlos sin
+          ellos es lo que Google castiga. Ver src/lib/jsonld.ts. */}
       <DatosEstructurados datos={productoJsonLd(producto, nombreMarca)} />
       <DatosEstructurados
         datos={migasDePan([
@@ -176,19 +171,10 @@ export default async function ProductoPage({
               {producto.nombre}
             </h1>
 
+            {/* Aquí iban estrellas y «(N reseñas)» enlazando a una sección de
+                reseñas. No hay reseñas de clientes: la calificación y el
+                conteo salían de un número al azar por producto. */}
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-              <a
-                href="#resenas"
-                className="hover:text-gold-light flex items-center gap-2 text-sm"
-              >
-                <Estrellas valor={producto.rating} />
-                <span data-precio className="font-medium">
-                  {producto.rating.toFixed(1)}
-                </span>
-                <span className="text-fg-subtle">
-                  ({numero(producto.totalReseñas)} reseñas)
-                </span>
-              </a>
               {/* El chip de familia lleva a su página: es el enlace que conecta
                   la ficha con la landing de cola larga de su familia. */}
               <Link
@@ -340,21 +326,9 @@ export default async function ProductoPage({
         </Contenedor>
       </Seccion>
 
-      {/* 11 · Reseñas */}
-      <Seccion id="resenas" className="border-border-soft border-t">
-        <Contenedor>
-          <TituloSeccion
-            eyebrow="Opiniones reales"
-            titulo="Lo que dicen quienes lo compraron"
-          />
-          <ResenasProducto
-            resenas={resenas}
-            rating={producto.rating}
-            total={producto.totalReseñas}
-            nombreProducto={producto.nombre}
-          />
-        </Contenedor>
-      </Seccion>
+      {/* 11 · Reseñas: fuera. Eran de muestra (ningún producto real tenía
+          una), con un resumen «4.x de 5 · N reseñas» inventado y un formulario
+          que fingía publicar. Vuelven cuando haya reseñas de compras reales. */}
 
       {/* 12 · Combina bien con */}
       {combina.length > 0 ? (

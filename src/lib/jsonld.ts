@@ -7,10 +7,9 @@ import { SITIO_URL, urlAbsoluta } from "./sitio";
  *
  * Regla única y sin excepciones: **solo se marca lo verificable**. Identidad,
  * categoría, casa, notas, presentación y navegación son hechos del catálogo y
- * se emiten. Calificaciones, número de reseñas, precios y disponibilidad salen
- * hoy de `randEntero()` sobre el slug del producto —son deterministas, no
- * reales— y emitirlos como `aggregateRating` u `offers` es justo lo que Google
- * sanciona con acción manual. Van fuera hasta que haya inventario real.
+ * se emiten. No hay reseñas ni inventario por pieza (el stock es «hay» o
+ * «agotado»), y marcar `aggregateRating` u `offers` sin ellos es justo lo que
+ * Google sanciona con acción manual. Van fuera hasta que existan de verdad.
  *
  * Qué falta y por qué, para cuando se pueda:
  *

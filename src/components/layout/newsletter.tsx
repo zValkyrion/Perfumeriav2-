@@ -5,6 +5,9 @@ import { ArrowRight, Check } from "lucide-react";
 import { toast } from "sonner";
 import { pixel } from "@/lib/pixel";
 
+/** El cupón de bienvenida que reparte el boletín (`CUPONES` en compartido/reglas.ts). */
+const CUPON_BIENVENIDA = "REY10";
+
 /**
  * Captura de correo con el gancho del 10% (§1.2.2, punto 9). No hay backend:
  * valida el formato y confirma en el propio componente.
@@ -35,8 +38,12 @@ export function Newsletter({ compacto = true }: { compacto?: boolean }) {
      * llega a usar.
      */
     pixel("Lead");
-    toast.success("¡Listo! Tu cupón AURA10 va en camino", {
-      description: "Revisa tu correo para el 10% de tu primera compra.",
+    // Antes: «tu cupón va en camino, revisa tu correo». No se manda ningún
+    // correo, así que el cupón se da aquí mismo. Es `REY10`, el de la tienda;
+    // `AURA10` era el de la plantilla (el servidor aún lo acepta por quien ya
+    // lo tenía guardado, ver `compartido/reglas.ts`).
+    toast.success(`¡Listo! Tu cupón es ${CUPON_BIENVENIDA}`, {
+      description: "Escríbelo en el carrito para el 10% de bienvenida.",
     });
   }
 
@@ -45,8 +52,9 @@ export function Newsletter({ compacto = true }: { compacto?: boolean }) {
       <div className="border-success/30 bg-success/10 flex items-center gap-2.5 rounded-md border px-3.5 py-3">
         <Check size={18} className="text-success shrink-0" aria-hidden />
         <p className="text-sm">
-          Ya estás dentro. Usa <strong className="text-gold-light">AURA10</strong>{" "}
-          en tu primera compra.
+          Ya estás dentro. Usa{" "}
+          <strong className="text-gold-light">{CUPON_BIENVENIDA}</strong> en el
+          carrito para el 10% de bienvenida.
         </p>
       </div>
     );
@@ -54,10 +62,12 @@ export function Newsletter({ compacto = true }: { compacto?: boolean }) {
 
   return (
     <form onSubmit={enviar} noValidate>
+      {/* Antes prometía «ofertas exclusivas y lanzamientos antes que nadie»,
+          pero el correo no se guarda en ningún sitio: no hay envíos. */}
       {compacto ? (
         <p className="text-fg-muted mb-3 text-sm leading-relaxed">
-          Recibe ofertas exclusivas y lanzamientos antes que nadie.{" "}
-          <span className="text-gold-light">10% en tu primera compra.</span>
+          Escribe tu correo y te damos tu cupón al instante.{" "}
+          <span className="text-gold-light">10% de bienvenida.</span>
         </p>
       ) : null}
 

@@ -3,7 +3,7 @@
 import { Truck } from "lucide-react";
 import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { precio } from "@/lib/format";
-import { ESCALON_TOPE, pct } from "@/lib/volumen";
+import { DESCUENTO_TRANSFERENCIA, ESCALON_TOPE, pct } from "@/lib/volumen";
 import type { ResumenCarrito } from "@/lib/carrito";
 import { cn } from "@/lib/utils";
 
@@ -39,9 +39,13 @@ export function BarraEscalon({
           className,
         )}
       >
+        {/* Antes decía «el mejor precio … en todo el pedido», y ninguna de las
+            dos cosas era cierta: la transferencia baja otro tanto y la escalera
+            no toca paquetes ni ediciones limitadas. */}
         <p className="text-gold-light text-[13px] font-medium">
-          Tienes el mejor precio: {pct(ESCALON_TOPE.descuento)}% de descuento en
-          todo el pedido.
+          Ya tienes el mayor descuento por volumen:{" "}
+          {pct(ESCALON_TOPE.descuento)}% en tus piezas sueltas. Pagando por
+          transferencia bajas {pct(DESCUENTO_TRANSFERENCIA)}% más.
         </p>
         <p className="text-fg-muted mt-1 text-xs">
           Llevas {piezasTotales} piezas · ahorras {precio(resumen.ahorroVolumen)} MXN

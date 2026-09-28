@@ -51,7 +51,6 @@ export function Seccion({
 /** Encabezado de sección: eyebrow + título serif + enlace opcional. */
 export function TituloSeccion({
   eyebrow,
-  sobretitulo,
   titulo,
   descripcion,
   enlace,
@@ -61,12 +60,6 @@ export function TituloSeccion({
   centrado = false,
 }: {
   eyebrow?: string;
-  /**
-   * Renglón propio por encima del título, para cosas como una fila de
-   * estrellas. Metidas dentro del título se mezclaban con las palabras y el
-   * salto de línea caía en mitad de la fila.
-   */
-  sobretitulo?: string;
   titulo: string;
   descripcion?: string;
   enlace?: string;
@@ -76,7 +69,7 @@ export function TituloSeccion({
   revelado?: boolean;
   /**
    * Centra el encabezado y engrosa el título. Es para las secciones que se
-   * leen como un anuncio —la prueba social, el surtido— y no como el rótulo de
+   * leen como un anuncio —la escalera de precios, el surtido— y no como el rótulo de
    * una rejilla: ahí el título alineado a la izquierda con el enlace colgando a
    * la derecha se pierde en el ancho de la página.
    */
@@ -99,11 +92,6 @@ export function TituloSeccion({
     >
       <div className="max-w-2xl">
         {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
-        {sobretitulo ? (
-          <p className="mb-1.5 text-2xl leading-none tracking-[0.1em] lg:text-3xl">
-            {sobretitulo}
-          </p>
-        ) : null}
         {revelado ? (
           <TituloRevelado texto={titulo} className={claseTitulo} />
         ) : (

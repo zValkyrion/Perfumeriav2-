@@ -1,8 +1,13 @@
 import {
+  DESCUENTO_MAXIMO,
+  DESCUENTO_TRANSFERENCIA,
   PIEZAS_ENVIO_GRATIS,
   TARIFAS_ENVIO,
   type IdEnvio,
 } from "../../compartido/reglas";
+
+/** Fracción a porcentaje entero, igual que `pct` de `src/lib/volumen.ts`. */
+const pct = (fraccion: number) => Math.round(fraccion * 100);
 
 /** Datos de marca, copy institucional y contenido editorial de la tienda. */
 
@@ -25,10 +30,8 @@ export const MARCA = {
   instagram: "https://instagram.com",
   facebook: "https://facebook.com",
   tiktok: "https://tiktok.com",
-  // Cifra deliberadamente modesta: da más confianza que un número redondo
-  // enorme, que es lo que hace sospechar al cliente.
-  clientes: 1500,
-  ratingGlobal: 4.9,
+  // Aquí vivían `clientes: 1500` y `ratingGlobal: 4.9`, cifras de la plantilla
+  // sin ningún respaldo que la portada y /nosotros enseñaban como reales.
 } as const;
 
 /**
@@ -85,7 +88,7 @@ export const PASOS_ENVIO = [
   {
     titulo: "Guía de rastreo el mismo día",
     texto:
-      "En cuanto lo entregamos a paquetería te llega el número de guía por WhatsApp y correo. Sin tener que pedirlo.",
+      "En cuanto lo entregamos a paquetería te llega el número de guía por WhatsApp. Sin tener que pedirlo.",
   },
   {
     titulo: "Entrega en 2 a 5 días",
@@ -116,7 +119,7 @@ export const FAQ_HOME = [
   {
     grupo: "Envíos",
     p: "¿Puedo rastrear mi pedido?",
-    r: "Sí. Una vez que tu pedido se envía, recibirás un número de guía por WhatsApp o correo para rastrearlo en tiempo real.",
+    r: "Sí. Cuando tu pedido sale te mandamos el número de guía por WhatsApp. También puedes ver cómo va en «Rastrear pedido» con tu folio y tu teléfono, o en Mi cuenta si compraste con tu sesión iniciada.",
   },
   {
     grupo: "Mayoreo",
@@ -131,7 +134,9 @@ export const FAQ_HOME = [
   {
     grupo: "Pagos",
     p: "¿Qué métodos de pago aceptan?",
-    r: "Aceptamos pagos con tarjeta de débito, crédito y transferencias. También puedes pagar con herramientas de pago seguro como Clip o Ecart Pay.",
+    // Decía también «Ecart Pay», que la tienda no tiene: solo cobra con Clip,
+    // transferencia y contra entrega (METODOS_PAGO, más abajo).
+    r: "Con tarjeta de débito o crédito y en efectivo a través de Clip, por depósito o transferencia bancaria, y contra entrega en pedidos menores a $ 10,000.00 MXN.",
   },
   {
     grupo: "Pagos",
@@ -156,7 +161,9 @@ export const FAQ_HOME = [
   {
     grupo: "Las más frecuentes",
     p: "¿Puedo elegir perfumes diferentes?",
-    r: "Sí. En Mayoreo Surtido y en los paquetes puedes elegir perfumes variados dentro de la disponibilidad del catálogo.",
+    // Decía que en los paquetes también se eligen, y no: vienen armados con
+    // modelos fijos (lo dice la misma FAQ de mayoreo).
+    r: "Sí, en Mayoreo Surtido eliges cada perfume dentro de lo disponible en el catálogo. Los paquetes vienen armados con modelos fijos, que ves en la ficha de cada uno.",
   },
   {
     grupo: "Las más frecuentes",
@@ -166,7 +173,9 @@ export const FAQ_HOME = [
   {
     grupo: "Las más frecuentes",
     p: "¿Cuál es la mejor opción para empezar un negocio?",
-    r: "El Paquete Emprendedor de 20 perfumes es la opción más recomendada para iniciar, por su precio por pieza y su facilidad de reventa.",
+    // Recomendaba el Emprendedor «por su precio por pieza», y desde 20 piezas
+    // las mismas sueltas salen más baratas que ese paquete.
+    r: "Depende de cuánto quieras invertir. Con 3 perfumes sueltos ya tienes precio de mayoreo y envío gratis, y el descuento sube al llegar a 10 y a 20 piezas. Si prefieres no elegir modelo por modelo, los paquetes vienen armados; en la ficha de cada uno ves qué modelos trae y cuánto suman a precio de lista.",
   },
 ] as const;
 
@@ -202,7 +211,7 @@ export const FAQ_CATALOGO = [
   },
   {
     p: "¿El frasco también es idéntico?",
-    r: "Sí: misma forma, mismo peso de vidrio, mismo tipo de tapa y el mismo atomizador de rocío fino. Es la parte que más miran quienes revenden, porque un frasco ligero o un atomizador que gotea delatan el producto al instante. Puedes girar uno en tres dimensiones en nuestra página de inicio.",
+    r: "Sí: misma forma, mismo peso de vidrio, mismo tipo de tapa y el mismo atomizador de rocío fino. Es la parte que más miran quienes revenden, porque un frasco ligero o un atomizador que gotea delatan el producto al instante.",
   },
   {
     p: "¿Qué pasa si el perfume no me gusta?",
@@ -214,11 +223,11 @@ export const FAQ_CATALOGO = [
   },
   {
     p: "¿Cuánto dura un perfume en la piel?",
-    r: "Depende de la concentración. Un Eau de Toilette rinde de 4 a 6 horas, un Eau de Parfum de 6 a 9, y un Parfum puede pasar de 10. En cada ficha de producto verás la barra de duración y proyección medida en piel, no la que dice el fabricante.",
+    r: "Depende de la concentración. Un Eau de Toilette rinde de 4 a 6 horas, un Eau de Parfum de 6 a 9, y un Parfum puede pasar de 10. En cada ficha de producto verás una barra de duración y otra de proyección.",
   },
   {
     p: "¿Facturan?",
-    r: "Sí, sin costo adicional. Puedes solicitar tu factura desde tu cuenta dentro de los 30 días del mes en que compraste, o escribirnos por WhatsApp con tu folio y tus datos fiscales y la emitimos el mismo día.",
+    r: "Sí, sin costo adicional. Puedes solicitarla desde el detalle de tu pedido en Mi cuenta, o con tu folio por WhatsApp junto con tus datos fiscales.",
   },
 ] as const;
 
@@ -233,7 +242,10 @@ export const FAQ_MAYOREO = [
   },
   {
     p: "¿A cómo debo revender?",
-    r: "Con cada paquete te mandamos una lista de precios sugeridos. Como referencia, vendiendo al precio de menudeo que publicamos en la tienda duplicas la inversión: el Paquete Inicio de 10 perfumes cuesta $4,299 y su valor de venta pasa de $8,400.",
+    // Prometía «duplicas la inversión» y un valor de venta de $8,400 para el
+    // Paquete Inicio, que a precio de lista suma $5,810; y una lista de precios
+    // sugeridos que ningún pedido incluye.
+    r: "Tú pones tu precio. Como referencia, en la ficha de cada paquete ves cuánto suman sus perfumes al precio de menudeo que publicamos en la tienda y la utilidad que te queda si vendes a ese precio.",
   },
   {
     p: "¿Puedo elegir qué modelos vienen en mi lote?",
@@ -245,7 +257,9 @@ export const FAQ_MAYOREO = [
   },
   {
     p: "¿Manejan precios especiales para volúmenes mayores a 50 piezas?",
-    r: "Sí. A partir de 20 perfumes trabajamos precio negociado y asignamos un asesor. Escríbenos por WhatsApp con el volumen estimado y te mandamos la propuesta el mismo día.",
+    // Decía «a partir de 20 trabajamos precio negociado», y ya no hay tramo
+    // de cotización: desde 20 piezas el precio es el del escalón más alto.
+    r: "El precio por volumen llega a su punto más bajo desde 20 perfumes: 30% de descuento, y 40% si pagas por depósito o transferencia. Ese es el tope de la tienda. Si vas a comprar un volumen grande, escríbenos por WhatsApp y te ayudamos a armar el pedido.",
   },
 ] as const;
 
@@ -261,55 +275,29 @@ export const RAZONES_MAYOREO = [
       "El descuento se calcula sobre el total de piezas del pedido, no por modelo. Armas el surtido a tu gusto.",
   },
   {
-    titulo: "Envío gratis siempre",
-    texto:
-      "Desde 3 piezas el envío corre por nuestra cuenta, a cualquier código postal del país.",
+    // Se titulaba «Envío gratis siempre»; es desde 3 piezas y solo el estándar.
+    titulo: `Envío gratis desde ${PIEZAS_ENVIO_GRATIS} piezas`,
+    texto: `Desde ${PIEZAS_ENVIO_GRATIS} piezas el envío estándar corre por nuestra cuenta, a cualquier código postal del país.`,
   },
   {
-    titulo: "Inventario real",
-    texto:
-      "Lo que ves en stock es lo que hay en bodega. No vendemos sobre pedido ni te dejamos esperando semanas.",
+    // Aquí iba «Inventario real: lo que ves en stock es lo que hay en bodega».
+    // Falso: el catálogo solo sabe «hay» o «agotado», sin conteo por pieza.
+    titulo: `${pct(DESCUENTO_TRANSFERENCIA)}% más por transferencia`,
+    texto: `Pagando por depósito o transferencia te descontamos ${pct(DESCUENTO_TRANSFERENCIA)}% más sobre el precio de lista, hasta un máximo de ${pct(DESCUENTO_MAXIMO)}% en total.`,
   },
   {
+    // Decía «lotes de 24 y 50», y no existe un lote de 24. Se alinea con la
+    // FAQ de mayoreo; la política misma la tiene que confirmar el negocio.
     titulo: "Cambio de modelo que no rota",
     texto:
-      "En lotes de 24 y 50 piezas cambiamos hasta el 20% del pedido en los primeros 60 días, sin costo.",
+      "En los paquetes de 40 y 50 perfumes cambiamos hasta el 20% del pedido en los primeros 60 días, sin costo.",
   },
   {
+    // Prometía que el asesor «te dice qué se está moviendo en tu zona»: la
+    // tienda no tiene datos de venta por zona con qué decirlo.
     titulo: "Te atienden personas",
     texto:
-      "Un asesor real por WhatsApp que conoce el catálogo y te dice qué se está moviendo en tu zona.",
-  },
-] as const;
-
-export const TESTIMONIOS_MAYOREO = [
-  {
-    autor: "Yatzil Contreras",
-    ciudad: "Irapuato, Gto.",
-    tiempo: "2 años vendiendo",
-    texto:
-      "Empecé con el lote de 6 porque no quería arriesgar. Lo vendí en diez días y desde entonces pido el de 24 cada mes. Hoy es de donde sale la colegiatura de mis hijos.",
-  },
-  {
-    autor: "Ricardo Peñaloza",
-    ciudad: "Mérida, Yuc.",
-    tiempo: "1 año vendiendo",
-    texto:
-      "Tengo una barbería y empecé vendiendo perfume a los clientes mientras esperaban. Ahora el mostrador de perfumes deja más que dos sillas de corte.",
-  },
-  {
-    autor: "Brenda Sarmiento",
-    ciudad: "Tijuana, B.C.",
-    tiempo: "3 años vendiendo",
-    texto:
-      "Lo que me convenció fue poder mezclar modelos. Otros mayoristas te obligan a llevar doce iguales y se te queda parado el inventario. Aquí armo el surtido según lo que me piden.",
-  },
-  {
-    autor: "Gustavo Lira",
-    ciudad: "Puebla, Pue.",
-    tiempo: "8 meses vendiendo",
-    texto:
-      "Pedí un lote de 50 en marzo y lo terminé en seis semanas. La guía de rastreo llegó el mismo día y el paquete venía bien empacado, ni un frasco maltratado.",
+      "Por WhatsApp te atiende alguien que conoce el catálogo y te ayuda a armar tu pedido.",
   },
 ] as const;
 

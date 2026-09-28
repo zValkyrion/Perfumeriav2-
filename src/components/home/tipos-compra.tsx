@@ -36,7 +36,7 @@ const TIPOS: Tipo[] = [
     icono: Shuffle,
     destacado: true,
   },
-  { titulo: "Paquetes", nota: "De 10, 20 y 30", href: "/lotes", icono: Package },
+  { titulo: "Paquetes", nota: "Ya armados", href: "/lotes", icono: Package },
   { titulo: "Diseñador", nota: "Casas europeas", href: "/catalogo/disenador", icono: Sparkles },
   { titulo: "Árabes", nota: "Oud y azafrán", href: "/catalogo/arabes", icono: Boxes },
   { titulo: "Hombre", nota: "Ver colección", href: "/catalogo/hombre", icono: User },

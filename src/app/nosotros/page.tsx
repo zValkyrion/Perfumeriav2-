@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Bloque, PaginaInfo } from "@/components/comunes/pagina-info";
-import { MARCA } from "@/data/contenido";
-import { numero } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Nosotros",
@@ -11,11 +9,15 @@ export const metadata: Metadata = {
 };
 
 export default function NosotrosPage() {
+  // La entrada seguía con «empezamos en una sala en León y hoy despachamos a
+  // más de 1,500 clientes», y «Dos clientes» afirmaba que la mitad de los
+  // pedidos son de una o dos piezas: historia y cifras de la plantilla, sin
+  // respaldo (MEMORIA §0.3, no inventar datos).
   return (
     <PaginaInfo
       eyebrow="Quiénes somos"
       titulo="La misma fragancia. El mismo frasco. Sin pagar la etiqueta."
-      entrada={`Hacemos perfumería 1:1: equivalencias exactas de las grandes fragancias, en olor y en frasco, a una fracción del precio. Empezamos vendiendo por WhatsApp desde una sala en León y hoy despachamos a más de ${numero(MARCA.clientes)} clientes y revendedores en todo el país.`}
+      entrada="Hacemos perfumería 1:1: equivalencias exactas de las grandes fragancias, en olor y en frasco, a una fracción del precio. Vendemos por pieza y al mayoreo, con envío a todo el país."
     >
       <Bloque titulo="Por qué existimos">
         <p>
@@ -34,9 +36,9 @@ export default function NosotrosPage() {
 
       <Bloque titulo="Dos clientes, una sola tienda">
         <p>
-          La mitad de nuestros pedidos son de una o dos piezas: gente que se está
-          dando un gusto. La otra mitad son revendedoras y revendedores que
-          compran de diez perfumes para arriba y viven de ese margen.
+          Nos compra gente que se está dando un gusto con una o dos piezas, y
+          revendedoras y revendedores que compran de diez perfumes para arriba y
+          viven de ese margen.
         </p>
         <p>
           Por eso el precio baja solo al agregar piezas al carrito, sin registros

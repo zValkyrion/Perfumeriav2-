@@ -124,7 +124,7 @@ function useFiltrosUrl() {
         navegar(siguiente);
         return;
       }
-      if (["stock", "rating"].includes(chip.clave)) {
+      if (chip.clave === "stock") {
         asignar(chip.clave, null);
         return;
       }
@@ -256,7 +256,6 @@ function FiltroExtras() {
   const { params, valores, alternar, asignar } = useFiltrosUrl();
   const promo = valores("promo");
   const stock = params.get("stock") === "1";
-  const rating = params.get("rating");
 
   return (
     <AccordionItem value="extras" className="border-border-soft">
@@ -293,30 +292,8 @@ function FiltroExtras() {
           />
           Solo disponibles
         </label>
-
-        <div className="pt-2">
-          <p className="text-fg-subtle mb-1.5 text-xs">Calificación mínima</p>
-          <div className="flex gap-1.5">
-            {[4, 4.5, 4.8].map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() =>
-                  asignar("rating", rating === String(r) ? null : String(r))
-                }
-                aria-pressed={rating === String(r)}
-                className={cn(
-                  "rounded-full border px-2.5 py-1.5 text-xs transition-colors",
-                  rating === String(r)
-                    ? "border-gold text-gold-light"
-                    : "border-border-strong text-fg-muted hover:text-fg",
-                )}
-              >
-                {r}★ o más
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Aquí iba «Calificación mínima»: filtraba por estrellas que no venían
+            de ninguna reseña, sino de un número al azar por producto. */}
       </AccordionContent>
     </AccordionItem>
   );
@@ -413,7 +390,10 @@ export function BarraCatalogo({
 }) {
   const { params, asignar } = useFiltrosUrl();
   const [abierto, setAbierto] = useState(false);
-  const orden = params.get("orden") ?? "relevancia";
+  // Un enlace viejo con un orden que ya no existe (?orden=rating) deja el
+  // selector en el de siempre en vez de en blanco; el servidor hace lo mismo.
+  const pedido = params.get("orden");
+  const orden = ORDENES.some((o) => o.valor === pedido) ? pedido! : "relevancia";
 
   return (
     <div className="flex items-center justify-between gap-3">

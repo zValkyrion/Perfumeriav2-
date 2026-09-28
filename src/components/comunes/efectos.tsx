@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { animate, motion, useInView, useReducedMotion } from "framer-motion";
-import { numero } from "@/lib/format";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const CURVA = [0.16, 1, 0.3, 1] as const;
@@ -56,95 +55,6 @@ export function TituloRevelado({
         ))}
       </span>
     </Etiqueta>
-  );
-}
-
-/**
- * Cortina que descubre una imagen de izquierda a derecha al entrar en pantalla,
- * mientras el contenido se desescala muy ligeramente. Sustituye al clásico
- * "fade in" y da sensación de material que se despliega.
- */
-export function Cortina({
-  children,
-  className,
-  retraso = 0,
-}: {
-  children: ReactNode;
-  className?: string;
-  retraso?: number;
-}) {
-  const reducido = useReducedMotion();
-
-  if (reducido) return <div className={className}>{children}</div>;
-
-  return (
-    <motion.div
-      className={cn("overflow-hidden", className)}
-      initial={{ clipPath: "inset(0 100% 0 0)" }}
-      whileInView={{ clipPath: "inset(0 0% 0 0)" }}
-      viewport={{ once: true, margin: "-15%" }}
-      transition={{ duration: 0.9, ease: CURVA, delay: retraso }}
-    >
-      <motion.div
-        initial={{ scale: 1.12 }}
-        whileInView={{ scale: 1 }}
-        viewport={{ once: true, margin: "-15%" }}
-        transition={{ duration: 1.1, ease: CURVA, delay: retraso }}
-        className="h-full w-full"
-      >
-        {children}
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/**
- * Cifra grande que cuenta desde cero cuando entra en pantalla.
- *
- * Escribe en el nodo del DOM en lugar de en el estado: son decenas de
- * fotogramas y pasarlos por React costaría otros tantos renders.
- */
-export function ContadorEnVista({
-  valor,
-  duracion = 1.6,
-  className,
-  sufijo = "",
-  prefijo = "",
-}: {
-  valor: number;
-  duracion?: number;
-  className?: string;
-  sufijo?: string;
-  prefijo?: string;
-}) {
-  const nodo = useRef<HTMLSpanElement>(null);
-  const contenedor = useRef<HTMLSpanElement>(null);
-  const enVista = useInView(contenedor, { once: true, margin: "-20%" });
-  const reducido = useReducedMotion();
-
-  // `once: true` garantiza que esto solo se dispara una vez. No hay setState:
-  // la cuenta se escribe directamente en el nodo, así que los ~90 fotogramas
-  // no provocan un solo render de React.
-  useEffect(() => {
-    if (!enVista || reducido) return;
-    const el = nodo.current;
-    if (!el) return;
-
-    const control = animate(0, valor, {
-      duration: duracion,
-      ease: CURVA,
-      onUpdate: (v) => {
-        el.textContent = `${prefijo}${numero(v)}${sufijo}`;
-      },
-    });
-
-    return () => control.stop();
-  }, [enVista, valor, duracion, reducido, prefijo, sufijo]);
-
-  return (
-    <span ref={contenedor} className={className} data-precio>
-      <span ref={nodo}>{`${prefijo}${numero(valor)}${sufijo}`}</span>
-    </span>
   );
 }
 

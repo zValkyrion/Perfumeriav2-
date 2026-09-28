@@ -178,5 +178,8 @@ export function tituloLote(lote: Lote): string {
 }
 
 export function descripcionLote(lote: Lote): string {
-  return `${lote.piezas} perfumes por ${fmt(lote.precio)} MXN — ${fmt(lote.precioIndividualEquivalente)} la pieza. Precio de distribuidor, envío gratis a todo México y lista de precios sugeridos.`;
+  // Terminaba con «precio de distribuidor … y lista de precios sugeridos»: el
+  // paquete no trae ninguna lista, y desde 20 piezas las sueltas con el precio
+  // de distribuidor salen más baratas que el paquete.
+  return `${lote.piezas} perfumes por ${fmt(lote.precio)} MXN — ${fmt(lote.precioIndividualEquivalente)} la pieza. Paquete armado para revender, con envío gratis a todo México.`;
 }

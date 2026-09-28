@@ -71,7 +71,8 @@ export default function EnviosPage() {
         </p>
         <p>
           En cuanto entregamos el paquete a la paquetería te mandamos el número
-          de guía por correo y por WhatsApp. No tienes que pedirlo.
+          de guía por WhatsApp. También lo ves en «Rastrear pedido» con tu folio
+          y tu teléfono, o en Mi cuenta si compraste con tu sesión iniciada.
         </p>
       </Bloque>
 

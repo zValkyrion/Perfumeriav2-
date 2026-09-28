@@ -60,7 +60,9 @@ export function Footer() {
           </div>
 
           <div>
-            <p className="eyebrow mb-3">Recibe ofertas</p>
+            {/* «Recibe ofertas» prometía envíos que no existen: el correo no
+                se guarda. Lo que sí da el formulario es el cupón. */}
+            <p className="eyebrow mb-3">Cupón de bienvenida</p>
             <Newsletter />
             <div className="mt-6">
               <ListaEnlaces enlaces={FOOTER_LEGAL} />

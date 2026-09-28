@@ -18,11 +18,12 @@ export function FranjaNewsletter() {
         <div className="mx-auto max-w-xl py-14 text-center lg:py-20">
           <p className="eyebrow mb-3">Boletín EL REY DE LOS PERFUMES</p>
           <h2 className="font-display text-[26px] leading-tight tracking-tight text-balance lg:text-[36px]">
-            10% de descuento en tu primera compra.
+            10% de descuento de bienvenida.
           </h2>
+          {/* Antes: «ofertas exclusivas… un correo a la semana». No hay envíos:
+              el correo no se guarda en ningún sitio. */}
           <p className="text-fg-muted mt-3 text-[15px] leading-relaxed">
-            Recibe ofertas exclusivas y lanzamientos antes que nadie. Un correo
-            a la semana, sin relleno.
+            Escribe tu correo y te damos tu cupón al instante.
           </p>
 
           <div className="mx-auto mt-6 max-w-md text-left">

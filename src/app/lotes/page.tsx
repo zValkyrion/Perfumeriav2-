@@ -12,8 +12,10 @@ export const metadata: Metadata = {
   // "Paca" es la palabra que usa el revendedor mexicano; "lote" la que usa el
   // sitio. El título lleva las dos para no perder ninguna de las dos consultas.
   title: "Pacas de perfumes al mayoreo",
+  // Decía «a precio de importador directo» como argumento de precio, y desde
+  // 20 piezas las sueltas con descuento salen más baratas que el paquete.
   description:
-    "Cinco paquetes armados de 10 a 50 perfumes a precio de importador directo, con envío gratis a todo México y pago seguro.",
+    "Paquetes armados de 10 a 50 perfumes 1:1 para revender, con envío gratis a todo México y pago seguro.",
   alternates: { canonical: "/lotes" },
 };
 
@@ -33,11 +35,13 @@ export default function LotesPage() {
       <Contenedor className="pt-8 pb-2 lg:pt-12">
         <header className="mx-auto max-w-3xl text-center">
           <h1 className="titular-audaz">PAQUETES</h1>
+          {/* Mismo texto que /paquetes. Antes prometía «precios directos de
+              importación» y «márgenes de ganancia únicos», sin respaldo. */}
           <p className="text-fg-muted mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed font-medium lg:text-base">
-            Los paquetes son la forma más inteligente de arrancar tu negocio de
-            reventa. Cada lote incluye modelos de alta demanda listos para
-            vender, con precios directos de importación que te dejan márgenes de
-            ganancia únicos.
+            Los paquetes son una forma fácil de arrancar tu negocio de reventa:
+            cada uno viene armado con modelos que marcamos como más vendidos, y
+            en su ficha ves cuánto suman a precio de lista y cuánto te queda si
+            los vendes a ese precio.
           </p>
         </header>
       </Contenedor>

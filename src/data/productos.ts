@@ -1,6 +1,5 @@
 import type { ProductoCatalogo, ProductoPrecio } from "../../compartido/catalogo";
 import { normalizar, puntuar } from "../lib/coincidencia";
-import { randEntero } from "../lib/rand";
 import type { Nota, Presentacion, Producto } from "../types";
 import { CATALOGO, SIN_FOTO, urlImagen } from "./catalogo";
 
@@ -65,15 +64,19 @@ function construirProducto(p: ProductoCatalogo): Producto {
     presentaciones: presentacionesDe(p),
     imagenes: p.imagenes.length > 0 ? p.imagenes.map(urlImagen) : [SIN_FOTO],
     badges: p.badges,
-    rating: randEntero(`${p.slug}-rating`, 42, 50) / 10,
-    totalReseñas: randEntero(`${p.slug}-resenas`, 14, 486),
+    // No hay reseñas ni contador de visitas: antes estos tres campos salían de
+    // un número al azar por slug y la tienda los pintaba como calificación,
+    // «N reseñas» y «N personas están viendo». Nadie los lee ya; quedan en
+    // cero solo porque el tipo `Producto` todavía los exige.
+    rating: 0,
+    totalReseñas: 0,
+    viendoAhora: 0,
     duracion: p.duracion,
     estela: p.estela,
     ocasion: p.ocasion,
     // Las ediciones limitadas no entran a la escalera de mayoreo.
     esMayoreoElegible: !p.badges.includes("Edición limitada"),
     destacado: p.destacado,
-    viendoAhora: randEntero(`${p.slug}-viendo`, 6, 34),
     anio: p.anio,
     origen: p.origen,
   };
@@ -136,9 +139,14 @@ export function tieneRebaja(p: Producto): boolean {
 
 export const DESTACADOS = PRODUCTOS.filter((p) => p.destacado);
 
+/**
+ * Los que el negocio marca con la etiqueta «Más vendido», en el orden del
+ * catálogo. No hay cifra de ventas por producto que permita ordenarlos entre
+ * sí; antes se ordenaban por un número de reseñas inventado.
+ */
 export const MAS_VENDIDOS = PRODUCTOS.filter((p) =>
   p.badges.includes("Más vendido"),
-).sort((a, b) => b.totalReseñas - a.totalReseñas);
+);
 
 export const NOVEDADES = PRODUCTOS.filter((p) => p.badges.includes("Nuevo"));
 
@@ -176,7 +184,13 @@ export function combinaCon(p: Producto, n = 4): Producto[] {
       o.familia !== p.familia &&
       o.ocasion.some((oc) => p.ocasion.includes(oc)),
   )
-    .sort((a, b) => b.rating - a.rating)
+    // Primero lo que el negocio marca como más vendido; el resto, en el orden
+    // del catálogo. Antes se ordenaba por una calificación inventada.
+    .sort(
+      (a, b) =>
+        Number(b.badges.includes("Más vendido")) -
+        Number(a.badges.includes("Más vendido")),
+    )
     .slice(0, n);
 }
 
@@ -227,8 +241,9 @@ export function buscar(consulta: string, limite = 60): Producto[] {
   return PRODUCTOS.map((p) => {
     const entrada = INDICE.get(p.slug)!;
     const puntos = puntuar(entrada.nombre, entrada.texto, q);
-    // Desempate suave por popularidad.
-    return { p, puntos: puntos > 0 ? puntos + p.rating / 10 : 0 };
+    // Sin desempate por «popularidad»: la que había era una calificación al
+    // azar. A igual puntaje queda el orden del catálogo (`sort` es estable).
+    return { p, puntos };
   })
     .filter((r) => r.puntos > 0)
     .sort((a, b) => b.puntos - a.puntos)

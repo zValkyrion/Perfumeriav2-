@@ -182,7 +182,7 @@ export default async function LoteDetallePage({
           <TituloSeccion
             eyebrow={`${lote.productos.length} modelos incluidos`}
             titulo="Qué trae este lote"
-            descripcion={`Cada modelo viene ${porModelo} ${porModelo === 1 ? "vez" : "veces"}. Son los que mejor rotan en su categoría.`}
+            descripcion={`Cada modelo viene ${porModelo} ${porModelo === 1 ? "vez" : "veces"}.`}
           />
           <GridProductos productos={incluidos} />
         </Contenedor>

@@ -6,7 +6,6 @@ import { Heart, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio, PrecioAnterior, Descuento } from "@/components/comunes/precio";
-import { RatingCompacto } from "@/components/comunes/estrellas";
 import { Sticker } from "@/components/comunes/sticker";
 import { MARCAS_POR_SLUG } from "@/data/marcas";
 import { presentacionPrincipal } from "@/data/productos";
@@ -17,15 +16,6 @@ import { useProductoVivo } from "@/store/disponibilidad";
 import { useTienda } from "@/store/tienda";
 import type { Producto } from "@/types";
 import { cn } from "@/lib/utils";
-
-/**
- * Umbral a partir del cual mostramos escasez. Es stock real del dataset.
- *
- * Va en 19 porque las existencias se generan entre 15 y 30 piezas y las fichas
- * marcadas como «Últimas piezas» caen en 15–19. Con el umbral en 15 —el mínimo
- * del rango— el aviso de escasez no se encendía prácticamente nunca.
- */
-const STOCK_BAJO = 19;
 
 export function TarjetaProducto({
   producto: compilado,
@@ -56,7 +46,7 @@ export function TarjetaProducto({
 
   const mayoreo = precioUnitario(presentacion.precio, 3);
   const msi = mejorPlazo(presentacion.precio);
-  const bajo = presentacion.stock <= STOCK_BAJO;
+  const agotado = presentacion.stock === 0;
 
   function agregarAlCarrito() {
     agregar(producto.id, presentacion.ml, 1);
@@ -191,11 +181,11 @@ export function TarjetaProducto({
           <button
             type="button"
             onClick={agregarAlCarrito}
-            disabled={presentacion.stock === 0}
+            disabled={agotado}
             className="bg-gold-gradient text-bg btn-brillo presionable flex h-11 w-full items-center justify-center gap-1.5 rounded-full text-[13px] font-medium transition-[filter] hover:brightness-110 disabled:opacity-50"
           >
             <Plus size={15} aria-hidden />
-            {presentacion.stock === 0 ? "Agotado" : "Agregar"}
+            {agotado ? "Agotado" : "Agregar"}
           </button>
         </div>
       </div>
@@ -266,25 +256,15 @@ export function TarjetaProducto({
           </p>
         ) : null}
 
-        <div className="mt-auto pt-2.5">
-          <RatingCompacto valor={producto.rating} total={producto.totalReseñas} />
-
-          {bajo ? (
-            <div className="mt-2">
-              <div className="bg-surface-2 h-1 overflow-hidden rounded-full">
-                <div
-                  className="bg-danger/70 h-full rounded-full"
-                  style={{
-                    width: `${Math.max(8, (presentacion.stock / STOCK_BAJO) * 100)}%`,
-                  }}
-                />
-              </div>
-              <p className="text-danger mt-1 text-[11px]">
-                Solo quedan {presentacion.stock}
-              </p>
-            </div>
-          ) : null}
-        </div>
+        {/* Aquí iban la calificación («4.7 ★ (212)») y una barra de «Solo
+            quedan N». Las dos eran inventadas: no hay reseñas, y el stock solo
+            dice «hay» o «agotado», así que la barra solo se encendía en los
+            agotados con un «Solo quedan 0». Queda el dato que sí existe. */}
+        {agotado ? (
+          <p className="text-fg-subtle mt-auto pt-2.5 text-[11px]">
+            Agotado en {presentacion.ml} ml
+          </p>
+        ) : null}
       </div>
     </article>
   );

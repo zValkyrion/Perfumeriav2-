@@ -44,15 +44,18 @@ export const metadata: Metadata = {
     default: "EL REY DE LOS PERFUMES — Perfumes al mayoreo y menudeo",
     template: "%s | EL REY DE LOS PERFUMES",
   },
+  // Nada de «100% originales» ni «el mejor precio de México»: la tienda vende
+  // equivalencias 1:1 y no afirma ser el producto de la casa original
+  // (ver GARANTIAS en src/data/contenido.ts), y lo segundo no se puede probar.
   description:
-    "Perfumes 100% originales al mejor precio de México. Menudeo y mayoreo desde 3 piezas, envío gratis y hasta 6 meses sin intereses.",
+    "Perfumes 1:1 al mayoreo y menudeo en México. Precio de mayoreo desde 3 piezas, envío gratis y hasta 6 meses sin intereses.",
   openGraph: {
     type: "website",
     locale: "es_MX",
     siteName: "EL REY DE LOS PERFUMES",
     title: "EL REY DE LOS PERFUMES — El lujo tiene un aroma.",
     description:
-      "Perfumes 100% originales al mejor precio de México. Menudeo y mayoreo desde 3 piezas.",
+      "Perfumes 1:1 al mayoreo y menudeo en México. Precio de mayoreo desde 3 piezas.",
     // Imagen por defecto de las tarjetas de enlace. Las páginas con arte
     // propio —producto, lote, categoría— la sobrescriben con el suyo.
     images: [OG_POR_DEFECTO],

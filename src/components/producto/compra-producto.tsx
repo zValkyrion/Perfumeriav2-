@@ -2,13 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, Heart, PackageCheck, RotateCcw, Truck, Zap } from "lucide-react";
+import { Heart, PackageCheck, RotateCcw, Truck, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { NumeroAnimado } from "@/components/comunes/numero-animado";
 import { Precio, PrecioAnterior, Descuento } from "@/components/comunes/precio";
 import { Stepper } from "@/components/carrito/stepper";
-import { MARCA } from "@/data/contenido";
 import { precio as fmt, precioPorMl } from "@/lib/format";
 import { pixel } from "@/lib/pixel";
 import { ESCALONES, escalonPara, mejorPlazo, precioUnitario, siguienteEscalon } from "@/lib/volumen";
@@ -296,15 +295,13 @@ export function CompraProducto({ producto: compilado }: { producto: Producto }) 
               </tr>
             </thead>
             <tbody className="divide-border-soft divide-y">
-              {ESCALONES.map((e, i) => {
+              {ESCALONES.map((e) => {
                 const activo = e.nombre === escalon.nombre;
                 const precioFila = precioUnitario(presentacion.precio, e.min);
-                // Un escalón que no baja el precio respecto al anterior no
-                // ofrece nada automático: ahí el trato se cierra por WhatsApp.
-                // Repetir la misma tarifa y el mismo −30% lo hacía parecer un
-                // callejón sin salida en la única tabla donde se comparan.
-                const aCotizar =
-                  i > 0 && e.descuento === ESCALONES[i - 1]!.descuento;
+                // Aquí vivía un «Precio especial · pide cotización» para el
+                // escalón que no bajaba el precio. Desde 2026-09-22 cada
+                // escalón tiene su descuento y ya no hay tramo de cotización
+                // (reglas.ts), así que esa rama no podía salir y se quitó.
                 return (
                   <tr
                     key={e.nombre}
@@ -340,23 +337,12 @@ export function CompraProducto({ producto: compilado }: { producto: Producto }) 
                         activo ? "text-gold-light font-medium" : "text-fg-muted",
                       )}
                     >
-                      {aCotizar ? "Precio especial" : `${fmt(precioFila)} c/u`}
+                      {`${fmt(precioFila)} c/u`}
                     </td>
                     <td className="text-success px-3.5 py-2.5 text-right text-[12px]">
-                      {aCotizar ? (
-                        <a
-                          href={MARCA.whatsappLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-gold-light underline underline-offset-4"
-                        >
-                          pide cotización
-                        </a>
-                      ) : e.descuento > 0 ? (
-                        `−${Math.round(e.descuento * 100)}%`
-                      ) : (
-                        "—"
-                      )}
+                      {e.descuento > 0
+                        ? `−${Math.round(e.descuento * 100)}%`
+                        : "—"}
                     </td>
                   </tr>
                 );
@@ -415,13 +401,9 @@ export function CompraProducto({ producto: compilado }: { producto: Producto }) 
         >
           <Heart size={18} aria-hidden className={cn(favorito && "fill-gold text-gold")} />
         </button>
-        {/* Mismo umbral que la tarjeta del catálogo: el aviso de escasez no
-            puede aparecer en un sitio y faltar en el otro para la misma pieza. */}
-        {presentacion.stock <= 19 ? (
-          <p className="text-danger text-[13px]">
-            Solo quedan {presentacion.stock}
-          </p>
-        ) : null}
+        {/* Sin «Solo quedan N»: el stock es 999 o 0 (no hay conteo por pieza),
+            así que el aviso solo salía en los agotados, como «Solo quedan 0».
+            Lo agotado ya lo dicen la presentación tachada y los botones. */}
       </div>
 
       {/* Comprar ahora manda, agregar al carrito acompaña.
@@ -488,11 +470,8 @@ export function CompraProducto({ producto: compilado }: { producto: Producto }) 
         </li>
       </ul>
 
-      {/* 14 · Urgencia sutil, con un valor estable por producto */}
-      <p className="text-fg-subtle mt-4 flex items-center gap-1.5 text-[12px]">
-        <Eye size={13} aria-hidden />
-        {producto.viendoAhora} personas están viendo este perfume
-      </p>
+      {/* Aquí iba «N personas están viendo este perfume»: un número al azar
+          por producto, no un contador real. Urgencia inventada, fuera. */}
 
       {/* CTA sticky de móvil (§10.6) */}
       <div

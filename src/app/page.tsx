@@ -8,23 +8,18 @@ import {
 } from "@/components/comunes/layout";
 import { Tilt } from "@/components/comunes/efectos";
 import { BarraAnuncios } from "@/components/layout/barra-anuncios";
-// EN PAUSA (ver más abajo): Banner3x2, DestacadoLote y SelectorPresentaciones.
+// EN PAUSA (ver más abajo): Banner3x2 y SelectorPresentaciones.
 // import { Banner3x2 } from "@/components/home/banner-3x2";
-// import { DestacadoLote } from "@/components/home/destacado-lote";
 // import { SelectorPresentaciones } from "@/components/home/selector-presentaciones";
 // import { BloqueFrasco } from "@/components/home/bloque-frasco";
 // import { FranjaNewsletter } from "@/components/home/franja-newsletter";
 // import { PasosEnvio } from "@/components/home/pasos-envio";
 import { BannerPaquete } from "@/components/home/banner-paquete";
 import { BannerEmprende } from "@/components/home/banner-emprende";
+import { EscaleraPrecios } from "@/components/home/escalera-precios";
 import { Hero } from "@/components/home/hero";
-import { PruebaSocial } from "@/components/home/prueba-social";
-import { ResenasVertical } from "@/components/home/resenas-vertical";
 import { TiposCompra } from "@/components/home/tipos-compra";
 import { ValoresClave } from "@/components/home/valores-clave";
-import { VideosClientes } from "@/components/home/videos-clientes";
-import { RESEÑAS_DESTACADAS } from "@/data/resenas";
-import { videosDesdeResenas } from "@/data/videos";
 import { TarjetaLote } from "@/components/lotes/tarjeta-lote";
 import { CarruselProductos } from "@/components/producto/carrusel-productos";
 // import { GridProductos } from "@/components/producto/grid-productos";
@@ -47,12 +42,6 @@ export const metadata: Metadata = {
  * Quien llega aquí busca margen, no inspiración.
  */
 export default function Home() {
-  // Los pósters de los videos salen del arte de producto ya generado.
-  const videos = videosDesdeResenas(
-    RESEÑAS_DESTACADAS,
-    MAS_VENDIDOS.slice(0, 5).map((p) => p.imagenes[1] ?? p.imagenes[0]!),
-  );
-
   return (
     <>
       {/* El FAQPage de estas preguntas vive en /faq, que es su página. La home
@@ -91,30 +80,17 @@ export default function Home() {
         <BannerPaquete />
       </Seccion>
 
-      {/* 4b · El lote grande, con la utilidad como titular.
-          EN PAUSA — el bloque sigue funcionando; solo está fuera de la home.
-          Para recuperarlo, descomenta esto y su import.
-      <Seccion denso className="border-border-soft border-t">
-        <DestacadoLote />
-      </Seccion>
-      */}
+      {/* 4b · Aquí estuvo en pausa `DestacadoLote`. Se borró: buscaba un lote
+          «lote-50-distribuidor» que ya no existe (no pintaba nada) y prometía
+          «entrega inmediata» y contra entrega a un pedido que pasa del tope. */}
 
-      {/* 5 · Videos de clientes: la prueba social que más convierte */}
+      {/* 5 y 6 · Aquí iban «Videos de clientes» y la prueba social escrita
+          («+1,500 clientes», «4.9 de 5» y ocho reseñas). Todo era de la
+          plantilla: reseñas inventadas, videos armados con ellas y cifras sin
+          respaldo (MEMORIA §0.3). Vuelven cuando haya reseñas de compras reales.
+          En su lugar, la escalera de precios, que es un hecho del cobro. */}
       <Seccion denso className="bg-surface/40 border-border-soft border-y">
-        <Contenedor>
-          <TituloSeccion
-            centrado
-            eyebrow="Lo cuentan ellos"
-            sobretitulo="⭐️⭐️⭐️⭐️⭐️"
-            titulo="Confianza en todo México"
-          />
-        </Contenedor>
-        <VideosClientes videos={videos} />
-      </Seccion>
-
-      {/* 6 · Prueba social escrita */}
-      <Seccion denso revelar>
-        <PruebaSocial />
+        <EscaleraPrecios />
       </Seccion>
 
       {/* 6 · Surtido: producto suelto con precio por pieza */}
@@ -122,7 +98,7 @@ export default function Home() {
         <Contenedor>
           <TituloSeccion
             centrado
-            eyebrow="Los que más rotan"
+            eyebrow="Los más vendidos"
             titulo="MAYOREO SURTIDO"
             descripcion="Desde 3 perfumes obtén precio de mayoreo + Envío gratis 🚚✨"
             enlace="/catalogo"
@@ -193,16 +169,9 @@ export default function Home() {
         <ValoresClave />
       </Seccion>
 
-      {/* 13 · Reseñas en columna. Antes iban aquí los tres pasos de "así
-          recibes tu pedido"; el testimonio cierra mejor que la logística. */}
-      <Seccion revelar>
-        <ResenasVertical />
-      </Seccion>
-
-      {/* 14 · Valores */}
-      <Seccion denso revelar className="border-border-soft border-t">
-        <ValoresClave />
-      </Seccion>
+      {/* 13 y 14 · Aquí iban cinco reseñas en columna (inventadas, fuera) y
+          una segunda copia de la barra de valores, que sin las reseñas en
+          medio quedaba pegada a la primera. */}
 
       {/* 15 · Preguntas frecuentes */}
       <Seccion revelar className="border-border-soft border-t">

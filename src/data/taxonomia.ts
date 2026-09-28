@@ -246,7 +246,9 @@ export const CATEGORIAS: readonly Categoria[] = [
     titulo: "Fragancias inspiradas",
     eyebrow: "Precio accesible",
     descripcion:
-      "Alternativas inspiradas en grandes clásicos, con buena duración y precio de entrada. La categoría que mejor margen deja al revender.",
+      // Terminaba con «la categoría que mejor margen deja al revender», y lo
+      // mismo decía Body Mist: la escalera descuenta igual en todo el catálogo.
+      "Alternativas inspiradas en grandes clásicos, con buena duración y precio de entrada.",
     enHome: false,
     filtro: (p) =>
       p.concentracion !== "Body Mist" &&
@@ -258,7 +260,9 @@ export const CATEGORIAS: readonly Categoria[] = [
     titulo: "Brumas corporales",
     eyebrow: "Formato grande",
     descripcion:
-      "200 ml para usar sin contar los disparos. Rotación alta y el mejor margen del catálogo para quien revende.",
+      // Sin «rotación alta y el mejor margen del catálogo»: no hay cifras de
+      // venta que lo digan y el descuento por volumen es el mismo para todo.
+      "200 ml para usar sin contar los disparos.",
     enHome: false,
     filtro: (p) => p.concentracion === "Body Mist",
   },
@@ -294,13 +298,18 @@ export const OCASIONES: readonly Ocasion[] = [
 
 export const TAMANOS: readonly number[] = [30, 50, 100, 200];
 
+/**
+ * Órdenes del catálogo. Todos salen de datos del catálogo: «Destacados» y
+ * «Más vendidos» leen las marcas que pone el negocio (destacado y la etiqueta
+ * «Más vendido»). «Mejor calificados» se quitó: no hay reseñas reales que
+ * ordenar. El valor `relevancia` se conserva para no romper enlaces.
+ */
 export const ORDENES = [
-  { valor: "relevancia", etiqueta: "Relevancia" },
+  { valor: "relevancia", etiqueta: "Destacados" },
   { valor: "vendidos", etiqueta: "Más vendidos" },
   { valor: "precio-asc", etiqueta: "Precio: menor a mayor" },
   { valor: "precio-desc", etiqueta: "Precio: mayor a menor" },
   { valor: "novedades", etiqueta: "Novedades" },
-  { valor: "rating", etiqueta: "Mejor calificados" },
 ] as const;
 
 export type Orden = (typeof ORDENES)[number]["valor"];

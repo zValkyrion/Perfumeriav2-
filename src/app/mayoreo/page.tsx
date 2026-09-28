@@ -12,11 +12,7 @@ import { Precio } from "@/components/comunes/precio";
 import { Calculadora } from "@/components/mayoreo/calculadora";
 import { FormularioDistribuidor } from "@/components/mayoreo/formulario-distribuidor";
 import { TarjetaLote } from "@/components/lotes/tarjeta-lote";
-import {
-  FAQ_MAYOREO,
-  RAZONES_MAYOREO,
-  TESTIMONIOS_MAYOREO,
-} from "@/data/contenido";
+import { FAQ_MAYOREO, RAZONES_MAYOREO } from "@/data/contenido";
 import { LOTES_DESTACADOS, UTILIDAD_MAXIMA } from "@/data/lotes";
 import { MAS_VENDIDOS, precioDesde } from "@/data/productos";
 import { precioRedondo } from "@/lib/format";
@@ -103,6 +99,11 @@ export default function MayoreoPage() {
                   </dd>
                 </div>
               </dl>
+              {/* La utilidad es una cuenta, no una promesa: dice de dónde sale. */}
+              <p className="text-fg-subtle mt-3 text-xs">
+                Con un solo paquete, vendiendo cada pieza al precio de lista de
+                esta tienda.
+              </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild variant="gold" size="touch-lg">
@@ -288,7 +289,7 @@ export default function MayoreoPage() {
           <TituloSeccion
             eyebrow="Ya armados"
             titulo="Lotes listos para vender"
-            descripcion="Si no quieres elegir modelo por modelo, estos surtidos ya están balanceados por rotación."
+            descripcion="Si no quieres elegir modelo por modelo, estos paquetes ya vienen armados con modelos que marcamos como más vendidos."
             enlace="/lotes"
           />
           <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
@@ -299,36 +300,14 @@ export default function MayoreoPage() {
         </Contenedor>
       </Seccion>
 
-      {/* Testimonios */}
-      <Seccion className="bg-surface/40 border-border-soft border-y">
-        <Contenedor>
-          <TituloSeccion
-            eyebrow="Quienes ya venden"
-            titulo="Revendedores de EL REY DE LOS PERFUMES"
-          />
-          <ul className="snap-row -mx-4 flex gap-4 px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0">
-            {TESTIMONIOS_MAYOREO.map((t) => (
-              <li
-                key={t.autor}
-                className="border-border-soft bg-surface flex w-[80%] shrink-0 flex-col rounded-md border p-5 sm:w-[48%] lg:w-full"
-              >
-                <p className="text-fg-muted flex-1 text-sm leading-relaxed">
-                  “{t.texto}”
-                </p>
-                <div className="border-border-soft mt-4 border-t pt-3">
-                  <p className="text-sm font-medium">{t.autor}</p>
-                  <p className="text-fg-subtle text-[11px]">
-                    {t.ciudad} · {t.tiempo}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Contenedor>
-      </Seccion>
+      {/* Aquí iban cuatro testimonios de revendedores. Eran de la plantilla
+          —nombres y ciudades inventados, y citaban lotes de 6 y de 24 que no
+          existen—, así que se quitaron. Vuelven cuando haya testimonios reales
+          con permiso de quien los da. */}
 
-      {/* Formulario + FAQ */}
-      <Seccion>
+      {/* Formulario + FAQ. El borde superior separa de los lotes lo que antes
+          separaba la franja de testimonios. */}
+      <Seccion className="border-border-soft border-t">
         <Contenedor>
           <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
             <FormularioDistribuidor />

@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, HandCoins, Truck, Zap } from "lucide-react";
+import { ArrowRight, CreditCard, Landmark, Truck } from "lucide-react";
 import { Contenedor } from "@/components/comunes/layout";
 import { Imagen } from "@/components/comunes/imagen";
 import { Sticker } from "@/components/comunes/sticker";
 import { getLote, valorMenudeoLote } from "@/data/lotes";
 import { precioRedondo } from "@/lib/format";
+import { DESCUENTO_TRANSFERENCIA, pct } from "@/lib/volumen";
 
 /**
  * Banner del paquete estrella: la paca de 50.
@@ -13,13 +14,22 @@ import { precioRedondo } from "@/lib/format";
  * si la escalera de precios cambia, este bloque cambia con ella y no puede
  * quedarse contradiciendo a la tarjeta de más abajo.
  *
- * El arte lo produce `npm run banner-paca` en 1200 × 900. Para sustituirlo por
- * una foto definitiva basta con dejarla en `public/paca-50-piezas.webp`.
+ * Las tres ventajas son las que el checkout le da de verdad a este pedido. Antes
+ * decía «Entrega inmediata» y «Pago contra entrega», y la paca pasa del tope de
+ * contra entrega (`TOPE_CONTRA_ENTREGA`, $10,000): el checkout no se lo ofrece.
+ *
+ * La foto va con el arte del propio paquete. El arte anterior
+ * (`public/paca-50-piezas.webp`) traía escritos «DUPLICA TU INVERSIÓN» y
+ * «ENTREGA INMEDIATA» y el precio fijo dentro de la imagen; se puede volver a
+ * él cuando haya una versión sin esas frases.
  */
 const BENEFICIOS = [
   { icono: Truck, texto: "Envío gratis" },
-  { icono: Zap, texto: "Entrega inmediata" },
-  { icono: HandCoins, texto: "Pago contra entrega" },
+  { icono: CreditCard, texto: "Tarjeta con Clip" },
+  {
+    icono: Landmark,
+    texto: `${pct(DESCUENTO_TRANSFERENCIA)}% menos por transferencia`,
+  },
 ];
 
 export function BannerPaquete() {
@@ -33,15 +43,17 @@ export function BannerPaquete() {
       <div className="grid items-center gap-7 lg:grid-cols-[1fr_1.05fr] lg:gap-12">
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border-soft bg-surface shadow-2xl">
           <Imagen
-            src="/paca-50-piezas.webp"
-            alt="Paca 50 piezas - Con lo más vendido - Duplica tu inversión"
+            src={paca.imagen}
+            alt={`${paca.nombre}: ${paca.piezas} perfumes surtidos`}
             sizes="(max-width: 1024px) 100vw, 50vw"
             priority
             className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
           />
+          {/* Todos sus modelos llevan la etiqueta «Más vendido»; el paquete en
+              sí no es el más vendido (ese es el que marca `masVendido`). */}
           <span className="absolute top-3 left-3 z-10">
             <Sticker tono="oferta" giro={-6}>
-              Más vendido
+              Lo más vendido
             </Sticker>
           </span>
           <span className="absolute right-3 bottom-3 z-10">
@@ -54,14 +66,15 @@ export function BannerPaquete() {
         <div>
           <h2 className="titular-medio">PACA {paca.piezas} PIEZAS</h2>
 
+          {/* Antes: «duplica tu inversión». La cuenta real es la de abajo. */}
           <p className="text-fg-muted mt-2 text-[15px]">
             Con lo más vendido{" "}
             <span aria-hidden className="text-gold-light">
               ›
             </span>{" "}
-            duplica tu inversión:{" "}
+            a precio de lista suma{" "}
             <strong className="text-gold-light font-semibold">
-              más de {precioRedondo(valorReventa)}
+              {precioRedondo(valorReventa)}
             </strong>{" "}
             en ventas
           </p>

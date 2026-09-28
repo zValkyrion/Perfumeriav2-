@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bloque, PaginaInfo } from "@/components/comunes/pagina-info";
 import { MARCA } from "@/data/contenido";
+import { DESCUENTO_MAXIMO } from "@/lib/volumen";
 
 export const metadata: Metadata = {
   title: "Términos y condiciones",
@@ -17,11 +18,12 @@ export default function TerminosPage() {
       actualizado="1 de agosto de 2026"
     >
       <Bloque titulo="1. Sobre esta tienda">
+        {/* Aquí seguía el texto de la plantilla: «este sitio es una
+            demostración con datos ficticios». Es falso en una tienda que
+            vende y cobra de verdad. */}
         <p>
-          Este sitio es una demostración de comercio electrónico construida con
-          datos ficticios. Las marcas, productos, precios, reseñas y pedidos que
-          aparecen aquí son originales e inventados para fines de demostración, y
-          no corresponden a productos reales a la venta.
+          Estos términos aplican a las compras hechas en este sitio. Los
+          productos, precios y pedidos que ves aquí son reales.
         </p>
       </Bloque>
 
@@ -32,9 +34,10 @@ export default function TerminosPage() {
           se aplica automáticamente en el carrito.
         </p>
         <p>
-          El inventario mostrado corresponde a la existencia real de bodega.
-          Si una pieza se agota entre tu pedido y el despacho, te avisamos el
-          mismo día y puedes elegir reemplazo o reembolso completo.
+          El catálogo indica qué modelos están disponibles y cuáles agotados,
+          pero no lleva un conteo por pieza. Si una pieza se agota entre tu
+          pedido y el despacho, te avisamos el mismo día y puedes elegir
+          reemplazo o reembolso completo.
         </p>
       </Bloque>
 
@@ -46,8 +49,10 @@ export default function TerminosPage() {
           entre sí, aunque sí se suman al descuento por volumen.
         </p>
         <p>
-          El cupón de bienvenida es de un solo uso por cliente y se aplica sobre
-          el subtotal después del descuento por volumen.
+          El cupón de bienvenida se aplica sobre el subtotal después del
+          descuento por volumen. Volumen, transferencia y cupón juntos no pasan
+          de {Math.round(DESCUENTO_MAXIMO * 100)}% sobre el precio de lista; si
+          se pasan, el cupón se reduce primero.
         </p>
       </Bloque>
 
@@ -77,8 +82,8 @@ export default function TerminosPage() {
       <Bloque titulo="6. Propiedad intelectual">
         <p>
           La marca EL REY DE LOS PERFUMES, sus textos, su identidad visual y las descripciones de
-          producto de este sitio son originales y pertenecen a sus autores. Las
-          casas de perfumería mencionadas son ficticias.
+          producto de este sitio pertenecen a sus autores. Las marcas de
+          terceros que se mencionan pertenecen a sus respectivos dueños.
         </p>
       </Bloque>
 

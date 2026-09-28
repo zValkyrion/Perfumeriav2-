@@ -3,6 +3,7 @@ import { Check, TrendingUp } from "lucide-react";
 import { Imagen } from "@/components/comunes/imagen";
 import { Precio, PrecioAnterior } from "@/components/comunes/precio";
 import { valorMenudeoLote } from "@/data/lotes";
+import { precioRedondo } from "@/lib/format";
 import type { Lote } from "@/types";
 import { BotonAgregarLote } from "./boton-agregar-lote";
 import { cn } from "@/lib/utils";
@@ -61,10 +62,15 @@ export function TarjetaLote({
         {/* El desglose por pieza se retiró: en la tarjeta competía con el
             precio del paquete, que es la cifra que decide la compra. Sigue en
             la ficha del paquete, que es donde se compara. */}
-        <p className="text-success mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-bold tracking-wide">
-          <TrendingUp size={14} aria-hidden />
-          DUPLICA TU INVERSIÓN
-        </p>
+        {/* Aquí decía «DUPLICA TU INVERSIÓN», fijo en todas las tarjetas; a
+            precio de lista la utilidad real va de 1.35 a 1.42 veces, no el
+            doble. Ahora se enseña la cuenta, que sale del catálogo. */}
+        {lote.utilidadEstimada > 0 ? (
+          <p className="text-success mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-bold tracking-wide">
+            <TrendingUp size={14} aria-hidden />
+            Ganas {precioRedondo(lote.utilidadEstimada)} a precio de lista
+          </p>
+        ) : null}
 
         <ul className="mt-4 space-y-1.5">
           {lote.incluye.slice(0, 4).map((i) => (

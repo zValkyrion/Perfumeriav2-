@@ -32,7 +32,7 @@ export default function DevolucionesPage() {
         <p>
           Escríbenos por WhatsApp con tu folio y dinos si quieres cambio,
           devolución del dinero o saldo a favor. Te mandamos la guía prepagada
-          por correo el mismo día.
+          por WhatsApp el mismo día.
         </p>
         <p>
           Una vez que recibimos el paquete en bodega, el reembolso sale en un
@@ -56,7 +56,9 @@ export default function DevolucionesPage() {
 
       <Bloque titulo="Cambio por rotación, para mayoreo">
         <p>
-          En los lotes de 24 y 50 piezas cambiamos hasta el 20% del pedido por
+          {/* Decía «lotes de 24 y 50»: no hay lote de 24. Se alinea con la
+              FAQ de mayoreo (paquetes de 40 y 50). */}
+          En los paquetes de 40 y 50 perfumes cambiamos hasta el 20% del pedido por
           otro modelo dentro de los primeros 60 días, sin costo. Solo pedimos que
           las piezas estén selladas.
         </p>

@@ -9,8 +9,10 @@ import { ESCALON_TOPE, pct } from "@/lib/volumen";
 export const metadata: Metadata = {
   title: "Paquetes para revender",
   description:
-    "Paquetes armados de perfumes 1:1 con precio de distribuidor, envío gratis y material de venta incluido.",
-  // Esta página lista los mismos ocho lotes que /lotes, solo que sin separar
+    // Prometía «precio de distribuidor» y «material de venta incluido»: ni lo
+    // uno (las sueltas al 30% salen más baratas desde 20) ni lo otro existen.
+    "Paquetes armados de perfumes 1:1 para revender, con envío gratis a todo México.",
+  // Esta página lista los mismos lotes que /lotes, solo que sin separar
   // mixtos de temáticos: para un buscador es contenido duplicado. Sigue
   // existiendo porque la home y el banner del paquete estrella apuntan aquí,
   // pero la autoridad se acumula en /lotes, que es la landing de mayoreo.
@@ -32,10 +34,10 @@ export default function PaquetesPage() {
         <header className="mx-auto max-w-3xl text-center">
           <h1 className="titular-audaz">PAQUETES</h1>
           <p className="text-fg-muted mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed font-medium lg:text-base">
-            Los paquetes son la forma más inteligente de arrancar tu negocio de
-            reventa. Cada lote incluye modelos de alta demanda listos para
-            vender, con precios directos de importación que te dejan márgenes de
-            ganancia únicos.
+            Los paquetes son una forma fácil de arrancar tu negocio de reventa:
+            cada uno viene armado con modelos que marcamos como más vendidos, y
+            en su ficha ves cuánto suman a precio de lista y cuánto te queda si
+            los vendes a ese precio.
           </p>
         </header>
       </Contenedor>
