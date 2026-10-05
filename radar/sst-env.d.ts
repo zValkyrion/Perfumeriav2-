@@ -30,6 +30,14 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "Elrey_jwt_secreto": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "Elrey_pin": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "Elrey_proveedores": {
       "name": string
       "type": "sst.aws.Dynamo"

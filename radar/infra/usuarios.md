@@ -90,12 +90,9 @@ invitar.
 ## El código de equipo ya no existe
 
 El PIN compartido se retiró el 2026-10-05: la API ya no tiene `POST /acceso` y
-la portada solo ofrece la cuenta. Si quedan los secretos en SSM, se borran con:
+la portada solo ofrece la cuenta.
 
-```bash
-cd radar && npx sst secret remove Elrey_pin --stage produccion
-```
-
-```bash
-cd radar && npx sst secret remove Elrey_jwt_secreto --stage produccion
-```
+Los secretos `Elrey_pin` y `Elrey_jwt_secreto` **se quedan** en SSM y
+declarados en `sst.config.ts`, sin enlazar a ninguna función: producción va con
+`protect` y Pulumi no deja borrarlos. **No uses `sst secret remove` con
+ellos**: un secreto declarado sin valor hace fallar cada despliegue.

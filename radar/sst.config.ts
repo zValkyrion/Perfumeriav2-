@@ -32,7 +32,13 @@ export default $config({
     // `npx sst secret set <nombre> <valor> --stage produccion`.
     //
     // `Elrey_pin` y `Elrey_jwt_secreto` (el código compartido del equipo) se
-    // retiraron el 2026-10-05: ahora cada quien entra con su cuenta.
+    // retiraron el 2026-10-05: ahora cada quien entra con su cuenta. **Siguen
+    // declarados, sin enlazar a nada, a propósito**: producción va con
+    // `protect` y Pulumi se niega a borrar un recurso protegido, así que
+    // quitarlos de aquí tumbó el despliegue entero. Sin `link` ninguna
+    // función los lee: son dos parámetros muertos en SSM.
+    new sst.Secret("Elrey_pin");
+    new sst.Secret("Elrey_jwt_secreto");
     //
     // Token de GitHub con permiso de Actions (escritura) sobre este repositorio
     // y nada más: es lo que deja al panel volver a compilar la tienda. Vacío

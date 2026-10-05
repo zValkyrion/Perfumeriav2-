@@ -123,18 +123,12 @@ quedan en él y suben al entrar con cuenta). **Avísale al equipo antes del
 push**: quien entraba con el código tiene que crearse su cuenta en la tienda y
 pedir acceso, o recibir tu invitación.
 
-**Queda de tu lado, después del despliegue** (borra los secretos que ya nadie
-lee; con la sesión de `aws login` exportada como en `entorno-maquina`):
+**No borres los secretos `Elrey_pin` ni `Elrey_jwt_secreto`.** Siguen
+declarados en `sst.config.ts` sin enlazar a nada: producción va con `protect`
+y quitarlos tumbó el primer despliegue (ver la bitácora). Borrarles el valor
+con `sst secret remove` haría fallar todos los despliegues siguientes.
 
-```bash
-cd radar && npx sst secret remove Elrey_pin --stage produccion
-```
-
-```bash
-cd radar && npx sst secret remove Elrey_jwt_secreto --stage produccion
-```
-
-Y para que la prueba de humo de la CI recorra el radar entero: crea (o invita)
+Para que la prueba de humo de la CI recorra el radar entero: crea (o invita)
 una cuenta solo para pruebas en *equipo de proveedores* y guarda su correo y
 contraseña como secretos `RADAR_CORREO` y `RADAR_CONTRASENA` del repositorio
 (Settings → Secrets and variables → Actions). Sin ellos la CI solo comprueba
@@ -354,6 +348,10 @@ que costó descubrir:
   en grupo dejaría que un descuido en el panel se lo quitara al dueño o se lo
   diera a otro. Si se cambia el correo de la lista, también la copia de
   `radar/src/lib/superadmin.ts` (`tsc` avisa).
+- **En producción no se quita nada de `sst.config.ts` a la ligera.** Va con
+  `protect`: borrar la declaración de un recurso (hasta un `sst.Secret`)
+  tumba el despliegue entero. Para retirar algo se le quita el `link` o el
+  uso, y la declaración se queda.
 - **El botón del panel no es un permiso**, solo un enlace. El permiso vive en el
   grupo del token y lo comprueba la API; la tienda solo decide qué pintar.
 - **El canonical de la tienda no se mueve** hasta que exista el dominio.

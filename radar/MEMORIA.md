@@ -69,7 +69,7 @@ Región **us-east-1**. Cuenta **637423567003**. Etapa: `produccion`.
 | Lambda + EventBridge | `Elrey_publicacion_produccion` (Cron, cada 10 min) | Publica solo los cambios del panel que llevan 10 min quietos |
 | API Gateway | `Elrey_api` | HTTP API v2 |
 | CloudFront | distribución de `Elrey_radar` | Sirve el sitio |
-| SSM | ~~`Elrey_pin`, `Elrey_jwt_secreto`~~ | Retirados el 2026-10-05 con el PIN del equipo. Se borran con `sst secret remove` |
+| SSM | `Elrey_pin`, `Elrey_jwt_secreto` | Muertos desde el 2026-10-05 (PIN retirado): declarados sin `link` porque `protect` no deja borrarlos. **No hacer `sst secret remove`**: sin valor, falla el despliegue |
 | SSM | `Elrey_github_token` | Token de GitHub para publicar desde el panel. Vacío por defecto |
 | Cognito | `Elrey_usuarios` (`us-east-1_qpU8tmkIB`) | Identidad y grupos |
 
@@ -605,6 +605,12 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
   invitaciones, bajas y cierre de sesiones. `probar-api.mjs` y
   `probar-textract.mjs` entran con una cuenta de prueba de Cognito
   (`scripts/token-cognito.mjs`); sin ella, `probar` solo comprueba puertas.
+- **El primer despliegue falló en «Desplegar»** (las pruebas pasaron): se
+  habían quitado de `sst.config.ts` los `sst.Secret` del PIN, y con `protect`
+  en producción Pulumi se niega a borrar un recurso protegido. Volvieron a
+  declararse **sin `link`**: ninguna función los lee, que es lo que retira el
+  PIN. No se borran con `sst secret remove`: un secreto declarado sin valor
+  tumba cada despliegue.
 - **El panel no importa valores de `compartido/`** (Turbopack tiene la raíz en
   `radar/`): importar `esCorreoSuperadmin` de allí rompió la compilación. Va
   una copia en `src/lib/superadmin.ts` atada por tipos.
