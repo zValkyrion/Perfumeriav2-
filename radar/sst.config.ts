@@ -160,6 +160,10 @@ export default $config({
               emailSubject: "Tu acceso al panel de El Rey de los Perfumes",
               emailMessage:
                 "Hola. Te dieron acceso al panel de El Rey de los Perfumes. Entra en https://devfq5kjop78h.cloudfront.net/radar/ con tu correo {username} y esta contraseña temporal: {####} . Vale 14 días y te pedirá cambiarla la primera vez.",
+              // No se manda SMS, pero con la plantilla a medias el primer
+              // despliegue la guardó en el estado y Cognito no la recibió: va
+              // completa.
+              smsMessage: "El Rey de los Perfumes: tu usuario es {username} y tu contraseña temporal {####}",
             },
           },
           // Quien cambia su correo desde la cuenta sigue entrando con el
