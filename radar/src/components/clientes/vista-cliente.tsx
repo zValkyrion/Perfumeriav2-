@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronRight, Mail, MessageCircle, Phone, RefreshCw } from "lucide-react";
 import { Boton, Insignia, Tarjeta } from "@/components/ui";
-import { Aviso, Interruptor, Mensaje } from "@/components/catalogo/comun";
+import { Aviso } from "@/components/catalogo/comun";
 import {
   Cabecera,
   Dato,
@@ -17,14 +16,7 @@ import {
   usePanelAdmin,
   whatsappCliente,
 } from "@/components/tienda/comun";
-import {
-  ErrorApi,
-  cambiarGrupo,
-  leerCliente,
-  type ClienteAdmin,
-  type Grupo,
-  type ResumenPedido,
-} from "@/lib/tienda-admin";
+import { ErrorApi, leerCliente, type ClienteAdmin, type ResumenPedido } from "@/lib/tienda-admin";
 import { cn } from "@/lib/utils";
 import { Desactualizado } from "@/components/ventas/desactualizado";
 import {
@@ -34,19 +26,12 @@ import {
   estadoCuentaLegible,
   fechaDia,
   nombreDe,
-  subDeToken,
   telefonoLegible,
 } from "./formato";
 
 /**
  * Ficha de un cliente: sus datos, lo que ha comprado, sus pedidos y —si tiene
- * cuenta— sus permisos en el panel.
- *
- * Los permisos se cambian aquí pero **se hacen valer en la Lambda**: el token
- * de cada persona lleva los grupos con que entró, así que el cambio se nota
- * cuando vuelve a entrar (o cuando su sesión se renueva, a más tardar en una
- * hora). Nadie puede quitarse a sí mismo de `admins`: con un toque se quedaría
- * sin panel y sin forma de deshacerlo.
+ * cuenta— qué permisos tiene en el panel (se cambian en «Equipo y cuentas»).
  */
 
 const VOLVER = "/clientes/";
@@ -126,14 +111,7 @@ export function VistaCliente() {
         <Datos cliente={cliente} />
         <Metricas cliente={cliente} />
         <Pedidos pedidos={pedidos} />
-        <Permisos
-          cliente={cliente}
-          token={c.token!}
-          esYo={cliente.sub !== null && cliente.sub === subDeToken(c.token)}
-          alCambiar={(grupos) =>
-            c.setDatos((x) => (x && x.cliente.clave === cliente.clave ? { ...x, cliente: { ...x.cliente, grupos } } : x))
-          }
-        />
+        <Permisos cliente={cliente} esSuperadmin={c.sesion.esSuperadmin} />
       </div>
     </main>
   );
@@ -283,45 +261,12 @@ function Pedidos({ pedidos }: { pedidos: ResumenPedido[] }) {
 
 /* ── Permisos ─────────────────────────────────────────────────────────────── */
 
-const GRUPOS_EDITABLES: { grupo: Grupo; titulo: string; texto: string }[] = [
-  {
-    grupo: "admins",
-    titulo: "Administrador",
-    texto: "Ve pedidos, ventas y clientes, cambia estatus, edita el catálogo y da permisos.",
-  },
-  {
-    grupo: "proveedores",
-    titulo: "Equipo de proveedores",
-    texto: "Captura y consulta proveedores en el radar. No ve ventas ni clientes.",
-  },
-];
-
-function pregunta(nombre: string, grupo: Grupo, accion: "agregar" | "quitar"): string {
-  if (grupo === "admins") {
-    return accion === "agregar"
-      ? `¿Hacer administrador a ${nombre}? Podrá ver todos los pedidos, clientes y ventas, cambiar el catálogo y dar o quitar permisos.`
-      : `¿Quitarle a ${nombre} el acceso de administrador? Dejará de ver pedidos, ventas y clientes.`;
-  }
-  return accion === "agregar"
-    ? `¿Agregar a ${nombre} al equipo de proveedores? Podrá capturar y ver proveedores en el radar.`
-    : `¿Quitar a ${nombre} del equipo de proveedores? Dejará de ver el radar de proveedores.`;
-}
-
-function Permisos({
-  cliente,
-  token,
-  esYo,
-  alCambiar,
-}: {
-  cliente: ClienteAdmin;
-  token: string;
-  esYo: boolean;
-  alCambiar: (grupos: string[]) => void;
-}) {
-  const [pendiente, setPendiente] = useState<{ grupo: Grupo; accion: "agregar" | "quitar" } | null>(null);
-  const [guardando, setGuardando] = useState(false);
-  const [mensaje, setMensaje] = useState<{ tono: "ok" | "error"; texto: string } | null>(null);
-
+/**
+ * Qué permisos tiene, de solo lectura. Desde el 2026-10-05 los reparte
+ * únicamente el superadmin, en «Equipo y cuentas»: a él se le enseña el
+ * enlace; a un admin, a quién pedírselo.
+ */
+function Permisos({ cliente, esSuperadmin }: { cliente: ClienteAdmin; esSuperadmin: boolean }) {
   // Sin cuenta en Cognito no hay a quién darle permisos.
   if (!cliente.sub || cliente.estadoCuenta === null) {
     return (
@@ -334,99 +279,26 @@ function Permisos({
       </Tarjeta>
     );
   }
-  const sub = cliente.sub;
-  const nombre = nombreDe(cliente);
-
-  const confirmar = async () => {
-    if (!pendiente) return;
-    setGuardando(true);
-    setMensaje(null);
-    try {
-      const { grupos } = await cambiarGrupo(token, sub, pendiente.grupo, pendiente.accion);
-      const titulo = GRUPOS_EDITABLES.find((g) => g.grupo === pendiente.grupo)?.titulo ?? pendiente.grupo;
-      setPendiente(null);
-      setMensaje({
-        tono: "ok",
-        texto:
-          `Listo: ${nombre} ${pendiente.accion === "agregar" ? "ya es" : "ya no es"} ${titulo.toLowerCase()}. ` +
-          "Lo notará cuando vuelva a entrar; si tiene la sesión abierta, puede tardar hasta una hora.",
-      });
-      alCambiar(grupos);
-    } catch (e) {
-      setMensaje({
-        tono: "error",
-        // 400 si el servidor no deja (p. ej. quitarse a uno mismo), 404 si la
-        // cuenta ya no existe: su mensaje ya lo dice en palabras del dueño.
-        texto: e instanceof Error ? e.message : "No se pudo cambiar el permiso",
-      });
-    } finally {
-      setGuardando(false);
-    }
-  };
+  const roles = [
+    cliente.grupos.includes("admins") && "administrador",
+    cliente.grupos.includes("proveedores") && "equipo de proveedores",
+  ].filter(Boolean);
 
   return (
-    <Tarjeta
-      titulo="Permisos"
-      pista="El cambio se nota cuando la persona vuelve a entrar: su sesión guarda los permisos con que entró."
-    >
-      <div className={cn("grid gap-4", guardando && "pointer-events-none opacity-60")} aria-busy={guardando}>
-        {GRUPOS_EDITABLES.map((g) => {
-          const tiene = cliente.grupos.includes(g.grupo);
-          if (esYo && g.grupo === "admins" && tiene) {
-            return (
-              <div key={g.grupo} className="flex items-center justify-between gap-3">
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[14px] font-medium">{g.titulo}</span>
-                  <span className="block text-[12px] text-fg-subtle">
-                    Eres tú: no puedes quitarte. Si hace falta, pídeselo a otro administrador.
-                  </span>
-                </span>
-                <Insignia color="var(--color-success)">Sí</Insignia>
-              </div>
-            );
-          }
-          return (
-            <Interruptor
-              key={g.grupo}
-              etiqueta={g.titulo}
-              pista={g.texto}
-              valor={pendiente?.grupo === g.grupo ? pendiente.accion === "agregar" : tiene}
-              onChange={(v) => {
-                setMensaje(null);
-                // Volver a su estado actual cancela la pregunta.
-                setPendiente(v === tiene ? null : { grupo: g.grupo, accion: v ? "agregar" : "quitar" });
-              }}
-            />
-          );
-        })}
-      </div>
-
-      {pendiente && (
-        <div
-          role="alertdialog"
-          aria-label="Confirmar el cambio de permisos"
-          className="mt-4 rounded-[var(--radius-md)] border border-warning/40 bg-warning/10 p-3"
+    <Tarjeta titulo="Permisos">
+      <p className="text-[14px] text-fg-muted">
+        {roles.length ? `Es ${roles.join(" y ")}.` : "Es cliente de la tienda: no abre el panel."}{" "}
+        {esSuperadmin
+          ? "Los permisos se cambian en «Equipo y cuentas»."
+          : "Los permisos los da el superadministrador."}
+      </p>
+      {esSuperadmin && (
+        <Link
+          href="/equipo/"
+          className="mt-2 inline-flex min-h-11 items-center text-[14px] font-semibold text-info underline"
         >
-          <p className="text-[14px] text-fg">{pregunta(nombre, pendiente.grupo, pendiente.accion)}</p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Boton variante="secundario" onClick={() => setPendiente(null)} disabled={guardando}>
-              Cancelar
-            </Boton>
-            <Boton
-              variante={pendiente.accion === "quitar" ? "peligro" : "primario"}
-              onClick={confirmar}
-              disabled={guardando}
-            >
-              {guardando ? "Guardando…" : pendiente.accion === "quitar" ? "Sí, quitar" : "Sí, agregar"}
-            </Boton>
-          </div>
-        </div>
-      )}
-
-      {mensaje && (
-        <div className="mt-4">
-          <Mensaje tono={mensaje.tono}>{mensaje.texto}</Mensaje>
-        </div>
+          Ir a Equipo y cuentas
+        </Link>
       )}
     </Tarjeta>
   );

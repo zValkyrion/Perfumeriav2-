@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CloudOff, RefreshCw } from "lucide-react";
-import { Boton, Campo, Tarjeta } from "@/components/ui";
+import { RefreshCw } from "lucide-react";
+import { Boton } from "@/components/ui";
 import { descargar, sincronizar } from "@/lib/sync";
 import type { Sesion } from "@/lib/sesion";
 
@@ -27,9 +27,8 @@ function resumen(
 /**
  * El estado de la sincronización, en una sola franja.
  *
- * Muestra lo que falta por subir y lo sube. Si el teléfono entró sin señal y no
- * tiene token, pide el código aquí mismo en vez de mandar a nadie a cerrar
- * sesión: lo capturado no se toca y se sube en cuanto valida.
+ * Muestra lo que falta por subir y lo sube. Sin señal, la sincronización
+ * falla y lo capturado se queda en el teléfono hasta el siguiente intento.
  */
 export function BarraSync({
   sesion,
@@ -43,8 +42,6 @@ export function BarraSync({
   const [trabajando, setTrabajando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [fallos, setFallos] = useState<string[]>([]);
-  const [pin, setPin] = useState("");
-  const [errorPin, setErrorPin] = useState<string | null>(null);
   const yaCorrio = useRef(false);
   /**
    * `alTerminar` llega como función nueva en cada render del padre. Si el efecto
@@ -105,45 +102,6 @@ export function BarraSync({
       setTrabajando(false);
     }
   };
-
-  const conectar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setTrabajando(true);
-    setErrorPin(null);
-    const r = await sesion.conectar(pin);
-    if (!r.ok) setErrorPin(r.error ?? "No se pudo conectar");
-    else setPin("");
-    setTrabajando(false);
-  };
-
-  // Entró sin red: hay que validar el código antes de poder subir nada.
-  if (sesion.soloLocal) {
-    return (
-      <Tarjeta className="mb-3">
-        <p className="flex items-start gap-2 text-[13px] text-fg-muted">
-          <CloudOff size={16} className="mt-0.5 shrink-0 text-warning" />
-          Estás trabajando sin conexión al servidor. Escribe el código del equipo para
-          poder subir {pendientes > 0 ? `las ${pendientes} fichas pendientes` : "lo que captures"}.
-        </p>
-        <form onSubmit={conectar} className="mt-2 flex items-end gap-2">
-          <Campo
-            etiqueta="Código"
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="••••••••"
-            className="flex-1"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-          />
-          <Boton type="submit" disabled={trabajando || pin.trim() === ""}>
-            Conectar
-          </Boton>
-        </form>
-        {errorPin && <p className="mt-1 text-[13px] text-danger">{errorPin}</p>}
-      </Tarjeta>
-    );
-  }
 
   // La barra se queda visible aunque no haya nada pendiente: sincronizar también
   // sirve para *traer* fichas, y un teléfono recién estrenado —o el de alguien

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { acceso } from "@/lib/api";
 import {
   esTokenCognito,
   fijarNuevaContrasena,
@@ -11,43 +10,42 @@ import {
   refrescar,
   type ResultadoAcceso,
 } from "@/lib/cognito";
+import { esCorreoSuperadmin } from "@/lib/superadmin";
 
 /**
- * La sesión del panel.
+ * La sesión del panel: una cuenta de Cognito, con la identidad real y los
+ * grupos dentro del token. El código compartido del equipo se retiró el
+ * 2026-10-05.
  *
- * Conviven dos formas de entrar mientras dura la transición:
- *
- * 1. **Cognito** — correo y contraseña, con la identidad real y los grupos
- *    dentro del token. Es lo definitivo.
- * 2. **El código de equipo** — el PIN compartido de siempre. Sigue aquí porque
- *    el equipo está en la calle y no se le puede cortar el acceso a mitad de una
- *    gira; se retira cuando todos tengan cuenta.
- *
- * **Modo sin conexión.** Si al entrar no hay red se permite trabajar igual: las
- * fichas viven en el teléfono y no sale nada de él hasta sincronizar. Bloquear la
- * captura por falta de señal sería inaceptable donde esto se usa.
+ * **Sin señal se sigue trabajando.** Iniciar sesión pide red una vez; después
+ * la sesión queda guardada en el teléfono, se captura sin conexión y las fichas
+ * suben cuando vuelve la señal. El token de refresco dura 90 días.
  */
 
 const CLAVE_TOKEN = "radar:token";
 const CLAVE_REFRESCO = "radar:refresco";
 const CLAVE_VENCE = "radar:vence";
 const CLAVE_EVALUADOR = "radar:evaluador";
-const CLAVE_LOCAL = "radar:solo_local";
+/** La dejaba el PIN al entrar sin red. Solo se borra. */
+const CLAVE_LOCAL_VIEJA = "radar:solo_local";
 
 export type Sesion = {
   desbloqueado: boolean;
   /**
-   * Hay sesión de Cognito pero la cuenta no es del equipo: es un cliente de la
-   * tienda que llegó aquí. Todos entran por la misma puerta, así que pasa. La
-   * API lo rechazaría igual; esto solo evita enseñarle un panel vacío.
+   * Hay sesión pero la cuenta no es del equipo: es un cliente de la tienda que
+   * llegó aquí. Todos entran por la misma puerta, así que pasa y ve cómo pedir
+   * acceso. La API lo rechazaría igual; esto solo evita enseñarle un panel vacío.
    */
   sinPermiso: boolean;
   evaluador: string | null;
-  /** Token que viaja a la API. De Cognito o del PIN, según cómo se entró. */
+  /** El ID token de Cognito que viaja a la API. */
   token: string | null;
-  /** Grupos de Cognito. Vacío si se entró con el código de equipo. */
+  correo: string | null;
   grupos: string[];
-  soloLocal: boolean;
+  /** `admins` o superadmin. Decide qué se pinta; el permiso real lo mira la API. */
+  esAdmin: boolean;
+  /** El dueño: reparte los permisos desde «Equipo y cuentas». */
+  esSuperadmin: boolean;
   listo: boolean;
   /** Correo y contraseña contra Cognito. */
   entrarConCuenta: (
@@ -61,20 +59,29 @@ export type Sesion = {
     reto: { sesion: string; correo: string },
     nueva: string,
   ) => Promise<{ ok: boolean; error?: string }>;
-  /** El código compartido de siempre. Se irá. */
-  entrarConCodigo: (
-    pin: string,
-    evaluador: string,
-  ) => Promise<{ ok: boolean; sinRed?: boolean; error?: string }>;
-  conectar: (pin: string) => Promise<{ ok: boolean; error?: string }>;
   salir: () => void;
 };
+
+function borrarGuardado() {
+  for (const c of [
+    CLAVE_TOKEN,
+    CLAVE_REFRESCO,
+    CLAVE_VENCE,
+    CLAVE_EVALUADOR,
+    CLAVE_LOCAL_VIEJA,
+    // Los guarda la tienda para editar la cuenta; se van con la sesión.
+    "radar:acceso",
+    "radar:acceso_vence",
+  ]) {
+    localStorage.removeItem(c);
+  }
+}
 
 export function useSesion(): Sesion {
   const [token, setToken] = useState<string | null>(null);
   const [evaluador, setEvaluador] = useState<string | null>(null);
+  const [correo, setCorreo] = useState<string | null>(null);
   const [grupos, setGrupos] = useState<string[]>([]);
-  const [soloLocal, setSoloLocal] = useState(false);
   const [listo, setListo] = useState(false);
 
   const guardarCognito = useCallback(
@@ -84,21 +91,29 @@ export function useSesion(): Sesion {
       if (refreshToken) localStorage.setItem(CLAVE_REFRESCO, refreshToken);
       localStorage.setItem(CLAVE_VENCE, String(vence));
       localStorage.setItem(CLAVE_EVALUADOR, perfil?.nombre ?? "");
-      localStorage.removeItem(CLAVE_LOCAL);
       setToken(idToken);
       setEvaluador(perfil?.nombre ?? "");
+      setCorreo(perfil?.correo ?? null);
       setGrupos(perfil?.grupos ?? []);
-      setSoloLocal(false);
     },
     [],
   );
 
   useEffect(() => {
-    const guardado = localStorage.getItem(CLAVE_TOKEN);
+    let guardado = localStorage.getItem(CLAVE_TOKEN);
+    // Una sesión del PIN retirado: la API ya no la acepta, así que se cierra
+    // en vez de dejar al teléfono fallando en cada sincronización. Las fichas
+    // capturadas siguen en el teléfono y suben al entrar con la cuenta.
+    if (guardado && !esTokenCognito(guardado)) {
+      borrarGuardado();
+      guardado = null;
+    }
+    localStorage.removeItem(CLAVE_LOCAL_VIEJA);
+    const perfil = guardado ? leerPerfil(guardado) : null;
     setToken(guardado);
-    setEvaluador(localStorage.getItem(CLAVE_EVALUADOR));
-    setSoloLocal(localStorage.getItem(CLAVE_LOCAL) === "si");
-    if (guardado) setGrupos(leerPerfil(guardado)?.grupos ?? []);
+    setEvaluador(guardado ? localStorage.getItem(CLAVE_EVALUADOR) : null);
+    setCorreo(perfil?.correo ?? null);
+    setGrupos(perfil?.grupos ?? []);
     setListo(true);
 
     // El token de identidad dura una hora; el de refresco, noventa días. Se
@@ -106,12 +121,13 @@ export function useSesion(): Sesion {
     // jornada. Sin red no pasa nada: se sigue con lo local.
     const refresco = localStorage.getItem(CLAVE_REFRESCO);
     const vence = Number(localStorage.getItem(CLAVE_VENCE) ?? 0);
-    if (refresco && vence < Date.now() + 60_000) {
+    if (guardado && refresco && vence < Date.now() + 60_000) {
       refrescar(refresco)
         .then((t) => guardarCognito(t.idToken, refresco, t.vence))
         .catch(() => {
-          // Refresco vencido o sin señal: la sesión guardada sigue sirviendo
-          // para trabajar en local, y la API dirá que no cuando toque subir.
+          // Refresco vencido, acceso cortado o sin señal: la sesión guardada
+          // sigue sirviendo para trabajar en local, y la API dirá que no
+          // cuando toque subir.
         });
     }
   }, [guardarCognito]);
@@ -149,76 +165,29 @@ export function useSesion(): Sesion {
     [guardarCognito],
   );
 
-  const entrarConCodigo = useCallback(async (pin: string, nombre: string) => {
-    const limpio = nombre.trim();
-    try {
-      const r = await acceso(pin, limpio);
-      localStorage.setItem(CLAVE_TOKEN, r.token);
-      localStorage.setItem(CLAVE_EVALUADOR, r.evaluador);
-      localStorage.removeItem(CLAVE_LOCAL);
-      setToken(r.token);
-      setEvaluador(r.evaluador);
-      setGrupos([]);
-      setSoloLocal(false);
-      return { ok: true };
-    } catch (e) {
-      const motivo = e instanceof Error ? e.message : "Falló el acceso";
-      // Un código equivocado es un "no" del servidor. Que no haya red es otra
-      // cosa, y confundirlas dejaría al equipo pensando que se equivocó.
-      if (motivo.includes("código")) return { ok: false, error: motivo };
-
-      localStorage.setItem(CLAVE_EVALUADOR, limpio);
-      localStorage.setItem(CLAVE_LOCAL, "si");
-      setEvaluador(limpio);
-      setSoloLocal(true);
-      return { ok: true, sinRed: true };
-    }
-  }, []);
-
-  const conectar = useCallback(
-    async (pin: string) => {
-      if (!evaluador) return { ok: false, error: "Falta saber quién eres" };
-      const r = await entrarConCodigo(pin, evaluador);
-      return r.sinRed ? { ok: false, error: "Sigue sin haber conexión" } : r;
-    },
-    [evaluador, entrarConCodigo],
-  );
-
   const salir = useCallback(() => {
-    for (const c of [
-      CLAVE_TOKEN,
-      CLAVE_REFRESCO,
-      CLAVE_VENCE,
-      CLAVE_EVALUADOR,
-      CLAVE_LOCAL,
-      // Los guarda la tienda para editar la cuenta; se van con la sesión.
-      "radar:acceso",
-      "radar:acceso_vence",
-    ]) {
-      localStorage.removeItem(c);
-    }
+    borrarGuardado();
     setToken(null);
     setEvaluador(null);
+    setCorreo(null);
     setGrupos([]);
-    setSoloLocal(false);
   }, []);
 
+  const esSuperadmin = esCorreoSuperadmin(correo);
+  const esAdmin = grupos.includes("admins") || esSuperadmin;
+
   return {
-    desbloqueado: (token !== null || soloLocal) && evaluador !== null,
-    sinPermiso:
-      token !== null &&
-      esTokenCognito(token) &&
-      !grupos.includes("proveedores") &&
-      !grupos.includes("admins"),
+    desbloqueado: token !== null && evaluador !== null,
+    sinPermiso: token !== null && !grupos.includes("proveedores") && !esAdmin,
     evaluador,
     token,
+    correo,
     grupos,
-    soloLocal,
+    esAdmin,
+    esSuperadmin,
     listo,
     entrarConCuenta,
     cambiarContrasena,
-    entrarConCodigo,
-    conectar,
     salir,
   };
 }
@@ -237,7 +206,6 @@ export async function tokenVigente(actual: string): Promise<string> {
   const vence = Number(localStorage.getItem(CLAVE_VENCE) ?? 0);
   if (guardado && vence > Date.now() + 60_000) return guardado;
   const refresco = localStorage.getItem(CLAVE_REFRESCO);
-  // Sesión por PIN: no hay nada que renovar.
   if (!refresco) return actual;
   try {
     const t = await refrescar(refresco);

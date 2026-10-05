@@ -129,7 +129,7 @@ export default function Pagina() {
                   la vista de conjunto) solo se le enseña a `admins`. Quien no
                   lo sea y llegue a /tienda recibe la explicación ahí mismo:
                   esto decide qué se pinta, no qué se puede leer. */}
-              {sesion.grupos.includes("admins") && (
+              {sesion.esAdmin && (
                 <Link href="/tienda/" aria-label="Panel de la tienda" title="Panel de la tienda">
                   <Boton variante="secundario" className="px-3">
                     <LayoutDashboard size={18} />

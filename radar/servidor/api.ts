@@ -15,14 +15,23 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { CognitoIdentityProviderClient } from "@aws-sdk/client-cognito-identity-provider";
 import { gzipSync } from "node:zlib";
-import { firmarToken, pinCorrecto } from "./jwt";
 import {
   esAdmin,
+  esSuperadmin,
   identificar,
   puedeVerProveedores,
-  tieneIdentidadPropia,
   type Identidad,
 } from "./identidad";
+import {
+  cambiarAccesoEquipo,
+  cambiarGrupoEquipo,
+  invitar,
+  miSolicitud,
+  pedirIngreso,
+  resolverSolicitud,
+  vistaEquipo,
+} from "./equipo";
+import { esSub } from "./cuentas";
 import { leerLista } from "./precios";
 import {
   guardarCarrito,
@@ -43,7 +52,6 @@ import {
   type Salida,
 } from "./pedidos";
 import {
-  cambiarGrupo,
   cambiarPedidoAdmin,
   cambiarSolicitud,
   clientes,
@@ -228,8 +236,6 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
       });
     }
 
-    if (metodo === "POST" && ruta === "/acceso") return acceso(evento);
-
     // El catálogo publicado: lo lee el build de la tienda y, más adelante, la
     // disponibilidad en vivo. Público y cacheable un minuto: sin notas internas
     // ni productos ocultos (`catalogoPublico`).
@@ -266,14 +272,22 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
     // Distribuidor, contacto y factura: formularios públicos de la tienda.
     if (metodo === "POST" && ruta === "/solicitudes") {
       const sesion = await sesionDe(evento).catch(() => null);
-      const sub = sesion && tieneIdentidadPropia(sesion) ? sesion.sub : null;
-      return deSalida(await crearSolicitud(TIENDA, leerCuerpo<unknown>(evento), sub));
+      return deSalida(await crearSolicitud(TIENDA, leerCuerpo<unknown>(evento), sesion?.sub ?? null));
     }
 
     // Todo lo demás exige identidad. La app puede capturar sin ella —los datos
     // viven en el teléfono—, pero nada sube sin haber iniciado sesión.
     const sesion = await sesionDe(evento);
     if (!sesion) return json(401, { error: "Sesión inválida o vencida" });
+
+    // «Equipo y cuentas»: solo el superadmin. Va primero, igual que /admin,
+    // para que ninguna otra regla la pueda abrir por accidente.
+    if (ruta.startsWith("/superadmin/")) {
+      if (!esSuperadmin(sesion)) {
+        return json(403, { error: "Esta sección es solo para el superadministrador" });
+      }
+      return rutaSuperadmin(evento, metodo, ruta, sesion);
+    }
 
     // La administración es solo para cuentas del grupo `admins`. Va antes que
     // todo lo demás para que ninguna otra regla la pueda abrir por accidente.
@@ -284,10 +298,17 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
       return rutaAdmin(evento, metodo, ruta, sesion);
     }
 
+    // Pedir entrar al equipo: lo hace una cuenta que todavía no lo es, así que
+    // va antes del filtro por grupo.
+    if (ruta === "/equipo/solicitud") {
+      if (metodo === "GET") return deSalida(await miSolicitud(TIENDA, sesion));
+      if (metodo === "POST") return deSalida(await pedirIngreso(TIENDA, leerCuerpo<unknown>(evento), sesion));
+      return json(405, { error: `${metodo} no va en ${ruta}` });
+    }
+
     // Lo de la tienda va antes del filtro por grupo: el carrito y los pedidos
-    // son de quien inició sesión, sea cliente o del equipo. Lo que se exige aquí
-    // no es un grupo sino una identidad propia — el carrito se guarda bajo el
-    // `sub`, y el PIN compartido no identifica a nadie.
+    // son de quien inició sesión, sea cliente o del equipo, y se guardan bajo
+    // su `sub`.
     const dePedido = ruta.match(/^\/pedidos\/([^/]+)(\/cancelar)?$/);
     if (
       ruta === "/carrito" ||
@@ -296,11 +317,6 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
       ruta === "/cuenta" ||
       dePedido
     ) {
-      if (!tieneIdentidadPropia(sesion)) {
-        return json(403, {
-          error: "El carrito necesita una cuenta propia, no el código del equipo",
-        });
-      }
       if (metodo === "GET" && ruta === "/carrito") return verCarrito(sesion.sub);
       if (metodo === "PUT" && ruta === "/carrito") {
         return ponerCarrito(evento, sesion.sub);
@@ -352,22 +368,31 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
   }
 }
 
-// ── Acceso ──────────────────────────────────────────────────────────────────
+// ── Equipo y cuentas: el superadmin ────────────────────────────────────────
 
-async function acceso(evento: Evento) {
-  const cuerpo = leerCuerpo<{ pin?: string; evaluador?: string }>(evento);
-  const pin = cuerpo?.pin ?? "";
-  const evaluador = (cuerpo?.evaluador ?? "").trim();
+async function rutaSuperadmin(
+  evento: Evento,
+  metodo: string,
+  ruta: string,
+  sesion: Identidad,
+): Promise<Respuesta> {
+  const cuerpo = () => leerCuerpo<unknown>(evento);
 
-  if (!pinCorrecto(pin, Resource.Elrey_pin.value)) {
-    return json(401, { error: "Ese código no es." });
+  if (metodo === "GET" && ruta === "/superadmin/equipo") return deSalida(await vistaEquipo(TIENDA, CUENTAS()));
+  if (metodo === "POST" && ruta === "/superadmin/invitar") return deSalida(await invitar(CUENTAS(), cuerpo(), sesion));
+  if (metodo === "PUT" && ruta === "/superadmin/grupo") {
+    return deSalida(await cambiarGrupoEquipo(TIENDA, CUENTAS(), cuerpo(), sesion));
   }
-  if (!evaluador) return json(400, { error: "Falta el nombre de quien captura" });
-
-  return json(200, {
-    token: firmarToken(evaluador, Resource.Elrey_jwt_secreto.value),
-    evaluador,
-  });
+  if (metodo === "PUT" && ruta === "/superadmin/acceso") {
+    return deSalida(await cambiarAccesoEquipo(CUENTAS(), cuerpo(), sesion));
+  }
+  const solicitud = ruta.match(/^\/superadmin\/solicitudes\/([^/]+)$/);
+  if (solicitud && metodo === "PUT") {
+    const sub = decodeURIComponent(solicitud[1]!);
+    if (!esSub(sub)) return json(404, { error: "No existe esa solicitud" });
+    return deSalida(await resolverSolicitud(TIENDA, CUENTAS(), sub, cuerpo(), sesion));
+  }
+  return json(404, { error: `Sin ruta para ${metodo} ${ruta}` });
 }
 
 // ── Catálogo: el panel de admins ───────────────────────────────────────────
@@ -478,9 +503,6 @@ async function rutaAdmin(
   if (metodo === "GET" && ruta === "/admin/clientes") return deSalida(await clientes(TIENDA, CUENTAS()));
   if (metodo === "GET" && ruta === "/admin/clientes/detalle") {
     return deSalida(await detalleCliente(TIENDA, CUENTAS(), q.clave ?? ""));
-  }
-  if (metodo === "PUT" && ruta === "/admin/clientes/grupos") {
-    return deSalida(await cambiarGrupo(CUENTAS(), leerCuerpo<unknown>(evento), sesion));
   }
 
   if (metodo === "GET" && ruta === "/admin/solicitudes") return deSalida(await listarSolicitudes(TIENDA));

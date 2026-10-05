@@ -49,9 +49,14 @@ export type PanelAdmin<T> = {
  * No carga nada sin sesión, sin permiso de admin o sin API: para eso está
  * `PuertaAdmin`.
  */
-export function usePanelAdmin<T>(cargar: (token: string) => Promise<T>, clave = ""): PanelAdmin<T> {
+export function usePanelAdmin<T>(
+  cargar: (token: string) => Promise<T>,
+  clave = "",
+  /** `superadmin` para «Equipo y cuentas» (`/superadmin/*`). */
+  nivel: "admin" | "superadmin" = "admin",
+): PanelAdmin<T> {
   const sesion = useSesion();
-  const esAdmin = sesion.grupos.includes("admins");
+  const esAdmin = nivel === "superadmin" ? sesion.esSuperadmin : sesion.esAdmin;
   const token = sesion.token;
   const [datos, setDatos] = useState<T | null>(null);
   const [fallo, setFallo] = useState<{ mensaje: string; estado: number } | null>(null);
@@ -117,13 +122,22 @@ export function PuertaAdmin({
   c,
   titulo,
   volver = "/",
+  nivel = "admin",
 }: {
   c: Pick<PanelAdmin<unknown>, "sesion" | "esAdmin" | "token" | "estadoError">;
   /** Nombre de la sección, para los mensajes («Pedidos», «Ventas»…). */
   titulo: string;
   volver?: string;
+  nivel?: "admin" | "superadmin";
 }) {
   if (!c.sesion.listo) return <main className="p-4" />;
+  if (nivel === "superadmin" && c.sesion.desbloqueado && c.token && (!c.esAdmin || c.estadoError === 403)) {
+    return (
+      <AvisoPuerta titulo="Esta sección es solo para el superadministrador" volver={volver}>
+        {titulo} reparte los permisos de todo el sistema, así que solo la abre la cuenta del dueño.
+      </AvisoPuerta>
+    );
+  }
   if (!c.sesion.desbloqueado || !c.token) {
     return (
       <AvisoPuerta titulo="Hay que iniciar sesión" volver={volver}>
@@ -134,9 +148,8 @@ export function PuertaAdmin({
   if (!c.esAdmin || c.estadoError === 403) {
     return (
       <AvisoPuerta titulo="Esta sección es solo para administradores" volver={volver}>
-        {titulo} tiene datos de clientes y de ventas, así que es del grupo <strong>admins</strong> y
-        pide cuenta propia: el código de equipo no sirve. Si acaban de darte permiso, sal y vuelve a
-        entrar para que tu sesión lo traiga.
+        {titulo} tiene datos de clientes y de ventas, así que es del grupo <strong>admins</strong>. Si
+        acaban de darte permiso, sal y vuelve a entrar para que tu sesión lo traiga.
       </AvisoPuerta>
     );
   }

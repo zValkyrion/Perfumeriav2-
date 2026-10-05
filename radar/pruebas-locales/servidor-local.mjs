@@ -54,7 +54,7 @@ http
     const paraGuardar = Object.fromEntries(Object.entries(sesiones).map(([k, s]) => [k, { ...s, consola: snippet(s) }]));
     writeFileSync(join(GENERADO, "sesiones.json"), JSON.stringify(paraGuardar, null, 2));
 
-    console.log(`API local en http://127.0.0.1:${PUERTO}  (${pedidos} pedidos, 4 solicitudes y 5 cuentas de PRUEBA)`);
+    console.log(`API local en http://127.0.0.1:${PUERTO}  (${pedidos} pedidos, 4 solicitudes, 6 cuentas y 1 solicitud de equipo de PRUEBA)`);
     console.log(`Sesiones de prueba en ${join(GENERADO, "sesiones.json")}. Para entrar, pega en la consola del navegador:`);
     for (const [quien, s] of Object.entries(paraGuardar)) console.log(`\n· ${quien}:\n${s.consola}`);
     console.log("");

@@ -59,13 +59,6 @@ export async function pedir<T>(
   }
 }
 
-export function acceso(pin: string, evaluador: string) {
-  return pedir<{ token: string; evaluador: string }>("/acceso", {
-    method: "POST",
-    body: JSON.stringify({ pin, evaluador }),
-  });
-}
-
 export function salud() {
   return pedir<{ ok: boolean }>("/salud");
 }

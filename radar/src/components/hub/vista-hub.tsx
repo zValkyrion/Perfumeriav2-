@@ -8,6 +8,7 @@ import {
   Inbox,
   Package,
   RefreshCw,
+  ShieldCheck,
   Store,
   TrendingUp,
   Users,
@@ -257,6 +258,14 @@ export function VistaHub() {
         Más del panel
       </h2>
       <ul className="grid grid-cols-1 gap-2">
+        {c.sesion.esSuperadmin && (
+          <Acceso
+            href="/equipo/"
+            icono={<ShieldCheck size={18} />}
+            titulo="Equipo y cuentas"
+            texto="Aceptar al equipo, invitar, permisos y todas las cuentas"
+          />
+        )}
         <Acceso href="/catalogo/" icono={<Package size={18} />} titulo="Catálogo" texto="Perfumes, sets, lotes, precios y agotados" />
         <Acceso href="/" icono={<Warehouse size={18} />} titulo="Proveedores" texto="Captura y evaluación en campo" />
         <Acceso href="/admin/" icono={<ChartColumn size={18} />} titulo="Vista de conjunto" texto="Ranking y mapa de proveedores" />

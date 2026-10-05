@@ -233,6 +233,8 @@ export type CuentaCognito = {
   grupos: string[];
   registradoEn: string | null;
   estado: string | null;
+  /** `false` si el superadmin le cortó el acceso. */
+  habilitada: boolean;
 };
 
 /**

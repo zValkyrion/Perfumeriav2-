@@ -81,7 +81,9 @@ async function pedir(metodo, ruta, { cuerpo, tok, query } = {}) {
   return { estado: r.statusCode, json, cabeceras: r.headers };
 }
 
-const PIN = (await pedir("POST", "/acceso", { cuerpo: { pin: "1234", evaluador: "Campo" } })).json.token;
+// El token del PIN retirado: firmado por la Lambda, no por Cognito. Ya no
+// abre nada.
+const PIN = "eyJhbGciOiJIUzI1NiJ9.eyJldmFsdWFkb3IiOiJDYW1wbyJ9.firma";
 const ANIO = puras.fechaMexico(new Date()).slice(0, 4);
 const contador = () => fila("CONTADOR", "PEDIDOS")?.valor;
 
@@ -109,7 +111,7 @@ const RUTAS_CLIENTE = [
 for (const [m, ruta] of RUTAS_CLIENTE) {
   const sin = await pedir(m, ruta);
   const pin = await pedir(m, ruta, { tok: PIN });
-  ok(`${m} ${ruta}: 401 sin token y 403 con el PIN`, sin.estado === 401 && pin.estado === 403, `${sin.estado}/${pin.estado}`);
+  ok(`${m} ${ruta}: 401 sin token y 401 con un token del PIN retirado`, sin.estado === 401 && pin.estado === 401, `${sin.estado}/${pin.estado}`);
 }
 
 const RUTAS_ADMIN = [
@@ -119,7 +121,6 @@ const RUTAS_ADMIN = [
   ["GET", "/admin/ventas"],
   ["GET", "/admin/clientes"],
   ["GET", "/admin/clientes/detalle"],
-  ["PUT", "/admin/clientes/grupos"],
   ["GET", "/admin/solicitudes"],
   ["PUT", "/admin/solicitudes/abc12345"],
 ];
@@ -132,8 +133,8 @@ for (const [m, ruta] of RUTAS_ADMIN) {
   ]);
   const estados = r.map((x) => x.estado);
   ok(
-    `${m} ${ruta}: 401 sin token; 403 con PIN, cliente y proveedor, con mensaje neutro`,
-    JSON.stringify(estados) === "[401,403,403,403]" && r.slice(1).every((x) => x.json?.error === "Esta sección es solo para administradores"),
+    `${m} ${ruta}: 401 sin token y con el PIN retirado; 403 a cliente y proveedor, con mensaje neutro`,
+    JSON.stringify(estados) === "[401,401,403,403]" && r.slice(2).every((x) => x.json?.error === "Esta sección es solo para administradores"),
     estados.join("/"),
   );
 }
@@ -457,16 +458,10 @@ r = await pedir("GET", "/admin/clientes/detalle", { tok: ADMIN, query: { clave: 
 const sinClave = await pedir("GET", "/admin/clientes/detalle", { tok: ADMIN });
 ok("detalle de alguien que no existe: 404; sin clave: 400", r.estado === 404 && sinClave.estado === 400);
 
-r = await pedir("PUT", "/admin/clientes/grupos", { tok: ADMIN, cuerpo: { sub: "cliente-b", grupo: "proveedores", accion: "agregar" } });
-ok("agregar a proveedores: 200 con los grupos que quedan (y en Cognito)", r.estado === 200 && r.json.grupos.join() === "clientes,proveedores" && usuarios.get("beto@prueba.local").grupos.has("proveedores"));
-r = await pedir("PUT", "/admin/clientes/grupos", { tok: ADMIN, cuerpo: { sub: "cliente-b", grupo: "proveedores", accion: "quitar" } });
-ok("quitarlo: 200", r.estado === 200 && r.json.grupos.join() === "clientes");
-r = await pedir("PUT", "/admin/clientes/grupos", { tok: ADMIN, cuerpo: { sub: "admin-1", grupo: "admins", accion: "quitar" } });
-ok("un admin no se quita a sí mismo de admins: 400 y sigue siendo admin", r.estado === 400 && usuarios.get("admin@prueba.local").grupos.has("admins"), r.json?.error);
-r = await pedir("PUT", "/admin/clientes/grupos", { tok: ADMIN, cuerpo: { sub: "cliente-b", grupo: "root", accion: "agregar" } });
-const accionMala = await pedir("PUT", "/admin/clientes/grupos", { tok: ADMIN, cuerpo: { sub: "cliente-b", grupo: "admins", accion: "borrar" } });
-const noHay = await pedir("PUT", "/admin/clientes/grupos", { tok: ADMIN, cuerpo: { sub: "no-existe", grupo: "admins", accion: "agregar" } });
-ok("grupo o acción inventados: 400; cuenta que no existe: 404", r.estado === 400 && accionMala.estado === 400 && noHay.estado === 404);
+// Los grupos ya no los cambia un admin: la ruta vieja desapareció y el
+// permiso vive en /superadmin (probar-equipo.mjs).
+r = await pedir("PUT", "/admin/clientes/grupos", { tok: ADMIN, cuerpo: { sub: "cliente-b", grupo: "admins", accion: "agregar" } });
+ok("un admin ya no reparte grupos: la ruta vieja da 404 y Cognito no cambia", r.estado === 404 && !usuarios.get("beto@prueba.local").grupos.has("admins"), `${r.estado}`);
 
 /* ── Solicitudes ──────────────────────────────────────────────────────────── */
 

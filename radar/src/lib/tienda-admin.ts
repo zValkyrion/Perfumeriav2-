@@ -13,6 +13,13 @@ import type {
   ResumenVentas,
   SolicitudAdmin,
 } from "../../../compartido/tienda-admin";
+import type {
+  CuentaEquipo,
+  GrupoEquipo,
+  Invitacion,
+  SolicitudEquipo,
+  VistaEquipo,
+} from "../../../compartido/equipo";
 import { ErrorGuardado } from "@/lib/catalogo-admin";
 import { tokenVigente } from "@/lib/sesion";
 
@@ -34,8 +41,12 @@ export type {
   CambioPedidoAdmin,
   CambioSolicitud,
   ClienteAdmin,
+  CuentaEquipo,
   EstatusPedido,
   Grupo,
+  GrupoEquipo,
+  SolicitudEquipo,
+  VistaEquipo,
   PedidoAdmin,
   ResumenPedido,
   ResumenVentas,
@@ -162,15 +173,69 @@ export function leerCliente(token: string, clave: string) {
   );
 }
 
+/* ── Equipo y cuentas (solo superadmin) ───────────────────────────────────── */
+
+/** `GET /superadmin/equipo`: todas las cuentas de Cognito y las solicitudes para entrar al equipo. */
+export function leerEquipo(token: string) {
+  return llamar<VistaEquipo>("/superadmin/equipo", token, { msCorte: 30000 });
+}
+
 /**
- * `PUT /admin/clientes/grupos`. Devuelve los grupos con que queda la cuenta.
- * 400 si un admin intenta quitarse a sí mismo de `admins`. El cambio se nota
- * cuando esa persona vuelve a entrar.
+ * `PUT /superadmin/grupo`. Devuelve los grupos con que queda la cuenta. 400 si
+ * es la propia cuenta o la del superadmin. El cambio se nota cuando esa
+ * persona vuelve a entrar.
  */
-export function cambiarGrupo(token: string, sub: string, grupo: Grupo, accion: "agregar" | "quitar") {
-  return llamar<{ grupos: string[] }>("/admin/clientes/grupos", token, {
+export function cambiarGrupo(token: string, sub: string, grupo: GrupoEquipo, accion: "agregar" | "quitar") {
+  return llamar<{ grupos: string[] }>("/superadmin/grupo", token, {
     method: "PUT",
     body: JSON.stringify({ sub, grupo, accion }),
+    escritura: true,
+  });
+}
+
+/** `PUT /superadmin/acceso`: cortar (`false`) o devolver (`true`) el acceso. */
+export function cambiarAcceso(token: string, sub: string, habilitada: boolean) {
+  return llamar<{ habilitada: boolean }>("/superadmin/acceso", token, {
+    method: "PUT",
+    body: JSON.stringify({ sub, habilitada }),
+    escritura: true,
+  });
+}
+
+/** `POST /superadmin/invitar`. 409 si ya hay cuenta con ese correo; 422 si algo no es válido. */
+export function invitarAlEquipo(token: string, invitacion: Invitacion) {
+  return llamar<{ cuenta: CuentaEquipo }>("/superadmin/invitar", token, {
+    method: "POST",
+    body: JSON.stringify(invitacion),
+    escritura: true,
+  });
+}
+
+/** `PUT /superadmin/solicitudes/{sub}`: aceptar (con grupo) o rechazar. 409 si ya se resolvió. */
+export function resolverSolicitudEquipo(
+  token: string,
+  sub: string,
+  decision: { decision: "aceptar"; grupo: GrupoEquipo } | { decision: "rechazar" },
+) {
+  return llamar<{ solicitud: SolicitudEquipo | null; grupos?: string[] }>(
+    `/superadmin/solicitudes/${encodeURIComponent(sub)}`,
+    token,
+    { method: "PUT", body: JSON.stringify(decision), escritura: true },
+  );
+}
+
+/* ── Pedir entrar al equipo (cualquier cuenta) ────────────────────────────── */
+
+/** `GET /equipo/solicitud`: la solicitud de quien pregunta, o `null`. */
+export function leerMiSolicitud(token: string) {
+  return llamar<{ solicitud: SolicitudEquipo | null }>("/equipo/solicitud", token);
+}
+
+/** `POST /equipo/solicitud`. 409 si la cuenta ya es del equipo. */
+export function pedirEntrarAlEquipo(token: string, mensaje: string) {
+  return llamar<{ solicitud: SolicitudEquipo }>("/equipo/solicitud", token, {
+    method: "POST",
+    body: JSON.stringify({ mensaje }),
     escritura: true,
   });
 }

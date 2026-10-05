@@ -1,6 +1,6 @@
 // Sustituye a aws-jwt-verify en la prueba: un "token" es el JSON de la carga
 // en base64 (o en la parte central de un JWT) con `falso: true`. Cualquier
-// otra cosa se rechaza, como haría Cognito, y la identidad cae al PIN.
+// otra cosa se rechaza, como haría Cognito, y no hay sesión.
 export const CognitoJwtVerifier = {
   create() {
     return {

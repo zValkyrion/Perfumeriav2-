@@ -69,7 +69,7 @@ Región **us-east-1**. Cuenta **637423567003**. Etapa: `produccion`.
 | Lambda + EventBridge | `Elrey_publicacion_produccion` (Cron, cada 10 min) | Publica solo los cambios del panel que llevan 10 min quietos |
 | API Gateway | `Elrey_api` | HTTP API v2 |
 | CloudFront | distribución de `Elrey_radar` | Sirve el sitio |
-| SSM | `Elrey_pin`, `Elrey_jwt_secreto` | Secretos (vía `sst secret`) |
+| SSM | ~~`Elrey_pin`, `Elrey_jwt_secreto`~~ | Retirados el 2026-10-05 con el PIN del equipo. Se borran con `sst secret remove` |
 | SSM | `Elrey_github_token` | Token de GitHub para publicar desde el panel. Vacío por defecto |
 | Cognito | `Elrey_usuarios` (`us-east-1_qpU8tmkIB`) | Identidad y grupos |
 
@@ -143,7 +143,6 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | `GET /salud` | Diagnóstico. Sin token |
 | `GET /catalogo` | El catálogo publicado (sin ocultos ni notas). Sin token, caché de un minuto |
 | `GET /disponibilidad` | Qué se vende y a cuánto, sin textos ni fotos (~33 KB). Sin token, caché de 30 s. La pide la tienda al abrirse |
-| `POST /acceso` | PIN + nombre → JWT de 90 días. Sin token |
 | `GET /proveedores` | Todas las fichas, por fecha |
 | `PUT /proveedores/{id}` | Guarda una ficha |
 | `DELETE /proveedores/{id}` | Borra ficha y sus fotos |
@@ -152,20 +151,48 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | `POST /precios/leer` | Textract sobre la foto de la lista de precios |
 | `GET/PUT /carrito` | El carrito de la tienda, por usuario |
 | `GET/PUT /direcciones` | La libreta de direcciones de ese usuario |
-| `GET /pedidos` | Los pedidos de ese usuario («Mis pedidos») |
-| `POST /pedidos` | Registra un pedido de la tienda. **Sin token**: recalcula el total con `cotizar` y asigna el folio |
+| `DELETE /cuenta` | Borra todo lo de `USER#<sub>` antes de eliminar la cuenta; conserva los `PEDIDO#` |
+| `GET /pedidos` | «Mis pedidos»: las copias `USER#` como índice, con estatus, guía y cifras leídos del META |
+| `GET /pedidos/{folio}` | El detalle completo del pedido. 404 si no existe **o no es suyo** |
+| `POST /pedidos/{folio}/cancelar` | El cliente cancela, solo si sigue `Pendiente` (409 si ya no) |
+| `POST /pedidos` | Registra un pedido de la tienda. **Sin token**: recalcula el total con `cotizar`, asigna el folio y admite `clave` de idempotencia |
+| `POST /pedidos/consulta` | Rastreo sin cuenta: folio + teléfono. **Sin token**; mismo 404 para folio inexistente y teléfono equivocado |
+| `POST /solicitudes` | Distribuidor, contacto o factura. **Sin token** (si llega, guarda el `sub`) |
+| `GET /admin/pedidos?desde&hasta` | Pedidos del negocio del rango (calendario de México), del más nuevo al más viejo |
+| `GET/PUT /admin/pedidos/{folio}` | Detalle y cambio de estatus, guía, paquetería y notas. PUT con `actualizadoEn` visto: 409 si otro lo cambió |
+| `GET /admin/ventas?desde&hasta` | Resumen de ventas (sin rango: últimos 30 días; máximo 400) |
+| `GET /admin/clientes` · `GET /admin/clientes/detalle?clave=` | Cuentas de Cognito unidas con los compradores de los pedidos |
+| `GET /admin/solicitudes` · `PUT /admin/solicitudes/{id}` | Bandeja de solicitudes con estado y nota (409 por concurrencia) |
 | `GET /admin/catalogo` | El catálogo completo (con ocultos y notas), la huella de cada registro, el estado de la publicación y el vocabulario |
 | `PUT /admin/catalogo/{tipo}/{id}` | Alta o edición de un producto, marca, set o lote. Lleva la huella leída (`null` en un alta) |
 | `DELETE /admin/catalogo/{tipo}/{id}?huella=` | Borra, si nada lo usa |
 | `POST /admin/imagenes` | URL prefirmada para subir una foto ya procesada, con nombre de huella |
 | `GET /admin/exportar?archivo=` | `productos`, `marcas`, `sets` o `lotes` en el formato de `catalogo/*.csv` |
 | `GET /admin/publicacion` · `POST /admin/publicar` | Si la tienda está al día; pedir que se vuelva a compilar |
+| `GET/POST /equipo/solicitud` | Una cuenta que no es del equipo pide entrar (nombre y correo salen del token). 409 si ya es del equipo |
+| `GET /superadmin/equipo` | Todas las cuentas de Cognito (grupos, estado, si puede entrar) y todas las solicitudes para entrar al equipo |
+| `PUT /superadmin/solicitudes/{sub}` | Aceptar (con grupo; por defecto `proveedores`) o rechazar. 409 si ya se resolvió |
+| `POST /superadmin/invitar` | Crea la cuenta con contraseña temporal por correo y la mete en su grupo. 409 si el correo ya tiene cuenta |
+| `PUT /superadmin/grupo` | Dar o quitar `proveedores`/`admins`. Nunca a uno mismo ni al superadmin |
+| `PUT /superadmin/acceso` | Cortar (cierra sus sesiones y deshabilita) o devolver el acceso |
 
-`carrito`, `direcciones` y `GET /pedidos` son de la **tienda**, no del panel, y
-por eso no piden grupo: piden identidad propia. `POST /pedidos` ni siquiera
-eso —casi nadie se registra para comprar—; si llega token, además guarda la
-copia en «Mis pedidos». `/admin/*` exige cuenta de Cognito del grupo `admins`
-(el PIN no entra: no firma a nadie). El resto exige `proveedores` o `admins`.
+`carrito`, `direcciones`, `cuenta` y los pedidos del cliente son de la
+**tienda**, no del panel, y por eso no piden grupo: piden sesión.
+`POST /pedidos`, `POST /pedidos/consulta` y `POST /solicitudes` ni siquiera
+eso —casi nadie se registra para comprar—. `/superadmin/*` es solo del
+superadmin (§4.1); `/admin/*`, del grupo `admins` (y del superadmin). El resto
+exige `proveedores` o `admins`. La lógica vive fuera del enrutador:
+`pedidos.ts` (crear, «Mis pedidos», detalle, cancelar, consulta),
+`tienda-admin.ts` (todo `/admin` de la tienda salvo el catálogo), `equipo.ts`
+(`/superadmin` y `/equipo`), `cuentas.ts` (Cognito) y, sin AWS para poder
+probarlas, `pedidos-formas.ts` y `ventas.ts`.
+
+**El estatus del pedido tiene una sola fuente: el META.** Vocabulario en
+`compartido/pedido.ts`: Pendiente → Pagado → En preparación → En camino →
+Entregado, más Cancelado. Solo `Pagado`, `En preparación`, `En camino` y
+`Entregado` cuentan como venta (ingresos, nivel del cliente, top). Cada cambio
+queda en el historial con quién y cuándo; el cliente ve «tienda» y no las notas
+internas.
 
 **El catálogo lo edita el panel** (`/radar/catalogo/`). Cada guardado se valida
 campo por campo con `compartido/validar-catalogo.ts` —las mismas reglas que el
@@ -195,9 +222,9 @@ con caché de un minuto (`servidor/catalogo.ts`). Lo agotado y lo oculto no se
 cobra. Si la tabla está vacía (el primer despliegue, antes de la carga) cobra con
 la copia versionada `src/data/catalogo.json`; si DynamoDB falla, no: rechaza.
 
-**Autenticación:** PIN de equipo → JWT HS256 firmado con `node:crypto` (sin
-librerías: son treinta líneas y una dependencia menos en el arranque en frío).
-El nombre de quien captura viaja dentro del token, así cada ficha queda firmada.
+**Autenticación:** solo cuentas de Cognito (`servidor/identidad.ts`). El nombre
+de la cuenta viaja dentro del ID token, así cada ficha queda firmada. El PIN
+compartido del equipo y su JWT propio se retiraron el 2026-10-05 (§7).
 
 **Las fotos no pasan por la Lambda.** Suben directo a S3 con URL prefirmada:
 con roaming, mandar la imagen por API Gateway es pagar dos veces la misma
@@ -223,18 +250,34 @@ PROV#<id>         META               la ficha completa + GSI1PK/GSI1SK
 PROV#<id>         FOTO#<fotoId>      clave en S3, tipo, lat/lng
 USER#<sub>        CARRITO            carrito, guardados y favoritos de la tienda
 USER#<sub>        DIRECCIONES        la libreta de direcciones
-USER#<sub>        PEDIDO#<folio>     copia del pedido en «Mis pedidos»
+USER#<sub>        PEDIDO#<folio>     índice de «Mis pedidos» (lo que vale se lee del META)
 PEDIDO#<folio>    META               el pedido de la tienda (con o sin cuenta) + GSI
+IDEMPOTENCIA#<clave> META            { folio }: un reintento del checkout no duplica
+SOLICITUD#<id>    META               distribuidor, contacto o factura + GSI
 CONTADOR          PEDIDOS            el último número de folio (ADD atómico)
 
 GSI "porFecha":   GSI1PK = "PROVEEDORES"   GSI1SK = "<actualizadoEn>#<id>"
                   GSI1PK = "PEDIDOS"       GSI1SK = "<creadoEn>#<folio>"
+                  GSI1PK = "SOLICITUDES"   GSI1SK = "<creadaEn>#<id>"
 ```
 
-Los pedidos guardan la solicitud saneada (artículos, forma de pago, envío,
-contacto) y la **cuenta del servidor**: subtotal, cada descuento, envío,
-comisión y total, tal como se calcularon al recibirlos. Su partición `PEDIDOS`
-del índice es la que leerá el panel de administración.
+Los pedidos guardan la solicitud saneada (artículos, forma de pago con plazo,
+envío, contacto) y la **cuenta del servidor**: subtotal, cada descuento, envío,
+comisión y total, y cada línea con su unitario, su subtotal y el nombre y la
+presentación **del momento** (si el producto cambia o se borra, el pedido sigue
+diciendo lo que se vendió). Desde 2026-09-27 también guardan `cliente` (`sub` y
+correo de quien compró con cuenta), `historial`, `guia`, `paqueteria`,
+`notaCliente`, `notaInterna` y `actualizadoEn`, el sello de concurrencia. Las
+filas viejas no los tienen y se leen con valores por defecto.
+
+**Crear un pedido es una transacción** (META + copia `USER#` + `IDEMPOTENCIA#`,
+cada uno con `attribute_not_exists`): antes eran escrituras sueltas que podían
+dejar el pedido partido y al checkout enseñando un folio local mientras el
+negocio tenía otro. El folio nuevo es `REY-<año>-<n>`; los `AUR-` ya emitidos
+siguen valiendo en todas partes, así que ningún código asume el prefijo.
+
+Las filas `USER#` e `IDEMPOTENCIA#` **no** llevan GSI1PK: el índice es disperso
+y `GET /proveedores` lee la partición `PROVEEDORES` entera.
 
 ### `Elrey_catalogo`
 
@@ -343,13 +386,46 @@ responde 403 aunque la sesión sea válida. Nadie puede auto-asignarse un grupo.
 
 Se verifica el **ID token** y no el de acceso porque solo aquel trae el correo,
 y sin correo la ficha quedaría firmada por un identificador que no le dice nada
-a nadie — la trazabilidad es justo lo que se ganaba al salir del PIN compartido.
+a nadie. El correo es también lo que reconoce al superadmin.
+
+### El superadmin
+
+Por encima de los grupos está **el superadmin**: el dueño
+(`carlos.acosta12121998@gmail.com`). Es el único que reparte permisos, desde
+**«Equipo y cuentas»** (`/radar/equipo/`): ve todas las cuentas, acepta o
+rechaza a quien pide entrar al equipo, invita por correo, da y quita
+`proveedores`/`admins` y corta o devuelve el acceso. Un admin ya no cambia
+grupos. El superadmin además es admin siempre, tenga o no el grupo.
+
+**No es un grupo de Cognito, a propósito.** Vive en el código
+(`compartido/equipo.ts`, `SUPERADMINS`) y la API lo reconoce por el correo
+**verificado** del token (`email_verified`). Si fuera un grupo se podría dar o
+quitar desde el mismo panel que reparte los grupos: un descuido dejaría el
+sistema sin nadie que lo administre o se lo daría a quien no debe. Así solo
+cambia con un commit, a la vista. Identificar por correo es seguro aquí porque
+Cognito no deja dos cuentas con el mismo correo y cambiar el correo exige el
+código mandado a la dirección nueva. El panel lleva una copia de la lista
+(`src/lib/superadmin.ts`, solo para decidir qué pintar) atada al tipo del
+original en los dos sentidos: si difieren, `tsc` falla.
+
+Desde el panel nadie toca su propia cuenta ni la del superadmin.
 
 **Registro abierto** desde la tienda: el disparador post-confirmación
 (`servidor/alta-cliente.ts`) mete cada alta en `clientes` y en nada más. Todos
-entran por la misma puerta; a `admins` y `proveedores` les aparece el panel. El
-equipo se crea por invitación o se sube de grupo a mano. Alta, baja, cambio de
-grupo y retirada del PIN, en [`infra/usuarios.md`](infra/usuarios.md).
+entran por la misma puerta; a `admins` y `proveedores` les aparece el panel.
+**Entrar al equipo**, dos caminos:
+
+1. La persona se registra en la tienda, abre `/radar`, ve «Tu cuenta todavía
+   no abre el panel» y pulsa **«Pedir acceso al equipo»**. El superadmin la ve
+   en «Por aceptar» y la acepta (equipo o admin) o la rechaza.
+2. El superadmin la **invita por correo**: Cognito le manda una contraseña
+   temporal de 14 días (plantilla en español en `sst.config.ts`) y el panel le
+   pide cambiarla al entrar.
+
+La **baja** es cortar el acceso: se cierran sus sesiones y la cuenta queda
+deshabilitada, sin borrar nada de lo que capturó o compró; el token que ya
+tenga vale hasta una hora más. Comandos de CLI para lo mismo, en
+[`infra/usuarios.md`](infra/usuarios.md).
 
 **Sin señal se sigue entrando** si ya se entró antes: el token de identidad dura
 una hora y el de refresco 90 días, así que una gira entera cabe en un solo
@@ -381,10 +457,11 @@ y al **abrir la app**. El botón «Sincronizar» sigue ahí para forzarla a mano
 
 ### Acceso sin señal
 
-Si al entrar no hay red, se permite trabajar igual y la app queda en **modo solo
-local**: captura sí, subir no. Se pide el código otra vez desde la barra de
-sincronización cuando haya red. Bloquear la captura por falta de señal sería
-inaceptable en la calle, que es donde esto se usa.
+Iniciar sesión pide red **una vez**. Después la sesión queda guardada en el
+teléfono: se captura sin señal y las fichas suben cuando vuelve, con el token
+renovado por el de refresco (90 días). El «modo solo local» del PIN —entrar
+sin red escribiendo el código— desapareció con él (2026-10-05): con cuenta
+propia no hace falta, porque nadie tiene que volver a entrar a mitad de gira.
 
 ---
 
@@ -396,10 +473,6 @@ npm --prefix radar run dev              # http://localhost:3100
 
 # Desplegar a producción
 cd radar && npx sst deploy --stage produccion
-
-# Cambiar el PIN del equipo
-cd radar && npx sst secret set Elrey_pin <nuevo> --stage produccion
-cd radar && npx sst deploy --stage produccion   # hace falta redesplegar
 
 # Publicar desde el panel: token de GitHub de grano fino, solo este
 # repositorio, permiso «Actions: Read and write». Lo crea y lo pone el dueño.
@@ -424,6 +497,8 @@ cd radar && npx sst unlock --stage produccion
 ```bash
 npm run probar:precios                   # reglas de precio (tienda y API), sin AWS
 npm run probar:catalogo                  # el catálogo: CSV, panel, fusión, disponibilidad y publicación
+npm --prefix radar run probar:local      # la API entera con DynamoDB, S3 y Cognito falsos, sin AWS
+npm --prefix radar run servidor:local    # la API en 127.0.0.1:4700 con datos de prueba, para el navegador
 npm --prefix radar run probar            # las rutas de la API, de punta a punta
 npm --prefix radar run probar-textract   # el lector de listas de precios
 npm --prefix radar run probar-tienda     # carrito y pedidos, contra la tabla
@@ -439,11 +514,27 @@ nada no los cambia), que la disponibilidad cobra igual que el catálogo
 completo, la fusión del CSV con el panel y las reglas de la publicación
 automática.
 
-`probar` recorre cada ruta con datos reales —incluida la subida de una foto a
-S3— y verifica también los rechazos: PIN equivocado, token inventado, ruta
-inexistente, y que el carrito y los pedidos no se abran con el token del PIN.
-Crea una ficha de prueba y la borra al terminar, así que se puede correr contra
-producción sin dejar basura.
+`probar:local` también corre antes de desplegar, sin credenciales: empaqueta
+`servidor/api.ts` con esbuild y lo ejecuta contra servicios falsos en memoria
+(`pruebas-locales/servicios-falsos.mjs`: DynamoDB con su evaluador de
+expresiones, índice, paginación, BatchGet y transacciones; S3; Cognito con
+invitaciones, bajas y cierre de sesiones). Tres archivos: el panel del
+catálogo (`probar-admin`), pedidos, ventas, clientes, solicitudes y rastreo con
+las cifras de ventas calculadas a mano (`probar-tienda`, 122) y «Equipo y
+cuentas» (`probar-equipo`, 56: puertas, superadmin por correo verificado,
+solicitudes, aceptar, rechazar, invitar, grupos y acceso). Es **la forma de probar una ruta nueva sin tocar producción**; cómo
+arrancar la tienda y el panel contra `servidor:local`, con tokens falsos de
+admin y de cliente, está en `pruebas-locales/LEEME.md`.
+
+`probar` verifica siempre los rechazos —sin token, token inventado, que el PIN
+retirado ya no dé token y la puerta de cada ruta de `/admin` y
+`/superadmin`—. Con la **cuenta de prueba** (`RADAR_CORREO` y
+`RADAR_CONTRASENA`, secretos del repositorio; una cuenta del grupo
+`proveedores` solo para esto, ver `scripts/token-cognito.mjs`) recorre además
+cada ruta del radar con datos reales —incluida la subida de una foto a S3— y
+comprueba el 403 de cada puerta. Sin ella, ese tramo sale como **OMITIDA** y no
+falla. Crea una ficha de prueba y la borra al terminar, así que se puede correr
+contra producción sin dejar basura. `probar-textract` necesita la misma cuenta.
 
 `probar-tienda` entra por debajo de HTTP: importa `servidor/tienda.ts` y trabaja
 con un `sub` inventado. El camino feliz del carrito no se puede probar por HTTP
@@ -474,6 +565,150 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-10-05 · Superadmin, «Equipo y cuentas» y adiós al PIN
+
+- **Por qué:** el dueño pidió ser el único que acepta a la gente del equipo,
+  desde su propio tablero y con el registro de todos los clientes y
+  trabajadores. Hasta ahora cualquier admin repartía grupos desde la ficha del
+  cliente y al equipo se le daba de alta por CLI. Además el PIN compartido era
+  la única deuda de seguridad abierta: sin identidad y sin forma de revocar a
+  una sola persona.
+- **Superadmin** (§4.1): por correo verificado, en `compartido/equipo.ts`, no
+  como grupo. `servidor/identidad.ts` gana `esSuperadmin`; `esAdmin` y
+  `puedeVerProveedores` lo incluyen siempre.
+- **«Equipo y cuentas»** (`/radar/equipo/`, enlace en el panel de la tienda
+  solo para él; `components/equipo/vista-equipo.tsx`): solicitudes por
+  aceptar (equipo, admin o rechazar) con el historial de las resueltas,
+  invitar por correo, y todas las cuentas en tres pestañas (equipo, clientes,
+  sin acceso) con búsqueda, grupos, «Puede entrar», enlace a sus compras y
+  exportar a CSV. La fila abierta no desaparece al cambiarla de pestaña: se
+  perdía el «Listo».
+- **Servidor:** `servidor/equipo.ts` con `/superadmin/*` y `/equipo/solicitud`
+  (solicitudes en `EQUIPO#<sub>`/`SOLICITUD`, índice `EQUIPO`); `cuentas.ts`
+  gana invitar (`AdminCreateUser`), cortar acceso (`AdminUserGlobalSignOut`
+  **antes** de `AdminDisableUser`: con la cuenta ya deshabilitada Cognito
+  puede negarse) y `habilitada`. Dar un grupo cierra la solicitud pendiente de
+  esa cuenta. **`PUT /admin/clientes/grupos` se quitó**: la ficha del cliente
+  enseña sus permisos en solo lectura y, al superadmin, el enlace.
+- **Invitación en español** (`inviteMessageTemplate` en `sst.config.ts`): sin
+  ella Cognito la manda en inglés. Cuenta contra el mismo tope de ~50 correos
+  al día que el registro.
+- **PIN retirado:** fuera `POST /acceso`, `servidor/jwt.ts`, `sesionPorPin`,
+  la excepción de `puedeVerProveedores`, `FormaCodigo`, el «modo solo local»
+  de la barra de sincronización y los secretos `Elrey_pin`/`Elrey_jwt_secreto`
+  de `sst.config.ts`. Un teléfono con la sesión vieja del PIN la cierra solo
+  al abrir (la API ya no la acepta); las fichas sin subir siguen en él y suben
+  al entrar con cuenta. Quien no tiene cuenta la crea en la tienda y pide
+  acceso desde `/radar`.
+- **Pruebas:** `probar-equipo.mjs` (56) y el Cognito falso entiende
+  invitaciones, bajas y cierre de sesiones. `probar-api.mjs` y
+  `probar-textract.mjs` entran con una cuenta de prueba de Cognito
+  (`scripts/token-cognito.mjs`); sin ella, `probar` solo comprueba puertas.
+- **El panel no importa valores de `compartido/`** (Turbopack tiene la raíz en
+  `radar/`): importar `esCorreoSuperadmin` de allí rompió la compilación. Va
+  una copia en `src/lib/superadmin.ts` atada por tipos.
+- **Verificado** con `servidor:local` en el navegador: la portada sin código,
+  una sesión vieja del PIN que se cierra sola, un cliente que pide acceso,
+  aceptarlo, cortar el acceso a un admin, invitar (y el 409 al repetir) y un
+  admin normal rechazado en `/equipo`. `next build` exporta `/equipo`.
+
+### 2026-09-28 · Panel de la tienda y seguimiento del cliente
+
+- **Por qué:** con el servidor listo faltaban las pantallas: el negocio no
+  veía pedidos, ventas ni clientes más que por WhatsApp, y el cliente veía
+  «Pendiente» para siempre y un detalle que no cuadraba con lo cobrado.
+- **Panel** (`/radar/tienda/` y lo que cuelga de ahí, solo `admins`):
+  - `/tienda/`: portada con cifras vivas (por cobrar, por enviar, ventas de
+    hoy y del mes, clientes, solicitudes nuevas); cada cifra falla por
+    separado y un fallo nunca se pinta como cero.
+  - `/pedidos/` y `/pedidos/detalle/?folio=`: estatus con botones del
+    siguiente paso, historial firmado, guía y paquetería con rastreo, notas,
+    WhatsApp armado según el estatus, hoja de surtido impresa; un 409 conserva
+    lo tecleado. Rango por defecto «Todo»: un pedido pagado hace más de 30
+    días sin enviar no se esconde.
+  - `/ventas/`, `/clientes/` (con permisos de grupo desde el panel) y
+    `/solicitudes/`. Toda fecha y rango en calendario de México
+    (`components/ventas/fechas.ts`): con la hora del teléfono o en UTC,
+    después de las 18:00 se pedía el día siguiente.
+  - La portada del radar lleva a los admins al panel con un solo botón.
+  - Piezas comunes en `components/tienda/comun.tsx` (`usePanelAdmin`,
+    `PuertaAdmin`, `BarrasDia` en SVG, formatos) y cliente HTTP en
+    `lib/tienda-admin.ts`.
+- **Tienda:** «Mis pedidos» con estatus en vivo, «Volver a pedir» y nivel con
+  piezas pagadas; detalle con línea de tiempo fechada, guía, cifras
+  congeladas, cancelar, factura e imprimir; `/rastreo` sin cuenta (el teléfono
+  nunca va en la URL); checkout con clave de idempotencia y dos reintentos con
+  la misma antes del folio local (`REY-…-L`, con fecha de México); direcciones
+  que no se pueden editar si la lectura falló (el guardado reemplaza la
+  libreta entera y la borraba); sin Cognito no hay cuenta de muestra.
+- **Token en UTF-8** (tienda y panel): `atob` devuelve bytes y un nombre con
+  acentos salía «MartÃ­nez» — firmaba así las fichas y «Mis datos» lo
+  guardaba corrupto en Cognito al primer «Guardar».
+- **Verificado en el navegador** contra `servidor:local`: hub, lista, detalle
+  y cambio de estatus (el cliente lo ve en el acto), ventas, ficha de cliente,
+  solicitudes, «Mis pedidos», detalle, `/rastreo` con teléfono equivocado y
+  correcto, y una compra completa con transferencia (−10%) que llega al panel
+  como «Pendiente · Lo hizo el cliente».
+
+### 2026-09-27 · Pedidos con estatus, seguimiento y administración en el servidor
+
+- **Por qué:** el dueño pidió un e-commerce mayorista completo (panel de admin,
+  de clientes, de seguimiento y de ventas, e historial del cliente). El pedido
+  nacía «Pendiente» y ahí se quedaba: no había ruta para moverlo, el META no
+  sabía de quién era y «Mis pedidos» leía una copia que nadie actualizaba.
+- **Una sola fuente del estatus:** el META. `GET /pedidos` usa las copias
+  `USER#` solo como índice y hace BatchGet del META (tandas de 100). Ser dueño
+  = `META.pedido.cliente.sub`; en filas viejas, la copia con la misma fecha y
+  total. A quien no es dueño, 404 (no 403: no confirma que exista).
+- **Crear:** transacción (META + copia + `IDEMPOTENCIA#<clave>`). La misma
+  `clave` devuelve el mismo folio sin gastar contador. Si el META choca
+  (contador reiniciado), 500 sin dejar nada suelto. Líneas con nombre y
+  presentación del momento; `plazo` solo con Clip y 3/6/9/12.
+- **Camino antiguo** (folio sin contacto): aceptaba el estatus que mandara el
+  navegador — un cliente podía marcarse «Entregado» o plantar una copia para
+  abrir un pedido ajeno. Ahora
+  fuerza Pendiente, descarta guía y paquetería, no pisa y responde 409 si el
+  folio ya tiene META.
+- **Administración:** PUT con condición sobre `pedido.actualizadoEn` (409),
+  historial firmado con el nombre del admin; una nota sin cambio de estatus
+  también queda en el historial. Ventas sobre `fecha` (calendario de México:
+  un pedido de las 20:00 no cae en el día siguiente). Clientes = cuentas de
+  Cognito (ListUsers + AdminListGroupsForUser, 5 a la vez) unidas con los
+  compradores sin cuenta (clave `tel:<10 dígitos>`); si Cognito falla, `aviso`
+  en vez de «no hay cuentas». Nadie se quita a sí mismo de `admins`.
+- **Folio `REY-`** (los `AUR-` siguen valiendo). **Cupón `REY10`**, con `AURA10`
+  aceptado como alias para no romperle el cupón a quien ya lo tiene. El 403 de
+  `/admin` es neutro («solo para administradores»).
+- **Pruebas:** el harness que vivía en `%TEMP%` se versionó en
+  `pruebas-locales/` y corre en la CI antes de desplegar (174 comprobaciones).
+  `probar-api` suma solo puertas que no escriben: 401 sin token y 403 con PIN
+  en las rutas nuevas, y consulta de un folio inexistente → 404.
+- **Sin límite de frecuencia** en `POST /pedidos/consulta` y `POST /solicitudes`.
+  El teléfono de 10 dígitos hace inviable adivinar pedidos; si alguien llena
+  la bandeja de basura, va un throttling de API Gateway o un WAF.
+
+### 2026-09-27 · La tienda deja de inventar
+
+- **Por qué:** §0.3 prohíbe inventar datos. La tienda enseñaba calificaciones,
+  conteos de reseñas y «N personas están viendo» de `randEntero(slug)`; la
+  portada, videos, reseñas, «+1,500 clientes» y «4.9»; /mayoreo, testimonios
+  de lotes que no existen; los agotados, «Solo quedan 0». Y prometía lo que no
+  hace: «Inventario real», «DUPLICA TU INVERSIÓN» (la utilidad real es de 1.35 a
+  1.42 veces), «el mejor precio», contra entrega para la paca de $19,749
+  (tope de $10,000), factura «desde tu cuenta», precio negociado desde 20.
+- **Implementación:** fuera `rand.ts`, reseñas, videos, estrellas y las
+  secciones que los pintaban. En la portada entra `EscaleraPrecios`, calculada
+  con las mismas reglas que el cobro. Órdenes deterministas: «Destacados» y
+  «Más vendidos» salen de las etiquetas `destacado` y «Más vendido», con el
+  orden del catálogo de desempate; un `?orden=rating` viejo cae a Destacados.
+  /promociones deja de prometer «3x2 en toda la tienda» cuando ningún modelo
+  lo tiene. El boletín da `REY10`.
+- **Queda para el dueño:** el hero de la portada anuncia 3x2 y ningún producto
+  lleva la etiqueta (no se cobra); textos de los paquetes que vienen del
+  catálogo («Precio de Importador Directo», «el mejor precio unitario que
+  damos»); el precio de los paquetes desde 20 piezas (sale más caro que las
+  sueltas); meses sin intereses (tres cifras distintas); correo y redes.
 
 ### 2026-09-26 · La cuenta se maneja entera desde «Mis datos»
 
@@ -1332,9 +1567,9 @@ proveedores no se entera.
 
 - **La copia JSON no incluye las fotos** (son Blobs, no sobreviven a
   `JSON.stringify`). Están en el teléfono y en S3.
-- **PIN compartido**: no se puede revocar a una sola persona sin cambiárselo a
-  todos. Para una gira corta es un intercambio aceptable; si esto sobrevive al
-  viaje, migrar a Cognito.
+- **Cortar el acceso tarda hasta una hora en notarse** si la persona tiene el
+  panel abierto: su token de identidad sigue valiendo hasta que vence. El
+  refresco sí se corta al instante.
 - **Cámara y GPS exigen HTTPS**: funcionan en la URL de CloudFront, no por IP
   local.
 - **El detalle del pedido no rastrea de verdad**: el estatus es el que se guardó

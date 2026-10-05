@@ -4,9 +4,13 @@ El pool es **`Elrey_usuarios`** (`us-east-1_qpU8tmkIB`) y tiene tres grupos:
 
 | Grupo | Qué abre |
 | --- | --- |
-| `admins` | Todo, incluido gestionar usuarios |
+| `admins` | El panel de la tienda: pedidos, ventas, clientes, solicitudes y catálogo |
 | `proveedores` | El panel de proveedores |
 | `clientes` | Solo la tienda |
+
+Y por encima, **el superadmin** (`carlos.acosta12121998@gmail.com`): el único
+que reparte permisos. No es un grupo: vive en `compartido/equipo.ts` y la API lo
+reconoce por el correo verificado. El porqué, en `MEMORIA.md` §4.1.
 
 **El grupo es el permiso.** La API comprueba `cognito:groups` en el token: sin
 `proveedores` ni `admins`, las rutas del panel responden 403 aunque la sesión sea
@@ -18,84 +22,80 @@ válida. Nadie puede auto-asignarse un grupo — es lo que sostiene todo el esqu
 sesión en el mismo sitio; a quien está en `admins` o `proveedores` le aparece el
 panel en la cabecera y en «Mi cuenta» en cuanto entra.
 
-El correo del código lo manda Cognito con su dirección por defecto, con un tope
-de **~50 correos al día**. Si el registro crece, hay que pasar a SES.
+El correo del código (y el de las invitaciones) lo manda Cognito con su
+dirección por defecto, con un tope de **~50 correos al día**. Si el registro
+crece, hay que pasar a SES.
 
-## Hacer admin a alguien que ya tiene cuenta
+## Lo normal: desde «Equipo y cuentas»
 
-La forma normal: la persona se registra sola en la tienda y luego se le sube de
-grupo. Tiene que cerrar sesión y volver a entrar (o esperar una hora) para que su
-token traiga el grupo nuevo.
+Todo lo de esta página se hace desde el panel, con la cuenta del superadmin:
+**Panel de la tienda → Equipo y cuentas** (`/radar/equipo/`).
 
-```bash
-aws cognito-idp admin-add-user-to-group --user-pool-id us-east-1_qpU8tmkIB --username "persona@correo.com" --group-name admins
-```
+- **Alguien del equipo que ya se registró en la tienda:** que abra `/radar`,
+  vea «Tu cuenta todavía no abre el panel» y pulse **«Pedir acceso al
+  equipo»**. Le aparece al superadmin en «Por aceptar»: **Aceptar en el
+  equipo** (`proveedores`), **Como admin** o **Rechazar**.
+- **Alguien sin cuenta:** **Invitar por correo** con su correo, su nombre real
+  (es lo que firma cada ficha) y si entra como equipo o como administrador. Le
+  llega una contraseña temporal de 14 días y el panel le pide cambiarla al
+  primer acceso.
+- **Cambiar de grupo:** abrir su fila en la lista y mover «Equipo de
+  proveedores» o «Administrador».
+- **Darle de baja:** «Puede entrar» → **No**. Se cierran sus sesiones y la
+  cuenta queda deshabilitada; no se borra nada de lo que capturó o compró y se
+  deshace con un toque.
 
-Para el equipo de campo, el grupo es `proveedores`.
+Tras un cambio de grupo, la persona tiene que salir y volver a entrar (o
+esperar una hora) para que su token traiga el grupo nuevo.
 
-## Dar de alta a alguien del equipo sin que se registre
-
-Dos comandos. El primero crea la cuenta con una contraseña temporal; el segundo
-le da el permiso.
-
-```bash
-aws cognito-idp admin-create-user --user-pool-id us-east-1_qpU8tmkIB --username "persona@correo.com" --temporary-password "UnaTemporal2026" --user-attributes Name=email,Value=persona@correo.com Name=email_verified,Value=true Name=name,Value="Nombre Apellido"
-```
+## Lo mismo por CLI, si el panel no está a mano
 
 ```bash
 aws cognito-idp admin-add-user-to-group --user-pool-id us-east-1_qpU8tmkIB --username "persona@correo.com" --group-name proveedores
 ```
 
-El atributo `name` es el que firma las fichas, así que conviene poner el nombre
-con el que esa persona se reconoce en el equipo.
-
-`email_verified=true` se pone a mano porque la cuenta la crea un admin y no pasa
-por el código de verificación: sin él, no podría recuperar su contraseña.
-
-### La primera vez que entran
-
-La contraseña temporal **solo sirve para el primer inicio de sesión**. El panel
-detecta que es una cuenta nueva y pide elegir una definitiva ahí mismo: al menos
-10 caracteres, con minúsculas y números. Vale 14 días; pasados, hay que volver a
-crearla.
-
-> Manda la temporal por un canal distinto al del correo de la cuenta —un mensaje
-> directo, en persona— y que la cambien al entrar.
-
-## Quitar el acceso a alguien
+Crear la cuenta de alguien del equipo sin que se registre (Cognito le manda la
+invitación con la contraseña temporal):
 
 ```bash
-aws cognito-idp admin-remove-user-from-group --user-pool-id us-east-1_qpU8tmkIB --username "persona@correo.com" --group-name proveedores
+aws cognito-idp admin-create-user --user-pool-id us-east-1_qpU8tmkIB --username "persona@correo.com" --user-attributes Name=email,Value=persona@correo.com Name=email_verified,Value=true Name=name,Value="Nombre Apellido"
 ```
 
-Sigue teniendo cuenta y puede entrar a la tienda, pero el panel le responderá
-403. Para cerrarle todo:
+`email_verified=true` se pone a mano porque la cuenta la crea el superadmin y no
+pasa por el código de verificación: sin él, no podría recuperar su contraseña.
+
+Quitar el acceso del todo (primero cerrar sesiones, luego deshabilitar):
+
+```bash
+aws cognito-idp admin-user-global-sign-out --user-pool-id us-east-1_qpU8tmkIB --username "persona@correo.com"
+```
 
 ```bash
 aws cognito-idp admin-disable-user --user-pool-id us-east-1_qpU8tmkIB --username "persona@correo.com"
 ```
 
-## Ver quién hay
+Ver quién hay:
 
 ```bash
 aws cognito-idp list-users --user-pool-id us-east-1_qpU8tmkIB --query "Users[].{Correo:Username,Estado:UserStatus}" --output table
-aws cognito-idp list-users-in-group --user-pool-id us-east-1_qpU8tmkIB --group-name proveedores --query "Users[].Username" --output table
 ```
 
-## El código de equipo sigue vivo
+## La primera vez que entran
 
-El PIN compartido no se ha retirado: la pantalla de acceso lo ofrece detrás de
-«Entrar con el código del equipo», y la API lo sigue aceptando. Está así a
-propósito — cortarlo antes de que todos tengan cuenta dejaría a alguien fuera a
-mitad de una gira.
+La contraseña temporal **solo sirve para el primer inicio de sesión**. El panel
+detecta que es una cuenta nueva y pide elegir una definitiva ahí mismo: al menos
+10 caracteres, con minúsculas y números. Vale 14 días; pasados, hay que volver a
+invitar.
 
-**Para retirarlo**, cuando todo el equipo tenga su cuenta:
+## El código de equipo ya no existe
 
-1. Quitar `FormaCodigo` y su enlace de `src/components/portada-acceso.tsx`.
-2. Quitar `entrarConCodigo` y `conectar` de `src/lib/sesion.ts`.
-3. Quitar `sesionPorPin` y la excepción de `puedeVerProveedores` en
-   `servidor/identidad.ts`, y la ruta `POST /acceso` de `servidor/api.ts`.
-4. Borrar el secreto: `npx sst secret remove Elrey_pin --stage produccion`.
+El PIN compartido se retiró el 2026-10-05: la API ya no tiene `POST /acceso` y
+la portada solo ofrece la cuenta. Si quedan los secretos en SSM, se borran con:
 
-El paso 3 es el que de verdad cierra la puerta; los demás solo dejan de
-enseñarla.
+```bash
+cd radar && npx sst secret remove Elrey_pin --stage produccion
+```
+
+```bash
+cd radar && npx sst secret remove Elrey_jwt_secreto --stage produccion
+```

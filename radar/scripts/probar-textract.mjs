@@ -1,7 +1,7 @@
 /**
  * Prueba del lector de listas de precios contra producción.
  *
- *   RADAR_PIN=xxxxxxxx node scripts/probar-textract.mjs
+ *   RADAR_CORREO=... RADAR_CONTRASENA=... node scripts/probar-textract.mjs
  *
  * Genera una hoja como las que cuelgan en un mostrador, la sube y comprueba qué
  * entendió Textract. Cubre los formatos de importe que de verdad aparecen en
@@ -12,6 +12,7 @@
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tokenDePrueba } from "./token-cognito.mjs";
 
 // sharp vive en la landing; no hace falta duplicarlo aquí solo para esto.
 // Apuntar al package.json y no a la carpeta: createRequire resuelve desde un
@@ -22,9 +23,11 @@ const require = createRequire(
 const sharp = require("sharp");
 
 const API = process.argv[2] ?? "https://qdn0ihicj6.execute-api.us-east-1.amazonaws.com";
-const PIN = process.env.RADAR_PIN;
-if (!PIN) {
-  console.error("Falta el PIN: RADAR_PIN=xxxxxxxx node scripts/probar-textract.mjs");
+const token = await tokenDePrueba(API);
+if (!token) {
+  console.error(
+    "Falta la cuenta de prueba: RADAR_CORREO=... RADAR_CONTRASENA=... node scripts/probar-textract.mjs",
+  );
   process.exit(1);
 }
 
@@ -55,15 +58,6 @@ const pedir = (ruta, token, op = {}) =>
     ...op,
     headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
   });
-
-const acceso = await (
-  await fetch(`${API}/acceso`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ pin: PIN, evaluador: "Prueba Textract" }),
-  })
-).json();
-const token = acceso.token;
 
 const id = `textract-${Date.now()}`;
 await pedir(`/proveedores/${id}`, token, {

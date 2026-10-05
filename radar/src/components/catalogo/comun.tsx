@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
  */
 export function useCatalogoAdmin() {
   const sesion = useSesion();
-  const esAdmin = sesion.grupos.includes("admins");
+  const esAdmin = sesion.esAdmin;
   const token = sesion.token;
   const [datos, setDatos] = useState<CatalogoAdmin | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +80,8 @@ export function PuertaCatalogo({
     return (
       <Aviso titulo="Tu cuenta no edita el catálogo" volver={volver}>
         Lo que se cambia aquí se cobra y se publica en la tienda, así que es del grupo{" "}
-        <strong>admins</strong> y pide cuenta propia: el código de equipo no sirve. Si
-        necesitas editarlo, pídele a un administrador que te agregue al grupo.
+        <strong>admins</strong>. Si necesitas editarlo, pídele al superadministrador que te
+        agregue al grupo.
       </Aviso>
     );
   }

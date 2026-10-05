@@ -10,7 +10,7 @@ import { fuenteDeCatalogo } from "../../compartido/catalogo";
 import { cotizar } from "../../compartido/cotizacion";
 import { estatusDe, type CambioEstatus, type ResumenPedido } from "../../compartido/pedido";
 import { catalogoVigente } from "./catalogo";
-import { tieneIdentidadPropia, type Identidad } from "./identidad";
+import type { Identidad } from "./identidad";
 import {
   armarDetalle,
   armarDetalleCopia,
@@ -127,7 +127,7 @@ export async function crearPedido(
   cuerpo: unknown,
   sesion: Identidad | null,
 ): Promise<Salida> {
-  const sub = sesion && tieneIdentidadPropia(sesion) ? sesion.sub : null;
+  const sub = sesion?.sub ?? null;
 
   // Camino antiguo: una pestaña abierta con el JavaScript de antes todavía
   // manda su propio folio y su total para «Mis pedidos». Se reconoce por no

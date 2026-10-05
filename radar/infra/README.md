@@ -40,8 +40,11 @@ aws iam attach-role-policy \
   --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
 ```
 
-Y en GitHub: **Settings → Secrets and variables → Actions → New secret**, con
-nombre `RADAR_PIN` y el código del equipo como valor. Lo usa el paso de pruebas.
+Y en GitHub: **Settings → Secrets and variables → Actions → New secret**, dos
+secretos con la cuenta de prueba (una cuenta del grupo `proveedores` solo para
+la CI): `RADAR_CORREO` y `RADAR_CONTRASENA`. Los usa el paso de pruebas; sin
+ellos solo se comprueban las puertas. El viejo `RADAR_PIN` ya no se usa y se
+puede borrar.
 
 ## Por qué el `sub` lleva números
 

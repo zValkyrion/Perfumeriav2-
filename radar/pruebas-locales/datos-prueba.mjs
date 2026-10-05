@@ -131,6 +131,9 @@ export function sembrarDemo({ puras, catalogo, tabla, agregarUsuario, ahora = ne
   const set = catalogo.sets.find((s) => s.visible && !s.agotado);
 
   const cuentas = {
+    // El correo del dueño, para que la API lo reconozca como superadmin
+    // (`compartido/equipo.ts`). Vive solo en la memoria de este proceso.
+    superadmin: { sub: "demo-superadmin", correo: "carlos.acosta12121998@gmail.com", nombre: "Dueño de Prueba", grupos: ["admins"] },
     admin: { sub: "demo-admin", correo: "admin@prueba.local", nombre: "Admin de Prueba", grupos: ["admins"] },
     proveedor: { sub: "demo-proveedor", correo: "campo@prueba.local", nombre: "Equipo de Campo", grupos: ["proveedores"] },
     cliente: { sub: "demo-cliente", correo: "cliente@prueba.local", nombre: "Ana Martínez", telefono: "+525512340000", grupos: ["clientes"] },
@@ -245,19 +248,42 @@ export function sembrarDemo({ puras, catalogo, tabla, agregarUsuario, ahora = ne
     });
   });
 
+  // Luis pidió entrar al equipo: «Equipo y cuentas» la enseña por aceptar.
+  const pidio = new Date(ahora.getTime() - 2 * 3_600_000).toISOString();
+  tabla.set(`EQUIPO#${cuentas.otro.sub}#SOLICITUD`, {
+    PK: `EQUIPO#${cuentas.otro.sub}`,
+    SK: "SOLICITUD",
+    GSI1PK: "EQUIPO",
+    GSI1SK: `${pidio}#${cuentas.otro.sub}`,
+    solicitud: {
+      sub: cuentas.otro.sub,
+      nombre: cuentas.otro.nombre,
+      correo: cuentas.otro.correo,
+      mensaje: "Soy Luis, voy a apoyar con las visitas a proveedores en Guadalajara.",
+      estado: "pendiente",
+      creadaEn: pidio,
+      resueltaEn: null,
+      resueltaPor: null,
+      grupo: null,
+    },
+  });
+
   const tokenDe = (c) =>
     tokenNavegador({
       sub: c.sub,
       email: c.correo,
+      email_verified: true,
       name: c.nombre,
       ...(c.telefono ? { phone_number: c.telefono } : {}),
       "cognito:groups": c.grupos,
     });
   return {
     sesiones: {
+      superadmin: { token: tokenDe(cuentas.superadmin), nombre: cuentas.superadmin.nombre },
       admin: { token: tokenDe(cuentas.admin), nombre: cuentas.admin.nombre },
       proveedor: { token: tokenDe(cuentas.proveedor), nombre: cuentas.proveedor.nombre },
       cliente: { token: tokenDe(cuentas.cliente), nombre: cuentas.cliente.nombre },
+      otro: { token: tokenDe(cuentas.otro), nombre: cuentas.otro.nombre },
     },
     pedidos: 34,
   };

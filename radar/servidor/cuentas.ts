@@ -1,7 +1,11 @@
 import {
   AdminAddUserToGroupCommand,
+  AdminCreateUserCommand,
+  AdminDisableUserCommand,
+  AdminEnableUserCommand,
   AdminListGroupsForUserCommand,
   AdminRemoveUserFromGroupCommand,
+  AdminUserGlobalSignOutCommand,
   CognitoIdentityProviderClient,
   ListUsersCommand,
   type UserType,
@@ -13,9 +17,9 @@ import type { CuentaCognito } from "./ventas";
  * Las cuentas de Cognito, vistas desde el panel.
  *
  * La Lambda ya tiene `cognito-idp:*` sobre el pool (el enlace `usuarios` de
- * `sst.config.ts`). Aquí solo se lee la lista, los grupos de cada cuenta y se
- * mueve a alguien de grupo; crear o borrar cuentas sigue siendo cosa de
- * `infra/usuarios.md`.
+ * `sst.config.ts`). Aquí se lee la lista y los grupos de cada cuenta, y —solo
+ * desde «Equipo y cuentas», que es del superadmin— se invita, se mueve de
+ * grupo y se corta o devuelve el acceso.
  */
 
 export type ContextoCuentas = { cognito: CognitoIdentityProviderClient; pool: string };
@@ -51,6 +55,7 @@ function cuentaDe(u: UserType, grupos: string[]): CuentaCognito {
     grupos,
     registradoEn: u.UserCreateDate ? new Date(u.UserCreateDate).toISOString() : null,
     estado: u.UserStatus ?? null,
+    habilitada: u.Enabled !== false,
   };
 }
 
@@ -113,4 +118,57 @@ export async function moverDeGrupo(
       : new AdminRemoveUserFromGroupCommand(datos),
   );
   return gruposDe(ctx, usuario);
+}
+
+/**
+ * Crea la cuenta de alguien del equipo. Cognito le manda por correo una
+ * contraseña temporal (la plantilla en español está en `sst.config.ts`) que
+ * vale 14 días; el panel le pide cambiarla al primer acceso.
+ *
+ * El correo se da por verificado: lo escribió el superadmin, que conoce a la
+ * persona, y sin eso no podría recuperar la contraseña. Devuelve `null` si ya
+ * existe una cuenta con ese correo.
+ */
+export async function crearCuenta(
+  ctx: ContextoCuentas,
+  correo: string,
+  nombre: string,
+): Promise<CuentaCognito | null> {
+  try {
+    const r = await ctx.cognito.send(
+      new AdminCreateUserCommand({
+        UserPoolId: ctx.pool,
+        Username: correo,
+        DesiredDeliveryMediums: ["EMAIL"],
+        UserAttributes: [
+          { Name: "email", Value: correo },
+          { Name: "email_verified", Value: "true" },
+          { Name: "name", Value: nombre },
+        ],
+      }),
+    );
+    if (!r.User) return null;
+    return cuentaDe(r.User, []);
+  } catch (e) {
+    if ((e as { name?: string }).name === "UsernameExistsException") return null;
+    throw e;
+  }
+}
+
+/**
+ * Corta o devuelve el acceso. Al cortarlo también se cierran sus sesiones: sin
+ * eso, el token de refresco (90 días) seguiría dándole tokens nuevos. El token
+ * que ya tiene en la mano vale hasta una hora más; no hay forma de anularlo
+ * antes, y así se le explica al superadmin.
+ */
+export async function cambiarAcceso(ctx: ContextoCuentas, usuario: string, habilitada: boolean): Promise<void> {
+  const datos = { UserPoolId: ctx.pool, Username: usuario };
+  if (habilitada) {
+    await ctx.cognito.send(new AdminEnableUserCommand(datos));
+    return;
+  }
+  // Primero cerrar sesiones y luego deshabilitar: con la cuenta ya
+  // deshabilitada, Cognito puede negarse a operar sobre ella.
+  await ctx.cognito.send(new AdminUserGlobalSignOutCommand(datos));
+  await ctx.cognito.send(new AdminDisableUserCommand(datos));
 }

@@ -1,19 +1,15 @@
 import { Resource } from "sst";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
-import { verificarToken, type Sesion as SesionPin } from "./jwt";
+import { esCorreoSuperadmin } from "../../compartido/equipo";
 
 /**
  * Quién está llamando a la API y qué puede hacer.
  *
- * Conviven dos formas de identificarse mientras dura la transición:
- *
- * 1. **Cognito** — lo definitivo. El token trae la identidad real y los grupos.
- * 2. **El PIN compartido** — lo anterior. Un JWT que firma esta misma Lambda,
- *    sin identidad ni grupos.
- *
- * El PIN sigue aceptándose a propósito: el equipo está en la calle y no se le
- * puede cortar el acceso a mitad de una gira por un despliegue. Se retira cuando
- * todos tengan cuenta, y ese día basta con borrar `sesionPorPin` de aquí.
+ * Solo hay una forma de identificarse: una cuenta de Cognito. El PIN
+ * compartido del equipo se retiró el 2026-10-05 (ver la bitácora de
+ * MEMORIA.md): no identificaba a nadie y no se podía revocar a una sola
+ * persona. Ahora cada quien entra con su cuenta y el superadmin le da o le
+ * quita el acceso desde «Equipo y cuentas».
  */
 
 /**
@@ -21,8 +17,7 @@ import { verificarToken, type Sesion as SesionPin } from "./jwt";
  *
  * Ambos traen `cognito:groups`, pero solo el de identidad trae el correo, y sin
  * correo la ficha quedaría firmada por un identificador que no le dice nada a
- * nadie. La trazabilidad de quién capturó qué es justo lo que se quería ganar al
- * salir del PIN compartido.
+ * nadie. El correo, además, es lo que reconoce al superadmin.
  */
 const verificador = CognitoJwtVerifier.create({
   userPoolId: Resource.Elrey_usuarios.id,
@@ -33,26 +28,25 @@ const verificador = CognitoJwtVerifier.create({
 export type Identidad = {
   /** Nombre legible para firmar las fichas. */
   evaluador: string;
-  /** Grupos de Cognito. Vacío cuando la sesión viene del PIN antiguo. */
+  /** Grupos de Cognito. */
   grupos: string[];
   /**
-   * El identificador estable de Cognito. `null` en las sesiones por PIN, que no
-   * identifican a nadie en concreto.
+   * El identificador estable de Cognito.
    *
    * Es la clave de partición del carrito y los pedidos, y por eso se usa el
    * `sub` y no el correo: el correo se puede cambiar desde la cuenta y arrastraría
    * el carrito a otra partición, dejando el anterior huérfano. El `sub` no cambia
    * nunca.
    */
-  sub: string | null;
+  sub: string;
   /**
-   * El correo de la cuenta de Cognito, si el token lo trae. Se guarda en el
-   * pedido para que el panel sepa con qué cuenta se compró aunque el cliente
-   * haya escrito otro correo de contacto.
+   * El correo de la cuenta, si el token lo trae. Se guarda en el pedido para
+   * que el panel sepa con qué cuenta se compró aunque el cliente haya escrito
+   * otro correo de contacto.
    */
   correo: string | null;
-  /** De dónde salió esta sesión. */
-  origen: "cognito" | "pin";
+  /** `email_verified` del token: sin él, el correo no prueba nada. */
+  correoVerificado: boolean;
 };
 
 export async function identificar(
@@ -60,11 +54,6 @@ export async function identificar(
 ): Promise<Identidad | null> {
   if (!cabecera?.startsWith("Bearer ")) return null;
   const token = cabecera.slice(7);
-
-  return (await sesionPorCognito(token)) ?? sesionPorPin(token);
-}
-
-async function sesionPorCognito(token: string): Promise<Identidad | null> {
   try {
     const carga = await verificador.verify(token);
     const grupos = (carga["cognito:groups"] as string[] | undefined) ?? [];
@@ -73,57 +62,36 @@ async function sesionPorCognito(token: string): Promise<Identidad | null> {
       (carga.email as string | undefined) ??
       carga.sub;
     const correo = typeof carga.email === "string" ? carga.email : null;
-    return { evaluador: nombre, grupos, sub: carga.sub, correo, origen: "cognito" };
+    // Cognito lo manda como booleano; algunos flujos viejos, como texto.
+    const crudo: unknown = carga.email_verified;
+    const verificado = crudo === true || crudo === "true";
+    return { evaluador: nombre, grupos, sub: carga.sub, correo, correoVerificado: verificado };
   } catch {
-    // No es de Cognito —o está vencido—: puede seguir siendo del PIN.
+    // Inventado, vencido o de otro pool: no hay sesión.
     return null;
   }
 }
 
-function sesionPorPin(token: string): Identidad | null {
-  const sesion: SesionPin | null = verificarToken(
-    token,
-    Resource.Elrey_jwt_secreto.value,
-  );
-  if (!sesion) return null;
-  return { evaluador: sesion.evaluador, grupos: [], sub: null, correo: null, origen: "pin" };
-}
-
 /**
- * ¿Puede entrar al panel de proveedores?
- *
- * Las sesiones por PIN pasan mientras exista el PIN: quien lo tiene ya está
- * dentro del equipo, y exigirle un grupo que todavía no se le ha asignado lo
- * dejaría fuera sin alternativa.
+ * ¿Es superadmin? Lo decide el correo verificado contra `SUPERADMINS`
+ * (`compartido/equipo.ts`), no un grupo: el permiso de dar permisos no se
+ * puede dar ni quitar desde el panel.
  */
-export function puedeVerProveedores(identidad: Identidad): boolean {
-  if (identidad.origen === "pin") return true;
-  return identidad.grupos.includes("proveedores") || identidad.grupos.includes("admins");
+export function esSuperadmin(identidad: Identidad): boolean {
+  return identidad.correoVerificado && esCorreoSuperadmin(identidad.correo);
 }
 
 /**
- * ¿Puede editar el catálogo de la tienda?
+ * ¿Puede editar el catálogo y ver la tienda por dentro?
  *
- * Solo `admins`, y solo con cuenta propia: lo que se cambia aquí se cobra y se
- * publica, y cada cambio queda firmado con quién lo hizo. El PIN compartido no
- * firma a nadie, así que no entra aunque abra el panel de proveedores.
+ * El grupo `admins`, y el superadmin siempre: si alguien le quitara el grupo,
+ * no debe poder quedarse fuera de su propio panel.
  */
 export function esAdmin(identidad: Identidad): boolean {
-  return identidad.origen === "cognito" && identidad.grupos.includes("admins");
+  return identidad.grupos.includes("admins") || esSuperadmin(identidad);
 }
 
-/**
- * ¿Puede tener carrito y pedidos propios?
- *
- * Cualquier cuenta de Cognito, sin pedir grupo: quien compra en la tienda está
- * en `clientes`, y el equipo compra también. Lo que separa aquí no es el grupo
- * sino **tener identidad**, porque el carrito se guarda bajo el `sub`.
- *
- * El PIN compartido no la tiene: es el mismo token para todo el equipo, así que
- * un carrito guardado con él sería el carrito de todos a la vez.
- */
-export function tieneIdentidadPropia(
-  identidad: Identidad,
-): identidad is Identidad & { sub: string } {
-  return identidad.origen === "cognito" && typeof identidad.sub === "string";
+/** ¿Puede entrar al panel de proveedores? */
+export function puedeVerProveedores(identidad: Identidad): boolean {
+  return identidad.grupos.includes("proveedores") || esAdmin(identidad);
 }

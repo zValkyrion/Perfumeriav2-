@@ -476,8 +476,8 @@ export const usuarios = new Map();
 export const GRUPOS_POOL = new Set(["admins", "proveedores", "clientes"]);
 export const estadisticasCognito = { llamadas: 0, simultaneas: 0, maxSimultaneas: 0 };
 
-export function agregarUsuario({ sub, correo, nombre = "", telefono = "", grupos = [], creado = new Date(), estado = "CONFIRMED" }) {
-  usuarios.set(correo, { Username: correo, sub, correo, nombre, telefono, grupos: new Set(grupos), creado, estado });
+export function agregarUsuario({ sub, correo, nombre = "", telefono = "", grupos = [], creado = new Date(), estado = "CONFIRMED", habilitada = true }) {
+  usuarios.set(correo, { Username: correo, sub, correo, nombre, telefono, grupos: new Set(grupos), creado, estado, habilitada, sesionesCerradas: 0, invitado: false });
 }
 
 function usuarioCognito(u) {
@@ -492,7 +492,7 @@ function usuarioCognito(u) {
     Attributes: atributos.map(([Name, Value]) => ({ Name, Value })),
     UserCreateDate: u.creado.getTime() / 1000,
     UserLastModifiedDate: u.creado.getTime() / 1000,
-    Enabled: true,
+    Enabled: u.habilitada,
     UserStatus: u.estado,
   };
 }
@@ -539,6 +539,27 @@ function cognitoOperar(accion, d) {
       if (!GRUPOS_POOL.has(d.GroupName)) throw new ErrorCognito("ResourceNotFoundException", "Group not found.");
       if (accion === "AdminAddUserToGroup") u.grupos.add(d.GroupName);
       else u.grupos.delete(d.GroupName);
+      return {};
+    }
+    case "AdminCreateUser": {
+      if (usuarios.has(d.Username)) throw new ErrorCognito("UsernameExistsException", "An account with the given email already exists.");
+      const attr = (n) => d.UserAttributes?.find((a) => a.Name === n)?.Value ?? "";
+      if (attr("email") !== d.Username) throw new ErrorCognito("InvalidParameterException", "El falso espera el correo como Username");
+      agregarUsuario({ sub: `invitado-${usuarios.size}`, correo: d.Username, nombre: attr("name"), estado: "FORCE_CHANGE_PASSWORD" });
+      const u = usuarios.get(d.Username);
+      u.invitado = true;
+      return { User: usuarioCognito(u) };
+    }
+    case "AdminDisableUser":
+    case "AdminEnableUser": {
+      usuario(d.Username).habilitada = accion === "AdminEnableUser";
+      return {};
+    }
+    case "AdminUserGlobalSignOut": {
+      const u = usuario(d.Username);
+      // Como Cognito: con la cuenta ya deshabilitada no deja operar.
+      if (!u.habilitada) throw new ErrorCognito("NotAuthorizedException", "User is disabled.");
+      u.sesionesCerradas++;
       return {};
     }
     default:
@@ -590,8 +611,6 @@ export const entorno = {
   SST_RESOURCE_Elrey_fotos: JSON.stringify({ name: "bucket-fotos" }),
   SST_RESOURCE_Elrey_usuarios: JSON.stringify({ id: "us-east-1_falso" }),
   SST_RESOURCE_Elrey_web: JSON.stringify({ id: "cliente-falso" }),
-  SST_RESOURCE_Elrey_pin: JSON.stringify({ value: "1234" }),
-  SST_RESOURCE_Elrey_jwt_secreto: JSON.stringify({ value: "secreto" }),
   SST_RESOURCE_Elrey_github_token: JSON.stringify({ value: "" }),
 };
 

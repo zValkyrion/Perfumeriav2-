@@ -7,15 +7,9 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import type { CambioEstatus, PedidoAdmin } from "../../compartido/pedido";
 import { estatusDe } from "../../compartido/pedido";
-import {
-  GRUPOS,
-  type ClienteAdmin,
-  type Grupo,
-  type SolicitudAdmin,
-} from "../../compartido/tienda-admin";
+import type { ClienteAdmin, SolicitudAdmin } from "../../compartido/tienda-admin";
 import { catalogoVigente } from "./catalogo";
-import { cuentaPorSub, esSub, listarCuentas, moverDeGrupo, type ContextoCuentas } from "./cuentas";
-import type { Identidad } from "./identidad";
+import { cuentaPorSub, esSub, listarCuentas, type ContextoCuentas } from "./cuentas";
 import { esCondicionFallida, leerMeta, type ContextoTienda, type Salida } from "./pedidos";
 import {
   armarAdmin,
@@ -300,35 +294,8 @@ export async function detalleCliente(
   return { estado: 200, cuerpo: { cliente, pedidos: suyas.map(armarResumen) } };
 }
 
-/**
- * Agrega o quita a una cuenta de un grupo. El cambio se nota cuando esa
- * persona vuelve a entrar (su token lleva los grupos de cuando lo recibió).
- *
- * Un admin no puede quitarse a sí mismo de `admins`: con un solo toque se
- * quedaría sin panel y sin forma de deshacerlo desde aquí.
- */
-export async function cambiarGrupo(
-  cuentasCtx: ContextoCuentas,
-  cuerpo: unknown,
-  sesion: Identidad,
-): Promise<Salida> {
-  const c = (typeof cuerpo === "object" && cuerpo !== null ? cuerpo : {}) as Record<string, unknown>;
-  if (!esSub(c.sub)) return { estado: 400, cuerpo: { error: "Falta el sub de la cuenta" } };
-  if (!(GRUPOS as readonly unknown[]).includes(c.grupo)) {
-    return { estado: 400, cuerpo: { error: `Grupo desconocido: ${String(c.grupo)}` } };
-  }
-  if (c.accion !== "agregar" && c.accion !== "quitar") {
-    return { estado: 400, cuerpo: { error: "La acción es «agregar» o «quitar»" } };
-  }
-  if (c.sub === sesion.sub && c.grupo === "admins" && c.accion === "quitar") {
-    return { estado: 400, cuerpo: { error: "No puedes quitarte a ti mismo de admins. Pídeselo a otro administrador." } };
-  }
-  const cuenta = await cuentaPorSub(cuentasCtx, c.sub);
-  if (!cuenta) return { estado: 404, cuerpo: { error: "Esa cuenta no existe" } };
-  const grupos = await moverDeGrupo(cuentasCtx, cuenta.usuario, c.grupo as Grupo, c.accion);
-  console.log("grupo", c.accion, c.grupo, "cuenta", c.sub, cuenta.correo, "por", sesion.evaluador);
-  return { estado: 200, cuerpo: { grupos } };
-}
+// Los grupos ya no se cambian aquí: desde el 2026-10-05 los reparte solo el
+// superadmin, en `equipo.ts` (`PUT /superadmin/grupo`).
 
 /* ── Solicitudes ──────────────────────────────────────────────────────── */
 

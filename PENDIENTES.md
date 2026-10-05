@@ -15,6 +15,7 @@ reconstruir el contexto.
 | | |
 | --- | --- |
 | Tienda | https://devfq5kjop78h.cloudfront.net/ |
+| Panel de la tienda (admins) | https://devfq5kjop78h.cloudfront.net/radar/tienda/ |
 | Panel de proveedores | https://devfq5kjop78h.cloudfront.net/radar/ |
 | API | https://qdn0ihicj6.execute-api.us-east-1.amazonaws.com |
 | Cuenta AWS | 637423567003 · us-east-1 · etapa `produccion` |
@@ -24,63 +25,151 @@ reconstruir el contexto.
 Cada push a `main` despliega solo y corre las pruebas. Para desplegar a mano:
 `npm --prefix radar run desplegar`.
 
-**Estado de las cuentas:** solo existe `carlos.acosta12121998@gmail.com`, en el
-grupo `admins` y con la contraseña ya cambiada.
+**Estado de las cuentas:** `carlos.acosta12121998@gmail.com` es el
+**superadmin** (además de estar en `admins`): el único que reparte permisos,
+desde **Panel de la tienda → Equipo y cuentas** (`/radar/equipo/`). Los
+clientes se registran solos (caen en `clientes`); quien deba ser del equipo
+pide acceso desde `/radar` o se le invita por correo. El PIN compartido ya no
+existe (2026-10-05).
 
 ---
 
-## 1. Dar de alta al equipo — *lo único que bloquea usarlo*
+## Operar la tienda
 
-**Por qué.** Mientras no tengan cuenta, entran con el PIN compartido: sin
-identidad, sin poder revocar a una sola persona, y las fichas firmadas con un
-nombre tecleado a mano.
+Todo sale del **Panel de la tienda** (`/radar/tienda/`, o «Panel admin» en la
+cabecera de la tienda con tu cuenta).
 
-**Cómo.** Dos comandos por persona. El `name` es lo que firma cada ficha, así que
-va el nombre real.
+1. **Llega un pedido** → aparece en «Por cobrar» como `Pendiente`. El cliente
+   te escribe por WhatsApp con el folio (la confirmación le arma el mensaje).
+2. **Cobras** (transferencia, Clip o se acuerda el contra entrega) → en el
+   detalle del pedido, **Confirmar pago** (`Pagado`).
+3. **Surtes** → **Empezar a surtir** (`En preparación`). «Imprimir» da la hoja
+   de surtido con las líneas y la nota interna.
+4. **Envías** → pones paquetería y guía y **Marcar enviado** (`En camino`). El
+   botón de WhatsApp arma el mensaje con el enlace de rastreo.
+5. **Llega** → **Marcar entregado** (`Entregado`). Solo `Pagado` en adelante
+   cuenta como venta.
 
-```bash
-aws cognito-idp admin-create-user --user-pool-id us-east-1_qpU8tmkIB --username "correo@ejemplo.com" --temporary-password "UnaTemporalDistinta2026" --user-attributes Name=email,Value=correo@ejemplo.com Name=email_verified,Value=true Name=name,Value="Nombre Real"
-```
+El cliente ve cada paso al instante en «Mis pedidos» o, sin cuenta, en
+`/rastreo` con su folio y su teléfono. Cancelar: él mismo mientras siga
+`Pendiente`; después, tú desde el panel. Cada cambio queda en el historial con
+quién y cuándo. Si dos personas tocan el mismo pedido, la segunda recibe un
+aviso en vez de pisar al otro.
 
-```bash
-aws cognito-idp admin-add-user-to-group --user-pool-id us-east-1_qpU8tmkIB --username "correo@ejemplo.com" --group-name proveedores
-```
+**Solicitudes** (`/radar/solicitudes/`): altas de distribuidor, mensajes de
+contacto y **facturas** (con RFC, razón social, régimen, CP y uso de CFDI y el
+folio). La factura se emite fuera del sistema; aquí se lleva el estado.
 
-Al equipo le toca `proveedores`, no `admins`. La contraseña temporal se manda por
-un canal distinto al correo de la cuenta y vale 14 días; el panel les pide
-cambiarla en el primer acceso.
+**Ventas** (`/radar/ventas/`) y **Clientes** (`/radar/clientes/`) se calculan
+solos a partir de los pedidos; los dos exportan a CSV para Excel.
 
-Más detalle —bajas, cambios de grupo, listados— en
+---
+
+## Decisiones que solo tú puedes tomar
+
+El código ya soporta cada una; falta el dato o la decisión:
+
+- **Meses sin intereses:** el PDF dice hasta 3, el checkout ofrece 3/6/9/12,
+  las garantías dicen «hasta 6» y los anuncios «3». Se cambian en
+  `src/lib/volumen.ts` y `src/data/contenido.ts`.
+- **3x2 del hero:** la portada anuncia «3X2 en toda la tienda» y ningún
+  producto tiene la etiqueta, así que no se cobra. O se etiquetan modelos con
+  «3x2» en `/radar/catalogo/`, o se cambia el arte.
+- **Precio de los paquetes desde 20 piezas:** hoy sale más caro que comprar las
+  mismas piezas sueltas con su descuento. Y sus textos del catálogo dicen
+  «Precio de Importador Directo» y «el mejor precio unitario que damos»
+  (se editan en `/radar/catalogo/`, tipo lote).
+- **Familias, géneros, los 14 ocultos y los 5 de cuidado de la piel** del
+  catálogo (`catalogo/revision.csv`).
+- **Correo y redes:** `contacto@elreydelosperfumes.mx` es de un dominio que no
+  se ha comprado; Instagram, Facebook y TikTok apuntan a las portadas genéricas.
+- **Políticas sin confirmar:** apartar piezas 24 horas con transferencia, «sale
+  el mismo día antes de la 1 pm», cambio de modelos que no rotan en paquetes de
+  40 y 50.
+- **Niveles de cliente:** «Mis pedidos» promete beneficios por nivel (Plata 5%
+  extra en lotes, Distribuidor precio permanente) que el cobro no aplica. O se
+  confirman y se programan en `compartido/cotizacion.ts`, o se quitan los textos
+  de `compartido/niveles.ts`.
+- **SES** para correos propios (tope actual de ~50 al día, §4).
+
+---
+
+## 1. Dar de alta al equipo — ✅ construido el 2026-10-05
+
+Ya no hace falta la CLI. Con tu cuenta: **Panel de la tienda → Equipo y
+cuentas** (`/radar/equipo/`).
+
+- **Quien ya tiene cuenta de la tienda:** que abra `/radar` y pulse «Pedir
+  acceso al equipo». Te aparece en «Por aceptar»: *Aceptar en el equipo*,
+  *Como admin* o *Rechazar*.
+- **Quien no tiene cuenta:** *Invitar por correo* con su nombre real (firma
+  cada ficha). Le llega una contraseña temporal de 14 días.
+- **Baja:** su fila → «Puede entrar» → No. No borra nada y se deshace.
+
+Al equipo le toca *equipo de proveedores*, no administrador. Tras el cambio,
+la persona sale y vuelve a entrar para que su sesión traiga el permiso.
+Detalle y la alternativa por CLI en
 [radar/infra/usuarios.md](radar/infra/usuarios.md).
 
-**Esfuerzo:** 5 minutos por persona.
+**Queda de tu lado:** aceptar o invitar a cada persona (1 minuto cada una).
 
 ---
 
-## 2. Retirar el PIN compartido
+## 2. Retirar el PIN compartido — ✅ hecho el 2026-10-05
 
-**Por qué.** Es la única deuda de seguridad abierta: cualquiera que lo sepa entra,
-y no se puede revocar a una sola persona sin cambiárselo a todos.
+La API ya no tiene `POST /acceso`, la portada solo ofrece la cuenta y un
+teléfono con la sesión vieja del PIN la cierra solo (las fichas sin subir se
+quedan en él y suben al entrar con cuenta). **Avísale al equipo antes del
+push**: quien entraba con el código tiene que crearse su cuenta en la tienda y
+pedir acceso, o recibir tu invitación.
 
-**Cuándo.** Solo cuando **todos** tengan cuenta (§1). Antes, dejaría a alguien
-fuera a mitad de una gira.
+**Queda de tu lado, después del despliegue** (borra los secretos que ya nadie
+lee; con la sesión de `aws login` exportada como en `entorno-maquina`):
 
-**Cómo.** Cuatro cambios. El tercero es el que de verdad cierra la puerta; los
-otros dejan de enseñarla.
+```bash
+cd radar && npx sst secret remove Elrey_pin --stage produccion
+```
 
-1. `radar/src/components/portada-acceso.tsx` — borrar `FormaCodigo` y el enlace
-   «Entrar con el código del equipo».
-2. `radar/src/lib/sesion.ts` — borrar `entrarConCodigo` y `conectar`.
-3. `radar/servidor/identidad.ts` — borrar `sesionPorPin` y la excepción de
-   `puedeVerProveedores`; en `radar/servidor/api.ts`, borrar la ruta
-   `POST /acceso`.
-4. `cd radar && npx sst secret remove Elrey_pin --stage produccion`
+```bash
+cd radar && npx sst secret remove Elrey_jwt_secreto --stage produccion
+```
 
-Los scripts de prueba usan el PIN (`RADAR_PIN`), así que hay que reescribirlos
-para que obtengan el token de Cognito. El patrón está en la §Verificación de
-abajo.
+Y para que la prueba de humo de la CI recorra el radar entero: crea (o invita)
+una cuenta solo para pruebas en *equipo de proveedores* y guarda su correo y
+contraseña como secretos `RADAR_CORREO` y `RADAR_CONTRASENA` del repositorio
+(Settings → Secrets and variables → Actions). Sin ellos la CI solo comprueba
+las puertas, y no falla. El secreto `RADAR_PIN` ya se puede borrar.
 
-**Esfuerzo:** 1–2 horas, incluyendo reescribir las pruebas.
+---
+
+## 2.1 Publicar desde el panel — token de GitHub
+
+**Por qué.** Sin él, lo que cambies en `/radar/catalogo/` (un perfume nuevo,
+una foto, un texto) sale en la tienda hasta el siguiente push. Los agotados y
+los precios no esperan: esos llegan en un minuto de todos modos.
+
+**Cómo** (lo haces tú: es una credencial de tu cuenta de GitHub):
+
+1. GitHub → foto de perfil → **Settings → Developer settings → Personal access
+   tokens → Fine-grained tokens → Generate new token**.
+2. Nombre `Elrey publicar`, caducidad la que prefieras (al vencer, se repite
+   esto). **Repository access → Only select repositories →
+   `zValkyrion/Perfumeriav2-`**.
+3. **Permissions → Repository permissions → Actions: Read and write.** Nada
+   más (Metadata: Read se pone solo).
+4. Generar y copiar el token (empieza por `github_pat_`).
+5. En PowerShell, con la sesión de AWS:
+
+```bash
+cd radar; npx.cmd sst secret set Elrey_github_token --stage produccion
+```
+
+   Sin el valor en la línea, SST lo pide y no queda en el historial de la
+   terminal; si tu versión no lo pide, añádelo al final del comando. Luego haz
+   un push o vuelve a correr el workflow para que la Lambda lo lea.
+
+6. En `/radar/catalogo/` el botón «Publicar» deja de decir «no está
+   configurado», y el Cron publica solo diez minutos después del último cambio.
 
 ---
 
@@ -138,13 +227,9 @@ Las direcciones se sumaron el mismo día: `GET/PUT /direcciones` bajo
 `SK = DIRECCIONES`, con una sola predeterminada impuesta por el servidor, y el
 checkout se prellena con ella —que es para lo que sirve guardarla—.
 
-Lo que **no** quedó cubierto y sigue pendiente:
-
-- **El total del pedido lo calcula el navegador** y el servidor se lo cree. Da
-  igual mientras el checkout sea una demostración; con cobro real hay que
-  calcularlo en el servidor a partir del catálogo.
-- **Nadie mueve el estatus de un pedido.** Nace en «Pendiente» y ahí se queda: no
-  hay panel de pedidos ni guía de paquetería para los reales.
+~~El total lo calcula el navegador~~ (✅ desde 2026-09-22 lo calcula el
+servidor) y ~~nadie mueve el estatus~~ (✅ 2026-09-28: panel de pedidos con
+estatus, guía, historial y seguimiento del cliente — ver «Operar la tienda»).
 
 ---
 
@@ -251,8 +336,7 @@ por WhatsApp —que es lo que dice el documento—, no la pongas y déjalo como 
   $ 149.00 por debajo**. La tarifa vive ahora en `COSTO_ENVIO_ESTANDAR`
   (`src/lib/volumen.ts`), junto al mínimo que la vuelve gratis, y de ahí la leen
   el carrito, el checkout y la página de envíos.
-- **El pedido no cambia de estatus** ni hay panel donde verlos (§5). Con el aviso
-  por WhatsApp y el webhook eso duele menos, pero sigue ahí.
+- ~~El pedido no cambia de estatus ni hay panel donde verlos.~~ ✅ 2026-09-28.
 
 ---
 
@@ -265,6 +349,11 @@ que costó descubrir:
   los ejes de evaluación fabrica datos y falsea el puntaje.
 - **Las banderas rojas topan el score en 39**, no restan. Sin el tope, la suma
   ponderada cuela al verde a un proveedor que es un riesgo legal.
+- **El superadmin no es un grupo de Cognito** y no se da desde el panel: vive en
+  `compartido/equipo.ts` y se reconoce por el correo *verificado*. Convertirlo
+  en grupo dejaría que un descuido en el panel se lo quitara al dueño o se lo
+  diera a otro. Si se cambia el correo de la lista, también la copia de
+  `radar/src/lib/superadmin.ts` (`tsc` avisa).
 - **El botón del panel no es un permiso**, solo un enlace. El permiso vive en el
   grupo del token y lo comprueba la API; la tienda solo decide qué pintar.
 - **El canonical de la tienda no se mueve** hasta que exista el dominio.
@@ -316,8 +405,9 @@ que costó descubrir:
 Después de cualquier cambio:
 
 ```bash
-RADAR_PIN=xxxxxxxx npm --prefix radar run probar
-RADAR_PIN=xxxxxxxx npm --prefix radar run probar-textract
+npm --prefix radar run probar:local
+RADAR_CORREO=... RADAR_CONTRASENA=... npm --prefix radar run probar
+RADAR_CORREO=... RADAR_CONTRASENA=... npm --prefix radar run probar-textract
 npm --prefix radar run probar-tienda
 ```
 
@@ -326,22 +416,6 @@ CORS, las fotos huérfanas en S3, los borrados que no viajaban, el precio de 280
 leído como 280— no los detectó ni el compilador ni las pruebas con curl: hicieron
 falta el navegador real y mirar el bucket.
 
-Cuando el PIN desaparezca (§2), estos scripts tendrán que pedir el token a
-Cognito. El patrón es este:
-
-```js
-const r = await fetch(`https://cognito-idp.us-east-1.amazonaws.com/`, {
-  method: "POST",
-  headers: {
-    "content-type": "application/x-amz-json-1.1",
-    "x-amz-target": "AWSCognitoIdentityProviderService.InitiateAuth",
-  },
-  body: JSON.stringify({
-    AuthFlow: "USER_PASSWORD_AUTH",
-    ClientId: "6b3sm0a4pucc821m59jhf2hob3",
-    AuthParameters: { USERNAME: correo, PASSWORD: contrasena },
-  }),
-});
-const { AuthenticationResult } = await r.json();
-// AuthenticationResult.IdToken va en la cabecera Authorization: Bearer …
-```
+Los dos scripts contra producción piden el token a Cognito con la cuenta de
+prueba (`radar/scripts/token-cognito.mjs`); sin ella, `probar` solo comprueba
+las puertas y `probar-textract` no corre.

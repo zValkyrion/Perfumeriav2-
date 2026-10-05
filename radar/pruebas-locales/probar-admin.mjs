@@ -53,9 +53,8 @@ let r = await pedir("GET", "/admin/catalogo");
 ok("sin sesión: 401", r.estado === 401, `${r.estado}`);
 r = await pedir("GET", "/admin/catalogo", { tok: PROVEEDOR });
 ok("una cuenta de proveedores no edita el catálogo: 403", r.estado === 403, `${r.estado}`);
-const pin = (await pedir("POST", "/acceso", { cuerpo: { pin: "1234", evaluador: "Campo" } })).json.token;
-r = await pedir("GET", "/admin/catalogo", { tok: pin });
-ok("el PIN compartido tampoco: 403", r.estado === 403, `${r.estado}`);
+r = await pedir("POST", "/acceso", { cuerpo: { pin: "1234", evaluador: "Campo" } });
+ok("el PIN compartido ya no existe: POST /acceso sin sesión da 401", r.estado === 401, `${r.estado}`);
 
 // ── Leer ───────────────────────────────────────────────────────────────────
 r = await pedir("GET", "/admin/catalogo", { tok: ADMIN, gzip: true });

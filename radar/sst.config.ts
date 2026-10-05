@@ -29,9 +29,11 @@ export default $config({
   async run() {
     // ── Secretos ────────────────────────────────────────────────────────────
     // Viven en SSM Parameter Store, nunca en el repositorio. Se fijan con
-    // `npx sst secret set Elrey_pin <valor> --stage produccion`.
-    const pin = new sst.Secret("Elrey_pin");
-    const jwtSecreto = new sst.Secret("Elrey_jwt_secreto");
+    // `npx sst secret set <nombre> <valor> --stage produccion`.
+    //
+    // `Elrey_pin` y `Elrey_jwt_secreto` (el código compartido del equipo) se
+    // retiraron el 2026-10-05: ahora cada quien entra con su cuenta.
+    //
     // Token de GitHub con permiso de Actions (escritura) sobre este repositorio
     // y nada más: es lo que deja al panel volver a compilar la tienda. Vacío
     // por defecto —el despliegue no falla sin él—; entonces el panel guarda
@@ -140,10 +142,20 @@ export default $config({
       transform: {
         userPool: {
           name: "Elrey_usuarios",
-          // Registro abierto: los clientes se crean su cuenta solos. El equipo
-          // sigue entrando por invitación, porque el grupo no se lo puede
-          // poner nadie más que un admin.
-          adminCreateUserConfig: { allowAdminCreateUserOnly: false },
+          // Registro abierto: los clientes se crean su cuenta solos. Al equipo
+          // lo acepta o lo invita el superadmin desde «Equipo y cuentas»,
+          // porque el grupo no se lo puede poner nadie más.
+          adminCreateUserConfig: {
+            allowAdminCreateUserOnly: false,
+            // La invitación que manda «Invitar por correo». Sin esto Cognito la
+            // manda en inglés. `{username}` es el correo y `{####}` la
+            // contraseña temporal; las dos son obligatorias en la plantilla.
+            inviteMessageTemplate: {
+              emailSubject: "Tu acceso al panel de El Rey de los Perfumes",
+              emailMessage:
+                "Hola. Te dieron acceso al panel de El Rey de los Perfumes. Entra en https://devfq5kjop78h.cloudfront.net/radar/ con tu correo {username} y esta contraseña temporal: {####} . Vale 14 días y te pedirá cambiarla la primera vez.",
+            },
+          },
           // Quien cambia su correo desde la cuenta sigue entrando con el
           // anterior hasta confirmar el nuevo con el código. Sin esto, un correo
           // mal escrito dejaba la cuenta atada a una dirección que nadie lee.
@@ -199,7 +211,8 @@ export default $config({
     });
 
     // Los grupos son el permiso. Nadie puede auto-asignarse uno: eso es lo que
-    // sostiene todo el esquema.
+    // sostiene todo el esquema. Solo los reparte el superadmin, que **no** es
+    // un grupo: vive en `compartido/equipo.ts` (`SUPERADMINS`).
     const grupos = [
       { nombre: "admins", precedencia: 1, texto: "Control total del sistema" },
       { nombre: "proveedores", precedencia: 2, texto: "Acceso al panel de proveedores" },
@@ -241,8 +254,6 @@ export default $config({
         catalogo,
         imagenes,
         fotos,
-        pin,
-        jwtSecreto,
         githubToken,
         usuarios,
         clienteWeb,

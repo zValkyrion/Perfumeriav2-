@@ -123,9 +123,13 @@ jobs:
 
       # Desplegar no es funcionar. Si la API queda rota, el workflow falla y
       # aparece en rojo en vez de descubrirse en la calle al día siguiente.
+      # Con la cuenta de prueba (secretos RADAR_CORREO y RADAR_CONTRASENA, una
+      # cuenta del grupo `proveedores` solo para esto) recorre el radar entero;
+      # sin ella, solo las puertas. El PIN del equipo se retiró el 2026-10-05.
       - name: Probar la API en producción
         env:
-          RADAR_PIN: ${{ secrets.RADAR_PIN }}
+          RADAR_CORREO: ${{ secrets.RADAR_CORREO }}
+          RADAR_CONTRASENA: ${{ secrets.RADAR_CONTRASENA }}
         run: npm run probar
 
       # El carrito y los pedidos no se pueden probar por HTTP sin la contraseña

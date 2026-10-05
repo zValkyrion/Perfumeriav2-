@@ -1,35 +1,19 @@
 /**
  * Prueba de humo de la API en producción.
  *
- *   node scripts/probar-api.mjs [url-de-la-api] [pin]
+ *   RADAR_CORREO=... RADAR_CONTRASENA=... node scripts/probar-api.mjs [url-de-la-api]
  *
- * Recorre cada ruta con datos reales —incluida la subida de una foto a S3— y
- * verifica también los rechazos: un PIN equivocado, un token inventado y una
- * ruta inexistente. Crea una ficha de prueba y la borra al terminar, así que se
- * puede correr contra producción sin dejar basura.
+ * Verifica siempre los rechazos —sin token, con un token inventado, el PIN
+ * retirado y cada puerta de /admin y /superadmin— y, si hay cuenta de prueba
+ * (`token-cognito.mjs`), recorre además cada ruta del radar con datos reales,
+ * incluida la subida de una foto a S3. La ficha de prueba se borra al
+ * terminar, así que se puede correr contra producción sin dejar basura.
  *
  * Se ejecuta después de cada `sst deploy`. Compilar no es funcionar.
  */
-const API = process.argv[2] ?? "https://qdn0ihicj6.execute-api.us-east-1.amazonaws.com";
+import { tokenDePrueba } from "./token-cognito.mjs";
 
-/**
- * El PIN nunca se escribe aquí.
- *
- * Este archivo vive en el repositorio; dejarlo con un valor por defecto sería
- * repetir el error que ya se corrigió en el cliente — sacamos el PIN del
- * JavaScript de la app precisamente para que no lo pudiera leer cualquiera, y
- * dejarlo en un script de pruebas lo devolvería al mismo sitio.
- *
- *   RADAR_PIN=xxxxxxxx node scripts/probar-api.mjs
- */
-const PIN = process.argv[3] ?? process.env.RADAR_PIN;
-if (!PIN) {
-  console.error(
-    "Falta el PIN. Pásalo como RADAR_PIN=... o como segundo argumento.\n" +
-      "  RADAR_PIN=xxxxxxxx node scripts/probar-api.mjs",
-  );
-  process.exit(1);
-}
+const API = process.argv[2] ?? "https://qdn0ihicj6.execute-api.us-east-1.amazonaws.com";
 
 let fallos = 0;
 const ok = (nombre, cond, detalle = "") => {
@@ -54,13 +38,15 @@ const salud = await pedir("/salud");
 ok("GET /salud responde 200", salud.estado === 200, JSON.stringify(salud.cuerpo));
 ok("apunta a la tabla Elrey_proveedores", salud.cuerpo?.tabla === "Elrey_proveedores");
 
+ok("publica el cliente de Cognito (lo usan las pruebas)", typeof salud.cuerpo?.clienteCognito === "string" && salud.cuerpo.clienteCognito !== "");
+
 // ── CORS: el preflight tiene que pasar o el sitio no puede hablar con la API ──
-const preflight = await fetch(`${API}/acceso`, {
+const preflight = await fetch(`${API}/proveedores`, {
   method: "OPTIONS",
   headers: {
     origin: "https://devfq5kjop78h.cloudfront.net",
-    "access-control-request-method": "POST",
-    "access-control-request-headers": "content-type",
+    "access-control-request-method": "GET",
+    "access-control-request-headers": "authorization",
   },
 });
 ok(
@@ -70,24 +56,12 @@ ok(
 );
 
 // ── Acceso ──────────────────────────────────────────────────────────────────
-const malo = await pedir("/acceso", {
+// El PIN compartido se retiró: `POST /acceso` ya no da token a nadie.
+const pin = await pedir("/acceso", {
   method: "POST",
   body: JSON.stringify({ pin: "00000000", evaluador: "Prueba" }),
 });
-ok("PIN incorrecto rechazado con 401", malo.estado === 401, malo.cuerpo?.error);
-
-const sinNombre = await pedir("/acceso", {
-  method: "POST",
-  body: JSON.stringify({ pin: PIN, evaluador: "" }),
-});
-ok("acceso sin nombre rechazado con 400", sinNombre.estado === 400);
-
-const bueno = await pedir("/acceso", {
-  method: "POST",
-  body: JSON.stringify({ pin: PIN, evaluador: "Prueba Automática" }),
-});
-ok("PIN correcto devuelve token", bueno.estado === 200 && !!bueno.cuerpo?.token);
-const auth = { authorization: `Bearer ${bueno.cuerpo?.token}` };
+ok("el PIN retirado ya no da token (401)", pin.estado === 401 && !pin.cuerpo?.token, `HTTP ${pin.estado}`);
 
 ok("GET /proveedores sin token da 401", (await pedir("/proveedores")).estado === 401);
 ok(
@@ -96,6 +70,21 @@ ok(
     .estado === 401,
 );
 
+let token = null;
+try {
+  token = await tokenDePrueba(API);
+} catch (e) {
+  ok("la cuenta de prueba entra a Cognito", false, e.message);
+}
+const auth = token ? { authorization: `Bearer ${token}` } : null;
+if (!token) {
+  console.log(
+    "\nOMITIDA  el recorrido con sesión (ficha, foto, borrado y el 403 de cada puerta): " +
+      "faltan RADAR_CORREO y RADAR_CONTRASENA de la cuenta de prueba.\n",
+  );
+}
+
+if (auth) {
 // ── Ficha ───────────────────────────────────────────────────────────────────
 const id = `prueba-${Date.now()}`;
 const guardado = await pedir(`/proveedores/${id}`, {
@@ -126,7 +115,7 @@ const encontrada = lista.cuerpo?.proveedores?.find((p) => p.id === id);
 ok("GET /proveedores devuelve la ficha", !!encontrada);
 ok("el servidor la marca como sincronizado", encontrada?.estado === "sincronizado");
 ok("conserva las promociones", encontrada?.promociones?.[0]?.tipo === "gratis");
-ok("firma quién la subió", encontrada?.subidoPor === "Prueba Automática");
+ok("firma quién la subió (el nombre de la cuenta)", typeof encontrada?.subidoPor === "string" && encontrada.subidoPor !== "");
 
 // ── Foto: URL prefirmada, subida real y lectura ─────────────────────────────
 const urlFoto = await pedir("/fotos", {
@@ -187,35 +176,22 @@ ok(
 );
 
 ok("ruta inexistente da 404", (await pedir("/no-existe", { headers: auth })).estado === 404);
+}
 
 // ── Tienda: carrito y pedidos ───────────────────────────────────────────────
-// El carrito se guarda bajo el `sub` de Cognito, así que exige una cuenta
-// propia. El PIN es el mismo token para todo el equipo: un carrito guardado con
-// él sería el carrito de todos a la vez, y por eso se rechaza aunque el token
-// sea válido. Probar el camino feliz pediría la contraseña de una cuenta real,
-// que no vive en este repositorio; lo que sí se puede comprobar aquí —y es lo
-// que protege— es que la puerta esté cerrada.
+// El carrito se guarda bajo el `sub` de Cognito. Aquí solo se prueba que la
+// puerta esté cerrada sin sesión: el camino feliz escribiría en el carrito de
+// la cuenta de prueba, y lo cubre `npm run probar:local` antes del despliegue.
 for (const [metodo, ruta] of [
   ["GET", "/carrito"],
   ["PUT", "/carrito"],
   ["GET", "/direcciones"],
   ["PUT", "/direcciones"],
   ["GET", "/pedidos"],
-  // El detalle y la cancelación son del dueño del pedido: tampoco con el PIN.
   ["GET", "/pedidos/REY-1999-00001"],
   ["POST", "/pedidos/REY-1999-00001/cancelar"],
+  ["GET", "/equipo/solicitud"],
 ]) {
-  const conPin = await pedir(ruta, {
-    method: metodo,
-    headers: auth,
-    body: metodo === "GET" ? undefined : "{}",
-  });
-  ok(
-    `${metodo} ${ruta} rechaza el token del PIN con 403`,
-    conPin.estado === 403,
-    `HTTP ${conPin.estado}`,
-  );
-
   const sinToken = await pedir(ruta, {
     method: metodo,
     body: metodo === "GET" ? undefined : "{}",
@@ -275,12 +251,12 @@ ok(
   `HTTP ${consulta.estado}`,
 );
 
-// ── Administración de la tienda: la puerta ──────────────────────────────────
-// Pedidos, ventas, clientes y solicitudes son solo para cuentas del grupo
-// `admins`. Aquí solo se prueba que la puerta esté cerrada —401 sin token y
-// 403 con el PIN del equipo—: el camino feliz necesitaría una cuenta de admin y
-// lo cubre `npm run probar:local`, antes del despliegue, sin tocar AWS. Nada
-// de esto escribe: el 403 sale antes de leer el cuerpo.
+// ── Administración y equipo: la puerta ──────────────────────────────────────
+// Pedidos, ventas, clientes y solicitudes son del grupo `admins`; «Equipo y
+// cuentas», solo del superadmin. Aquí se prueba que la puerta esté cerrada
+// —401 sin token y, con la cuenta de prueba (del equipo, no admin), 403—: el
+// camino feliz lo cubre `npm run probar:local`, antes del despliegue, sin
+// tocar AWS. Nada de esto escribe: el 403 sale antes de leer el cuerpo.
 for (const [metodo, ruta] of [
   ["GET", "/admin/pedidos"],
   ["GET", "/admin/pedidos/REY-1999-00001"],
@@ -288,17 +264,25 @@ for (const [metodo, ruta] of [
   ["GET", "/admin/ventas"],
   ["GET", "/admin/clientes"],
   ["GET", "/admin/clientes/detalle?clave=tel:5500000000"],
-  ["PUT", "/admin/clientes/grupos"],
   ["GET", "/admin/solicitudes"],
   ["PUT", "/admin/solicitudes/prueba-00000000"],
+  ["GET", "/superadmin/equipo"],
+  ["POST", "/superadmin/invitar"],
+  ["PUT", "/superadmin/grupo"],
+  ["PUT", "/superadmin/acceso"],
+  ["PUT", "/superadmin/solicitudes/prueba-00000000"],
 ]) {
   const cuerpo = metodo === "GET" ? undefined : "{}";
   const sinToken = await pedir(ruta, { method: metodo, body: cuerpo });
-  const conPin = await pedir(ruta, { method: metodo, headers: auth, body: cuerpo });
+  if (!auth) {
+    ok(`${metodo} ${ruta}: 401 sin token`, sinToken.estado === 401, `HTTP ${sinToken.estado}`);
+    continue;
+  }
+  const conCuenta = await pedir(ruta, { method: metodo, headers: auth, body: cuerpo });
   ok(
-    `${metodo} ${ruta}: 401 sin token y 403 con el PIN`,
-    sinToken.estado === 401 && conPin.estado === 403,
-    `HTTP ${sinToken.estado}/${conPin.estado}`,
+    `${metodo} ${ruta}: 401 sin token y 403 con la cuenta del equipo`,
+    sinToken.estado === 401 && conCuenta.estado === 403,
+    `HTTP ${sinToken.estado}/${conCuenta.estado}`,
   );
 }
 

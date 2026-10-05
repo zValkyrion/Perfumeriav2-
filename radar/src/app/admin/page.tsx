@@ -41,7 +41,7 @@ export default function Pagina() {
   /** Se incrementa para pedir otra consulta. Ver el efecto de abajo. */
   const [intento, setIntento] = useState(0);
 
-  const esAdmin = sesion.grupos.includes("admins");
+  const esAdmin = sesion.esAdmin;
   const token = sesion.token;
 
   // El botón de refrescar no llama a la consulta: mueve `intento` y este efecto
@@ -105,7 +105,7 @@ export default function Pagina() {
       <Aviso titulo="Tu cuenta no abre esta vista">
         La vista de conjunto es del grupo <strong>admins</strong>. Tu sesión sirve
         para capturar y consultar fichas con normalidad; si necesitas el resumen
-        global, pídele a un administrador que te cambie de grupo.
+        global, pídele al superadministrador que te cambie de grupo.
       </Aviso>
     );
   }

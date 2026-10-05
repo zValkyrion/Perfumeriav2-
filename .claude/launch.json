@@ -12,6 +12,19 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "radar", "run", "dev"],
       "port": 3100
+    },
+    {
+      "name": "api-local",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["radar/pruebas-locales/servidor-local.mjs"],
+      "port": 4700
+    },
+    {
+      "name": "radar-local",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "radar", "run", "dev"],
+      "env": { "NEXT_PUBLIC_API": "http://127.0.0.1:4700" },
+      "port": 3100
     }
   ]
 }

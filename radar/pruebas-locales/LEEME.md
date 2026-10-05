@@ -20,7 +20,10 @@ archivo en su propio proceso:
 - `probar-tienda.mjs` — pedidos (crear con idempotencia y transacción, camino
   antiguo, «Mis pedidos», detalle, cancelar, rastreo sin cuenta), solicitudes y
   todo `/admin` de la tienda (pedidos, ventas con cifras hechas a mano, clientes
-  con Cognito, grupos), más las puertas (401 / 403) de cada ruta nueva.
+  con Cognito), más las puertas (401 / 403) de cada ruta nueva.
+- `probar-equipo.mjs` — «Equipo y cuentas»: el superadmin por correo
+  verificado, las puertas de `/superadmin`, pedir entrar al equipo, aceptar,
+  rechazar, invitar, grupos y cortar el acceso.
 
 La CI (`.github/workflows/aws.yml`) lo corre antes de pedir credenciales a AWS.
 Funciona igual en Windows y en Linux. Necesita las dependencias de las dos apps
@@ -79,8 +82,11 @@ pruebas (`jwt-falso.mjs`). La tienda y el panel corren en orígenes distintos
 (3000 y 3100): hay que pegar la línea en cada uno. Para salir, el botón
 «Salir» de la app o `localStorage.clear()`.
 
+- **superadmin** (el correo del dueño, solo en memoria): todo, más «Equipo y
+  cuentas» (`/radar/equipo/`) con una solicitud de Luis por aceptar.
 - **admin** (`admin@prueba.local`, grupo `admins`): el panel de la tienda
-  completo.
+  completo, sin «Equipo y cuentas».
+- **otro** (`luis@prueba.local`, cliente): en `/radar` ve que ya pidió acceso.
 - **proveedor** (`campo@prueba.local`): el radar de proveedores, sin `/admin`.
 - **cliente** (`cliente@prueba.local`, Ana Martínez): «Mis pedidos» con 10
   pedidos y un folio heredado (`AUR-2025-01100`).
@@ -92,7 +98,6 @@ pruebas (`jwt-falso.mjs`). La tienda y el panel corren en orígenes distintos
 - `next dev` dentro de `radar/` crea `radar/AGENTS.md` y `radar/CLAUDE.md`:
   bórralos.
 - Si `src/data/catalogo.json` cambió: `git checkout -- src/data/catalogo.json`.
-- El PIN del equipo en las falsas es `1234`.
 
 ## Archivos
 
@@ -104,4 +109,4 @@ pruebas (`jwt-falso.mjs`). La tienda y el panel corren en orígenes distintos
 | `jwt-falso.mjs` | Sustituye a `aws-jwt-verify`: un token es JSON en base64 con `falso: true`. |
 | `datos-prueba.mjs` | Tokens, filas de pedido a mano y la tienda de muestra del servidor local. |
 | `servidor-local.mjs` | `servidor:local`: la API en `127.0.0.1:4700`. |
-| `probar-admin.mjs`, `probar-tienda.mjs` | Las comprobaciones. |
+| `probar-admin.mjs`, `probar-tienda.mjs`, `probar-equipo.mjs` | Las comprobaciones. |
