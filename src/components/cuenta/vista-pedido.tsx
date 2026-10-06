@@ -212,7 +212,7 @@ function PedidoDeLaCuenta({ folio, perfil }: { folio: string; perfil: Perfil }) 
 function Esqueleto() {
   return (
     <Contenedor className="py-10">
-      <div className="h-64 animate-pulse rounded-lg bg-white/5" aria-busy="true" />
+      <div className="h-64 animate-pulse rounded-lg bg-surface-2" aria-busy="true" />
     </Contenedor>
   );
 }

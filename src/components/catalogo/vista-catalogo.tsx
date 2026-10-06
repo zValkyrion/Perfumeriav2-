@@ -179,7 +179,9 @@ export function RejillaCatalogo({
   vacioPersonalizado?: React.ReactNode;
 }) {
   const searchParams = useSearchParams();
-  const params = initialParams ?? (searchParams ? searchParamsToRecord(searchParams) : {});
+  // La cadena de la URL como dependencia: el objeto de `useSearchParams` y el
+  // registro que sale de él cambian de identidad aunque la URL sea la misma.
+  const consulta = searchParams?.toString() ?? "";
 
   // Lo agotado se decide con la disponibilidad en vivo (lo que marca el panel)
   // y no solo con lo compilado: si no, «Solo en existencia» dejaría pasar un
@@ -187,12 +189,22 @@ export function RejillaCatalogo({
   const vivo = useDisponibilidad((s) => s.vivo);
   const productos = useMemo(() => base.map((p) => productoVivo(p, vivo)), [base, vivo]);
 
-  const filtros = leerFiltros(params);
-  const filtrados = ordenar(aplicarFiltros(productos, filtros), filtros.orden);
-  const visibles = filtrados.slice(0, filtros.mostrar);
-  const chips = chipsActivos(filtros);
-  const activos = contarActivos(filtros);
-  const conteos = contarOpciones(productos, filtros);
+  // Filtrar, ordenar y contar son nueve pasadas por el catálogo. Se rehacen
+  // solo cuando cambia la URL o la lista, no cada vez que el padre vuelve a
+  // pintarse.
+  const { filtrados, visibles, chips, activos, conteos } = useMemo(() => {
+    const params =
+      initialParams ?? searchParamsToRecord(new URLSearchParams(consulta));
+    const filtros = leerFiltros(params);
+    const filtrados = ordenar(aplicarFiltros(productos, filtros), filtros.orden);
+    return {
+      filtrados,
+      visibles: filtrados.slice(0, filtros.mostrar),
+      chips: chipsActivos(filtros),
+      activos: contarActivos(filtros),
+      conteos: contarOpciones(productos, filtros),
+    };
+  }, [initialParams, consulta, productos]);
 
   return (
     <>

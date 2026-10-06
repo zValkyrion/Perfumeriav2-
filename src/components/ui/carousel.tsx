@@ -105,7 +105,10 @@ function Carousel({
     api.on("reInit", onSelect)
     api.on("select", onSelect)
 
+    // Se quitan los dos: la plantilla de shadcn solo soltaba `select` y cada
+    // remontaje dejaba otro `reInit` colgado de la misma instancia.
     return () => {
+      api?.off("reInit", onSelect)
       api?.off("select", onSelect)
     }
   }, [api, onSelect])

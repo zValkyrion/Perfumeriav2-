@@ -28,6 +28,13 @@ export function Galeria({
   const [activa, setActiva] = useState(0);
   const [ampliada, setAmpliada] = useState<number | null>(null);
 
+  // El mismo `sizes` en la columna de escritorio y en el carrusel de móvil.
+  // Las dos versiones de la primera foto son prioritarias y las dos están en el
+  // HTML (una oculta con CSS): con `sizes` distintos el navegador precargaba
+  // dos archivos de la misma foto, y en escritorio uno era el de 100vw.
+  // Iguales, eligen el mismo archivo y se descarga una sola vez.
+  const sizes = "(min-width: 1024px) 45vw, 100vw";
+
   const alt = (i: number) =>
     i === 0
       ? `${nombre} de ${marca}, vista frontal`
@@ -53,7 +60,7 @@ export function Galeria({
                 <Imagen
                   src={src}
                   alt={alt(i)}
-                  sizes="45vw"
+                  sizes={sizes}
                   // Solo la primera entra en la carga inicial. Marcar las cuatro
                   // como prioritarias compite con el precio y los botones, que
                   // es lo que de verdad hay que pintar primero.
@@ -81,7 +88,7 @@ export function Galeria({
         >
           {imagenes.map((src, i) => (
             <div key={src} className="bg-surface relative aspect-3/4 w-full shrink-0">
-              <Imagen src={src} alt={alt(i)} sizes="100vw" priority={i === 0} />
+              <Imagen src={src} alt={alt(i)} sizes={sizes} priority={i === 0} />
             </div>
           ))}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   EncabezadoCatalogo,
@@ -38,7 +38,12 @@ function RejillaPromociones() {
   const searchParams = useSearchParams();
   const rebajas = searchParams.get("vista") === "rebajas";
 
-  const base = rebajas ? EN_PROMOCION.filter(tieneRebaja) : [...EN_PROMOCION];
+  // Memorizado: una lista nueva en cada render obligaba a la rejilla a
+  // rehacer todo el filtrado aunque nada hubiera cambiado.
+  const base = useMemo(
+    () => (rebajas ? EN_PROMOCION.filter(tieneRebaja) : [...EN_PROMOCION]),
+    [rebajas],
+  );
 
   // Sin nada en promoción, el vacío lo dice tal cual en vez de sugerir que
   // sobran filtros: no hay filtro que quitar para que aparezca algo.

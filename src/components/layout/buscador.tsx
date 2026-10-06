@@ -24,6 +24,15 @@ const POPULARES = [
   "Para regalo",
 ];
 
+// Fuera del componente a propósito: un array escrito en el JSX es uno nuevo en
+// cada render, y `PlaceholderAnimado` reiniciaba su tecleo con cada tecla que
+// se pulsaba en el buscador.
+const FRASES_GUIA = [
+  "Buscar Perfumes a Mayoreo",
+  "Oud, vainilla, azafrán…",
+  "Paquetes de 10, 20 y 30",
+];
+
 /**
  * Buscador del header (§7.2). Trabaja sobre un índice compacto que le pasa el
  * servidor, así que no arrastra el catálogo completo al bundle del cliente.
@@ -84,11 +93,7 @@ export function Buscador({
         >
           <Search size={18} aria-hidden className="text-fg-subtle shrink-0" />
           <PlaceholderAnimado
-            frases={[
-              "Buscar Perfumes a Mayoreo",
-              "Oud, vainilla, azafrán…",
-              "Paquetes de 10, 20 y 30",
-            ]}
+            frases={FRASES_GUIA}
             className="text-fg-subtle truncate text-sm"
           />
         </button>
@@ -112,7 +117,10 @@ export function Buscador({
             <SheetTitle>Buscar en EL REY DE LOS PERFUMES</SheetTitle>
           </SheetHeader>
 
-          <div className="mx-auto w-full max-w-3xl px-4 pt-2 pb-6 lg:px-8">
+          {/* `pr-14` hasta lg: la ✕ de cerrar del Sheet va fija arriba a la
+              derecha y, en el teléfono, caía encima del botón de limpiar. En
+              escritorio el bloque va centrado y ya no la alcanza. */}
+          <div className="mx-auto w-full max-w-3xl pt-2 pr-14 pb-6 pl-4 lg:px-8">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -137,11 +145,7 @@ export function Buscador({
                     `placeholder` porque un atributo no se puede animar. */}
                 {!q ? (
                   <PlaceholderAnimado
-                    frases={[
-                      "Buscar Perfumes a Mayoreo",
-                      "Oud, vainilla, azafrán…",
-                      "Paquetes de 10, 20 y 30",
-                    ]}
+                    frases={FRASES_GUIA}
                     className="text-fg-subtle pointer-events-none absolute inset-y-0 left-0 flex items-center text-base"
                   />
                 ) : null}

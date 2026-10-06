@@ -1,6 +1,7 @@
 import { MARCAS_POR_SLUG } from "@/data/marcas";
 import { PRODUCTOS, precioDesde, tieneRebaja } from "@/data/productos";
 import type { Orden } from "@/data/taxonomia";
+import { precioRedondo } from "@/lib/format";
 import type { Producto } from "@/types";
 
 export interface Filtros {
@@ -61,8 +62,18 @@ export function leerFiltros(params: ParamsBusqueda): Filtros {
     soloStock: lista(params.stock).includes("1"),
     orden:
       orden && ORDENES_VALIDOS.has(orden) ? (orden as Orden) : "relevancia",
-    mostrar: numeroDe(params.n) ?? 24,
+    mostrar: paginaDe(numeroDe(params.n)),
   };
+}
+
+/**
+ * `?n=` viene de la URL y cualquiera puede escribirlo: con `n=0` o negativo
+ * `slice` dejaba la rejilla vacía (o le quitaba los últimos) y con `n=30.5`
+ * pintaba media página rara. Nunca menos de la primera página de 24.
+ */
+function paginaDe(n: number | undefined): number {
+  if (n === undefined) return 24;
+  return Math.max(24, Math.floor(n));
 }
 
 /** Rango de precio de todo el catálogo, para los topes del slider. */
@@ -225,7 +236,8 @@ export function chipsActivos(f: Filtros): ChipActivo[] {
     chips.push({
       clave: "precio",
       valor: "1",
-      etiqueta: `$${f.precioMin ?? PRECIO_MIN} – $${f.precioMax ?? PRECIO_MAX}`,
+      // Con el mismo formato que el slider («$ 1,000»): antes decía «$1000».
+      etiqueta: `${precioRedondo(f.precioMin ?? PRECIO_MIN)} – ${precioRedondo(f.precioMax ?? PRECIO_MAX)}`,
     });
   }
   if (f.soloStock) {

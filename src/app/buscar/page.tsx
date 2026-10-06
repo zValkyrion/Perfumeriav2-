@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { EstadoVacio, VistaCatalogo } from "@/components/catalogo/vista-catalogo";
 import { PRODUCTOS, buscar } from "@/data/productos";
@@ -8,7 +8,9 @@ import { PRODUCTOS, buscar } from "@/data/productos";
 function BuscarContenido() {
   const searchParams = useSearchParams();
   const q = searchParams.get("q")?.trim() ?? "";
-  const base = q ? buscar(q, 200) : [...PRODUCTOS];
+  // Memorizado por la consulta: una lista nueva en cada render invalidaba la
+  // memoria de la rejilla y repetía la búsqueda y todo el filtrado.
+  const base = useMemo(() => (q ? buscar(q, 200) : [...PRODUCTOS]), [q]);
 
   return (
     <VistaCatalogo

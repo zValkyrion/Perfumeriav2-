@@ -35,7 +35,9 @@ export function VistaCarrito() {
   if (!hidratado) {
     return (
       <Contenedor className="py-10">
-        <div className="h-9 w-48 rounded bg-white/5" />
+        {/* `bg-surface-2` y no `bg-white/5`: sobre el fondo claro del tema
+            el blanco translúcido no se veía. */}
+        <div className="bg-surface-2 h-9 w-48 rounded" />
         <div className="mt-8">
           <GridSkeleton cantidad={3} />
         </div>
@@ -189,7 +191,14 @@ export function VistaCarrito() {
               <h2 className="font-display mb-4 text-xl">Guardado para después</h2>
               <ul className="divide-border-soft border-border-soft divide-y border-y">
                 {resumenGuardados.lineas.map((linea) => (
-                  <li key={linea.clave} className="flex items-center gap-4 py-4">
+                  // `flex-wrap` y un ancho mínimo para el nombre: a 375px la
+                  // foto, el precio y los dos botones no dejaban sitio y el
+                  // nombre se truncaba hasta quedarse en «…». Ahora los botones
+                  // bajan a su propia línea.
+                  <li
+                    key={linea.clave}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 py-4"
+                  >
                     <Link
                       href={linea.enlace}
                       className="bg-surface relative size-16 shrink-0 overflow-hidden rounded"
@@ -200,7 +209,7 @@ export function VistaCarrito() {
                         sizes="64px"
                       />
                     </Link>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-32 flex-1">
                       <Link
                         href={linea.enlace}
                         className="font-display hover:text-gold-light block truncate"
@@ -213,7 +222,7 @@ export function VistaCarrito() {
                       valor={linea.unitarioMenudeo}
                       className="text-fg-muted shrink-0 text-sm"
                     />
-                    <div className="flex shrink-0 items-center gap-1">
+                    <div className="ml-auto flex shrink-0 items-center gap-1">
                       <Button
                         variant="outline"
                         size="sm"

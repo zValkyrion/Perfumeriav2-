@@ -358,7 +358,7 @@ export function VistaCheckout() {
   if (!hidratado) {
     return (
       <Contenedor className="py-16">
-        <div className="mx-auto h-40 max-w-md animate-pulse rounded-lg bg-white/5" />
+        <div className="mx-auto h-40 max-w-md animate-pulse rounded-lg bg-surface-2" />
       </Contenedor>
     );
   }

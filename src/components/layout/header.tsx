@@ -27,12 +27,14 @@ export function Header({ indice }: { indice: EntradaIndice[] }) {
   }, []);
 
   return (
+    // Fondo sólido del tema siempre. Antes era transparente hasta los 40px de
+    // scroll y, como es sticky, en ese tramo el hero (una foto oscura) pasaba
+    // por debajo y la fila de navegación quedaba montada sobre la imagen. El
+    // translúcido con blur tampoco sirve: deja leer lo de detrás a medias.
     <header
       className={cn(
-        "sticky top-0 z-40 transition-[background-color,backdrop-filter,border-color] duration-300",
-        encogido
-          ? "bg-bg/70 border-border-soft border-b backdrop-blur-xl"
-          : "border-b border-transparent",
+        "bg-bg border-border-soft sticky top-0 z-40 border-b transition-shadow duration-300",
+        encogido && "shadow-[0_1px_8px_rgb(0_0_0/0.06)]",
       )}
     >
       {/* Más estrecho que el resto de la página (1400px) a propósito: con el

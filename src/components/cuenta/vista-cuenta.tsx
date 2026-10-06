@@ -206,7 +206,7 @@ function CuentaConSesion({ sesion, perfil }: { sesion: Sesion; perfil: Perfil })
               {piezas !== null ? (
                 <NivelCliente piezas={piezas} />
               ) : pedidos.tipo === "cargando" ? (
-                <div className="h-48 animate-pulse rounded-lg bg-white/5" />
+                <div className="h-48 animate-pulse rounded-lg bg-surface-2" />
               ) : null}
             </div>
           </div>
@@ -218,7 +218,7 @@ function CuentaConSesion({ sesion, perfil }: { sesion: Sesion; perfil: Perfil })
 
         <TabsContent value="favoritos">
           {!hidratado ? (
-            <div className="h-40 animate-pulse rounded-lg bg-white/5" />
+            <div className="h-40 animate-pulse rounded-lg bg-surface-2" />
           ) : productosFavoritos.length === 0 ? (
             <div className="border-border-soft rounded-lg border border-dashed px-6 py-14 text-center">
               <Heart size={28} className="text-fg-subtle mx-auto mb-3" aria-hidden />
@@ -299,8 +299,8 @@ function ListaPedidos({ estado }: { estado: ReturnType<typeof usePedidos> }) {
   if (estado.tipo === "cargando") {
     return (
       <div className="space-y-3" aria-busy="true" aria-label="Cargando tus pedidos">
-        <div className="h-28 animate-pulse rounded-md bg-white/5" />
-        <div className="h-28 animate-pulse rounded-md bg-white/5" />
+        <div className="h-28 animate-pulse rounded-md bg-surface-2" />
+        <div className="h-28 animate-pulse rounded-md bg-surface-2" />
       </div>
     );
   }
@@ -502,7 +502,7 @@ function Direcciones({ nombre, telefono }: { nombre: string; telefono: string })
     traido?.intento === intento ? traido.estado : { tipo: "cargando" };
 
   if (estado.tipo === "cargando") {
-    return <div className="h-40 animate-pulse rounded-lg bg-white/5" aria-busy="true" />;
+    return <div className="h-40 animate-pulse rounded-lg bg-surface-2" aria-busy="true" />;
   }
   if (estado.tipo === "error") {
     return (

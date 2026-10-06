@@ -21,7 +21,7 @@ export function VistaConfirmacion() {
   if (!hidratado) {
     return (
       <Contenedor className="py-20">
-        <div className="mx-auto h-48 max-w-lg animate-pulse rounded-lg bg-white/5" />
+        <div className="mx-auto h-48 max-w-lg animate-pulse rounded-lg bg-surface-2" />
       </Contenedor>
     );
   }

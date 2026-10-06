@@ -10,7 +10,7 @@ export default function Pagina() {
     <Suspense
       fallback={
         <div className="mx-auto max-w-6xl px-4 py-10">
-          <div className="h-64 animate-pulse rounded-lg bg-white/5" />
+          <div className="h-64 animate-pulse rounded-lg bg-surface-2" />
         </div>
       }
     >

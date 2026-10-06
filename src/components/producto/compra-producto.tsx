@@ -66,8 +66,15 @@ export function CompraProducto({ producto: compilado }: { producto: Producto }) 
    * Depende del producto y no de la presentación elegida: Meta agrupa por
    * artículo, y mandar un evento por cada clic en «100 ml» inflaría las vistas
    * de contenido hasta volver inútil el costo por resultado.
+   *
+   * Una vez por producto: el precio puede cambiar cuando llega la
+   * disponibilidad en vivo, y sin este candado la misma visita se contaba dos
+   * veces (una con el precio compilado y otra con el de ahora).
    */
+  const vistaEnviada = useRef<string | null>(null);
   useEffect(() => {
+    if (vistaEnviada.current === producto.id) return;
+    vistaEnviada.current = producto.id;
     pixel("ViewContent", {
       content_ids: [producto.id],
       content_name: producto.nombre,
@@ -473,8 +480,11 @@ export function CompraProducto({ producto: compilado }: { producto: Producto }) 
       {/* Aquí iba «N personas están viendo este perfume»: un número al azar
           por producto, no un contador real. Urgencia inventada, fuera. */}
 
-      {/* CTA sticky de móvil (§10.6) */}
+      {/* CTA sticky de móvil (§10.6). Mientras está escondida bajo el borde
+          va `inert`: si no, el tabulador y el lector de pantalla llegaban a un
+          botón que no se ve. */}
       <div
+        inert={ctaVisible}
         className={cn(
           "border-border-soft bg-bg/95 fixed inset-x-0 bottom-16 z-30 border-t px-4 py-3 backdrop-blur-xl transition-transform duration-300 md:hidden",
           ctaVisible ? "translate-y-[130%]" : "translate-y-0",

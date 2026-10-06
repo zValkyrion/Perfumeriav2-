@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { toast } from "sonner";
 import { pixel } from "@/lib/pixel";
@@ -16,6 +16,9 @@ export function Newsletter({ compacto = true }: { compacto?: boolean }) {
   const [correo, setCorreo] = useState("");
   const [listo, setListo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // El pie pinta dos copias (escritorio y móvil): un id fijo se repetía en el
+  // documento y `aria-describedby` podía apuntar al mensaje de la otra.
+  const idError = useId();
 
   function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -82,7 +85,7 @@ export function Newsletter({ compacto = true }: { compacto?: boolean }) {
           placeholder="tu@correo.com"
           aria-label="Tu correo electrónico"
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? "error-newsletter" : undefined}
+          aria-describedby={error ? idError : undefined}
           className="placeholder:text-fg-subtle h-11 w-full min-w-0 bg-transparent text-sm outline-none"
         />
         <button
@@ -95,7 +98,7 @@ export function Newsletter({ compacto = true }: { compacto?: boolean }) {
       </div>
 
       {error ? (
-        <p id="error-newsletter" role="alert" className="text-danger mt-2 text-xs">
+        <p id={idError} role="alert" className="text-danger mt-2 text-xs">
           {error}
         </p>
       ) : null}

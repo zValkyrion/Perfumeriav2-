@@ -43,9 +43,12 @@ export function BottomNav() {
 
 
   return (
+    // Sin `h-16` en el <nav>: la altura la da la fila de dentro más el relleno
+    // de la zona segura. Con las dos cosas en la misma caja, el relleno se
+    // comía la fila y los iconos quedaban montados sobre la barra del sistema.
     <nav
       aria-label="Navegación rápida"
-      className="border-border-soft bg-bg/85 fixed inset-x-0 bottom-0 z-40 h-16 border-t backdrop-blur-xl md:hidden"
+      className="border-border-soft bg-bg/85 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-xl md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="flex h-16">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
@@ -170,6 +170,11 @@ function GrupoCasillas({
   conteo?: ReadonlyMap<string, number>;
 }) {
   const { valores, alternar } = useFiltrosUrl();
+  // El panel se pinta dos veces (columna de escritorio, oculta con CSS en el
+  // teléfono, y el filtro del teléfono): con ids fijos se repetían y el
+  // `htmlFor` de la hoja apuntaba a la casilla oculta. Además había ids con
+  // espacios («Amaderado Oriental»), que no son válidos.
+  const prefijo = useId();
   const activos = valores(clave);
   // Las opciones que dejarían la lista vacía no se enseñan (salvo la que ya
   // está marcada, para poder quitarla). Sin conteos, todas.
@@ -190,9 +195,9 @@ function GrupoCasillas({
       </AccordionTrigger>
       <AccordionContent className="pb-3">
         <ul className="space-y-0.5">
-          {visibles.map((o) => {
+          {visibles.map((o, i) => {
             const valor = valorDe(o);
-            const id = `${clave}-${valor}`;
+            const id = `${prefijo}-${clave}-${i}`;
             const n = conteo?.get(valor);
             return (
               <li key={valor}>
@@ -221,8 +226,14 @@ function GrupoCasillas({
 
 function FiltroPrecio() {
   const { params, asignarVarios } = useFiltrosUrl();
-  const min = Number(params.get("precioMin") ?? PRECIO_MIN);
-  const max = Number(params.get("precioMax") ?? PRECIO_MAX);
+  // Un `?precioMin=abc` daba NaN y el slider se quedaba sin pulgares; fuera
+  // de los topes, los pulgares salían de la barra.
+  const acotar = (v: string | null, def: number) => {
+    const n = Number(v ?? def);
+    return Number.isFinite(n) ? Math.min(PRECIO_MAX, Math.max(PRECIO_MIN, n)) : def;
+  };
+  const min = acotar(params.get("precioMin"), PRECIO_MIN);
+  const max = acotar(params.get("precioMax"), PRECIO_MAX);
 
   // Solo se guarda el valor mientras se arrastra; el resto del tiempo el
   // slider se deriva de la URL. Así no hace falta un efecto que sincronice

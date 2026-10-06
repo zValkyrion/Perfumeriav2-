@@ -60,7 +60,17 @@ export default async function LoteDetallePage({
 
   const valorMenudeo = valorMenudeoLote(lote);
   const descuento = 1 - lote.precio / valorMenudeo;
-  const porModelo = Math.round(lote.piezas / lote.productos.length);
+  // Las piezas se reparten ciclando la lista de modelos (`valorLote`), así que
+  // si no salen parejas unos vienen una vez más que otros. Antes se redondeaba
+  // a un solo número y la cuenta no cuadraba: «6 modelos, 3 de cada uno» en un
+  // paquete de 20 piezas.
+  const modelos = Math.max(1, lote.productos.length);
+  const minPorModelo = Math.floor(lote.piezas / modelos);
+  const maxPorModelo = Math.ceil(lote.piezas / modelos);
+  const porModelo =
+    minPorModelo === maxPorModelo
+      ? String(minPorModelo)
+      : `${minPorModelo} o ${maxPorModelo}`;
   const otros = LOTES.filter((l) => l.slug !== lote.slug).slice(0, 3);
 
   return (
@@ -182,7 +192,7 @@ export default async function LoteDetallePage({
           <TituloSeccion
             eyebrow={`${lote.productos.length} modelos incluidos`}
             titulo="Qué trae este lote"
-            descripcion={`Cada modelo viene ${porModelo} ${porModelo === 1 ? "vez" : "veces"}.`}
+            descripcion={`Cada modelo viene ${porModelo} ${maxPorModelo === 1 ? "vez" : "veces"}.`}
           />
           <GridProductos productos={incluidos} />
         </Contenedor>

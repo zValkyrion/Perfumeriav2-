@@ -129,11 +129,13 @@ export function TarjetaProducto({
         ) : null}
 
         {/* Porcentaje de descuento: la cifra que decide la compra, pegada
-            en la esquina opuesta para que no compita con los distintivos. */}
+            en la esquina opuesta para que no compita con los distintivos.
+            En el teléfono el botón «Agregar» siempre está abajo y lo tapaba:
+            ahí sube por encima del botón. */}
         {descuento > 0 ? (
           <span
             style={{ animationDelay: "220ms" }}
-            className="animate-escala absolute right-2.5 bottom-2.5 z-20 lg:group-hover:opacity-0 lg:transition-opacity"
+            className="animate-escala absolute right-2.5 bottom-16 z-20 lg:bottom-2.5 lg:group-hover:opacity-0 lg:transition-opacity"
           >
             <Sticker tono="oferta" redondo giro={9}>
               −{Math.round(descuento * 100)}%
@@ -176,8 +178,10 @@ export function TarjetaProducto({
           />
         </button>
 
-        {/* CTA: siempre visible en móvil, aparece al hover en escritorio. */}
-        <div className="absolute inset-x-2.5 bottom-2.5 z-20 lg:translate-y-3 lg:opacity-0 lg:transition-[opacity,transform] lg:duration-[320ms] lg:ease-[cubic-bezier(0.16,1,0.3,1)] lg:group-hover:translate-y-0 lg:group-hover:opacity-100">
+        {/* CTA: siempre visible en móvil, aparece al hover en escritorio. Con
+            teclado también aparece al recibir el foco: antes se tabulaba a un
+            botón invisible. */}
+        <div className="absolute inset-x-2.5 bottom-2.5 z-20 lg:translate-y-3 lg:opacity-0 lg:transition-[opacity,transform] lg:duration-[320ms] lg:ease-[cubic-bezier(0.16,1,0.3,1)] lg:group-hover:translate-y-0 lg:group-hover:opacity-100 lg:focus-within:translate-y-0 lg:focus-within:opacity-100">
           <button
             type="button"
             onClick={agregarAlCarrito}

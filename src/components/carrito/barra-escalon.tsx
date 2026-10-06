@@ -91,7 +91,10 @@ export function BarraEscalon({
         />
       </div>
 
-      <p className="text-fg-subtle mt-2 flex items-center gap-1.5 text-[11px]">
+      {/* `flex-wrap`: son hasta cinco tramos en una fila y, a 375px en el
+          drawer, sin poder bajar de línea cada uno se estrujaba en una
+          columna de dos o tres palabras. */}
+      <p className="text-fg-subtle mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px]">
         <Truck size={13} aria-hidden className={envioGratis ? "text-success" : ""} />
         {envioGratis ? (
           <span className="text-success">Envío gratis aplicado</span>
