@@ -142,12 +142,14 @@ const TIPOS: Tipo[] = [
     descripcion: "Perfumes para mujer",
     silueta: (
       <>
+        {/* Mismo alto y hombros que el hombre; el vestido abre poco, para que
+            no se vea más ancha que él. */}
         <circle cx="50" cy="17" r="9.5" />
-        <path d="M40 30 L60 30 Q64 30 65 34 L73 66 L27 66 L35 34 Q36 30 40 30 Z" />
-        <rect x="24" y="32" width="7" height="27" rx="3.5" transform="rotate(14 27.5 32)" />
-        <rect x="69" y="32" width="7" height="27" rx="3.5" transform="rotate(-14 72.5 32)" />
-        <rect x="40" y="64" width="8.5" height="30" rx="3.5" />
-        <rect x="51.5" y="64" width="8.5" height="30" rx="3.5" />
+        <path d="M42 30 L58 30 Q61 30 62 33.5 L67 63 L33 63 L38 33.5 Q39 30 42 30 Z" />
+        <rect x="30.5" y="31" width="6.5" height="27" rx="3.25" transform="rotate(7 33.75 31)" />
+        <rect x="63" y="31" width="6.5" height="27" rx="3.25" transform="rotate(-7 66.25 31)" />
+        <rect x="41" y="61" width="8" height="33" rx="3.5" />
+        <rect x="51" y="61" width="8" height="33" rx="3.5" />
       </>
     ),
   },
@@ -178,13 +180,21 @@ const TIPOS: Tipo[] = [
     descripcion: "Oud, azafrán y especias",
     silueta: (
       <>
-        {/* Media luna y estrella */}
-        <path
-          fillRule="evenodd"
-          d="M47 16 A34 34 0 1 0 47 88 A34 34 0 1 0 47 16 Z M60 22 A27 27 0 1 1 60 76 A27 27 0 1 1 60 22 Z"
-        />
-        <path d="M76 36 L79.2 45 L88.6 45.3 L81.2 51.1 L83.8 60.2 L76 54.9 L68.2 60.2 L70.8 51.1 L63.4 45.3 L72.8 45 Z" />
+        {/* Frasco de perfume árabe (attar): tapa alta de cúpula con remate,
+            cuello y cuerpo facetado de ocho lados. */}
+        <path d="M50 4 L52.2 9 C57.5 12.5 60 17 60 21.5 C60 25.5 56 27.5 50 27.5 C44 27.5 40 25.5 40 21.5 C40 17 42.5 12.5 47.8 9 Z" />
+        <rect x="45" y="27" width="10" height="9" rx="1.5" />
+        <path d="M39 36 L61 36 L73 48 L73 81 L61 93 L39 93 L27 81 L27 48 Z" />
       </>
+    ),
+    detalles: (
+      <g fill="#fff">
+        {/* Rombo de adorno, aristas de las facetas y una franja en el cuello */}
+        <path d="M50 52 L60 64.5 L50 77 L40 64.5 Z" />
+        <rect x="36.5" y="40" width="1.6" height="49" />
+        <rect x="61.9" y="40" width="1.6" height="49" />
+        <rect x="45" y="30.5" width="10" height="1.8" />
+      </g>
     ),
   },
 ];
