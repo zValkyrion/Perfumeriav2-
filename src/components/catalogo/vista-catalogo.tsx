@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { SearchX } from "lucide-react";
@@ -19,10 +19,12 @@ import {
   aplicarFiltros,
   chipsActivos,
   contarActivos,
+  contarOpciones,
   leerFiltros,
   ordenar,
   type ParamsBusqueda,
 } from "@/lib/filtros";
+import { productoVivo, useDisponibilidad } from "@/store/disponibilidad";
 import type { Producto } from "@/types";
 import {
   BarraCatalogo,
@@ -179,11 +181,18 @@ export function RejillaCatalogo({
   const searchParams = useSearchParams();
   const params = initialParams ?? (searchParams ? searchParamsToRecord(searchParams) : {});
 
+  // Lo agotado se decide con la disponibilidad en vivo (lo que marca el panel)
+  // y no solo con lo compilado: si no, «Solo en existencia» dejaría pasar un
+  // perfume que se agotó después de publicar.
+  const vivo = useDisponibilidad((s) => s.vivo);
+  const productos = useMemo(() => base.map((p) => productoVivo(p, vivo)), [base, vivo]);
+
   const filtros = leerFiltros(params);
-  const filtrados = ordenar(aplicarFiltros(base, filtros), filtros.orden);
+  const filtrados = ordenar(aplicarFiltros(productos, filtros), filtros.orden);
   const visibles = filtrados.slice(0, filtros.mostrar);
   const chips = chipsActivos(filtros);
   const activos = contarActivos(filtros);
+  const conteos = contarOpciones(productos, filtros);
 
   return (
     <>
@@ -195,7 +204,7 @@ export function RejillaCatalogo({
         <aside className="hidden lg:block">
           <div className="pr-2 pb-6">
             <Suspense fallback={null}>
-              <PanelFiltros />
+              <PanelFiltros conteos={conteos} activos={activos} />
             </Suspense>
           </div>
         </aside>
@@ -203,7 +212,7 @@ export function RejillaCatalogo({
         <div className="min-w-0">
           <div className="space-y-3">
             <Suspense fallback={<div className="h-11" />}>
-              <BarraCatalogo total={filtrados.length} activos={activos} />
+              <BarraCatalogo total={filtrados.length} activos={activos} conteos={conteos} />
             </Suspense>
             <Suspense fallback={null}>
               <ChipsActivos chips={chips} />

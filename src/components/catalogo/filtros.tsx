@@ -36,7 +36,7 @@ import {
   ORDENES,
   TAMANOS,
 } from "@/data/taxonomia";
-import { PRECIO_MAX, PRECIO_MIN, type ChipActivo } from "@/lib/filtros";
+import { PRECIO_MAX, PRECIO_MIN, type ChipActivo, type Conteos } from "@/lib/filtros";
 import { precio as fmt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -160,14 +160,23 @@ function GrupoCasillas({
   clave,
   opciones,
   valorDe = (o: string) => o,
+  conteo,
 }: {
   titulo: string;
   clave: string;
   opciones: readonly string[];
   valorDe?: (o: string) => string;
+  /** Cuántos productos tiene cada opción con los demás filtros puestos. */
+  conteo?: ReadonlyMap<string, number>;
 }) {
   const { valores, alternar } = useFiltrosUrl();
   const activos = valores(clave);
+  // Las opciones que dejarían la lista vacía no se enseñan (salvo la que ya
+  // está marcada, para poder quitarla). Sin conteos, todas.
+  const visibles = conteo
+    ? opciones.filter((o) => (conteo.get(valorDe(o)) ?? 0) > 0 || activos.includes(valorDe(o)))
+    : opciones;
+  if (visibles.length === 0) return null;
 
   return (
     <AccordionItem value={clave} className="border-border-soft">
@@ -181,9 +190,10 @@ function GrupoCasillas({
       </AccordionTrigger>
       <AccordionContent className="pb-3">
         <ul className="space-y-0.5">
-          {opciones.map((o) => {
+          {visibles.map((o) => {
             const valor = valorDe(o);
             const id = `${clave}-${valor}`;
+            const n = conteo?.get(valor);
             return (
               <li key={valor}>
                 <label
@@ -195,7 +205,10 @@ function GrupoCasillas({
                     checked={activos.includes(valor)}
                     onCheckedChange={() => alternar(clave, valor)}
                   />
-                  {o}
+                  <span className="min-w-0 flex-1">{o}</span>
+                  {n !== undefined && (
+                    <span className="text-fg-subtle shrink-0 text-xs tabular-nums">{n}</span>
+                  )}
                 </label>
               </li>
             );
@@ -252,50 +265,96 @@ function FiltroPrecio() {
   );
 }
 
-function FiltroExtras() {
-  const { params, valores, alternar, asignar } = useFiltrosUrl();
-  const promo = valores("promo");
-  const stock = params.get("stock") === "1";
-
+/**
+ * «En 3x2» y «En rebaja». Se esconde si ninguna de las dos tiene productos.
+ * (Aquí iba «Calificación mínima»: filtraba por estrellas que no venían de
+ * ninguna reseña, sino de un número al azar por producto.)
+ */
+function FiltroPromocion({ conteo }: { conteo?: ReadonlyMap<string, number> }) {
   return (
-    <AccordionItem value="extras" className="border-border-soft">
-      <AccordionTrigger className="py-3.5 text-sm hover:no-underline">
-        Promoción y disponibilidad
-      </AccordionTrigger>
-      <AccordionContent className="space-y-0.5 pb-3">
-        {[
-          { id: "3x2", label: "En 3x2" },
-          { id: "rebaja", label: "En rebaja" },
-        ].map((o) => (
-          <label
-            key={o.id}
-            htmlFor={`promo-${o.id}`}
-            className="hover:text-fg text-fg-muted flex min-h-9 cursor-pointer items-center gap-2.5 text-sm"
-          >
-            <Checkbox
-              id={`promo-${o.id}`}
-              checked={promo.includes(o.id)}
-              onCheckedChange={() => alternar("promo", o.id)}
-            />
-            {o.label}
-          </label>
-        ))}
+    <GrupoCasillas
+      titulo="Promoción"
+      clave="promo"
+      opciones={["En 3x2", "En rebaja"]}
+      valorDe={(o) => (o === "En 3x2" ? "3x2" : "rebaja")}
+      conteo={conteo}
+    />
+  );
+}
 
-        <label
-          htmlFor="solo-stock"
-          className="hover:text-fg text-fg-muted flex min-h-9 cursor-pointer items-center gap-2.5 text-sm"
-        >
-          <Checkbox
-            id="solo-stock"
-            checked={stock}
-            onCheckedChange={() => asignar("stock", stock ? null : "1")}
-          />
-          Solo disponibles
-        </label>
-        {/* Aquí iba «Calificación mínima»: filtraba por estrellas que no venían
-            de ninguna reseña, sino de un número al azar por producto. */}
-      </AccordionContent>
-    </AccordionItem>
+/**
+ * «Solo en existencia», como interruptor y a la vista (antes era una casilla
+ * escondida al fondo de «Promoción y disponibilidad»). Encendido, la lista
+ * deja fuera lo agotado —con los agotados en vivo del panel— y los filtros
+ * esconden las opciones que se quedan sin nada.
+ */
+export function InterruptorExistencia({
+  disponibles,
+  compacto = false,
+}: {
+  /** Cuántos quedarían encendido, con los demás filtros puestos. */
+  disponibles?: number;
+  /** Versión corta para la barra superior. */
+  compacto?: boolean;
+}) {
+  const { params, asignar } = useFiltrosUrl();
+  const encendido = params.get("stock") === "1";
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={encendido}
+      onClick={() => asignar("stock", encendido ? null : "1")}
+      className={cn(
+        "inline-flex items-center gap-2.5 rounded-full border text-left text-sm font-medium transition-colors",
+        compacto ? "h-11 px-3.5" : "min-h-12 w-full justify-between px-4",
+        encendido
+          ? "border-success/60 bg-success/10 text-fg"
+          : "border-border-strong text-fg-muted hover:text-fg",
+      )}
+    >
+      <span className="min-w-0">
+        <span className="block whitespace-nowrap">{compacto ? "En existencia" : "Solo en existencia"}</span>
+        {!compacto && disponibles !== undefined && (
+          <span className="text-fg-subtle block text-xs font-normal">
+            {disponibles} {disponibles === 1 ? "perfume disponible" : "perfumes disponibles"}
+          </span>
+        )}
+      </span>
+      <span
+        aria-hidden
+        className={cn(
+          "relative h-6 w-10 shrink-0 rounded-full transition-colors",
+          encendido ? "bg-success" : "bg-border-strong",
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-[left]",
+            encendido ? "left-[18px]" : "left-0.5",
+          )}
+        />
+      </span>
+    </button>
+  );
+}
+
+/** «Borrar filtros»: quita todo menos el orden y la búsqueda. */
+function BotonBorrarTodo({ activos, className }: { activos: number; className?: string }) {
+  const { limpiarTodo } = useFiltrosUrl();
+  if (activos === 0) return null;
+  return (
+    <button
+      type="button"
+      onClick={limpiarTodo}
+      className={cn(
+        "text-gold-light hover:text-gold inline-flex min-h-9 items-center gap-1 text-sm font-semibold underline-offset-4 hover:underline",
+        className,
+      )}
+    >
+      <X size={14} aria-hidden />
+      Borrar filtros ({activos})
+    </button>
   );
 }
 
@@ -336,22 +395,38 @@ function CategoriasCatalogo() {
   );
 }
 
-export function PanelFiltros() {
+export function PanelFiltros({
+  conteos,
+  activos = 0,
+  sinCategorias = false,
+}: {
+  conteos?: Conteos;
+  activos?: number;
+  /** En el filtro del teléfono las categorías estorban: ya están en el menú. */
+  sinCategorias?: boolean;
+}) {
   return (
     <>
-      <CategoriasCatalogo />
+      {!sinCategorias && <CategoriasCatalogo />}
 
-      <p className="eyebrow mb-2">Filtrar</p>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <p className="eyebrow">Filtrar</p>
+        <BotonBorrarTodo activos={activos} />
+      </div>
+
+      <InterruptorExistencia disponibles={conteos?.stock.get("1")} />
+
       <Accordion
         type="multiple"
         defaultValue={["genero", "familia", "precio"]}
-        className="w-full"
+        className="mt-2 w-full"
       >
-        <GrupoCasillas titulo="Género" clave="genero" opciones={GENEROS} />
+        <GrupoCasillas titulo="Género" clave="genero" opciones={GENEROS} conteo={conteos?.genero} />
         <GrupoCasillas
           titulo="Familia olfativa"
           clave="familia"
           opciones={FAMILIAS.map((f) => f.nombre)}
+          conteo={conteos?.familia}
         />
         <FiltroPrecio />
         <GrupoCasillas
@@ -361,20 +436,23 @@ export function PanelFiltros() {
           valorDe={(nombre) =>
             MARCAS.find((m) => m.nombre === nombre)?.slug ?? nombre
           }
+          conteo={conteos?.marca}
         />
         <GrupoCasillas
           titulo="Concentración"
           clave="conc"
           opciones={CONCENTRACIONES}
+          conteo={conteos?.conc}
         />
         <GrupoCasillas
           titulo="Tamaño"
           clave="ml"
           opciones={TAMANOS.map((t) => `${t} ml`)}
           valorDe={(o) => o.replace(" ml", "")}
+          conteo={conteos?.ml}
         />
-        <GrupoCasillas titulo="Ocasión" clave="ocasion" opciones={OCASIONES} />
-        <FiltroExtras />
+        <GrupoCasillas titulo="Ocasión" clave="ocasion" opciones={OCASIONES} conteo={conteos?.ocasion} />
+        <FiltroPromocion conteo={conteos?.promo} />
       </Accordion>
     </>
   );
@@ -384,11 +462,13 @@ export function PanelFiltros() {
 export function BarraCatalogo({
   total,
   activos,
+  conteos,
 }: {
   total: number;
   activos: number;
+  conteos?: Conteos;
 }) {
-  const { params, asignar } = useFiltrosUrl();
+  const { params, asignar, limpiarTodo } = useFiltrosUrl();
   const [abierto, setAbierto] = useState(false);
   // Un enlace viejo con un orden que ya no existe (?orden=rating) deja el
   // selector en el de siempre en vez de en blanco; el servidor hace lo mismo.
@@ -396,7 +476,7 @@ export function BarraCatalogo({
   const orden = ORDENES.some((o) => o.valor === pedido) ? pedido! : "relevancia";
 
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="text-fg-muted text-sm" aria-live="polite">
         <span data-precio className="text-fg font-medium">
           {total}
@@ -404,7 +484,12 @@ export function BarraCatalogo({
         {total === 1 ? "producto" : "productos"}
       </p>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {/* El interruptor a la mano en el teléfono, sin abrir el filtro. En
+            computadora ya está arriba del panel de la izquierda. */}
+        <span className="lg:hidden">
+          <InterruptorExistencia compacto />
+        </span>
         <Sheet open={abierto} onOpenChange={setAbierto}>
           <Button
             variant="outline"
@@ -431,15 +516,24 @@ export function BarraCatalogo({
               </SheetTitle>
             </SheetHeader>
 
-            <div className="flex-1 overflow-y-auto px-4">
-              <PanelFiltros />
+            <div className="flex-1 overflow-y-auto px-4 pt-4">
+              <PanelFiltros conteos={conteos} activos={activos} sinCategorias />
             </div>
 
-            <div className="border-border-soft border-t px-4 py-3">
+            <div className="border-border-soft flex gap-2 border-t px-4 py-3">
+              <Button
+                variant="outline"
+                size="touch"
+                className="flex-1"
+                disabled={activos === 0}
+                onClick={limpiarTodo}
+              >
+                Borrar todo
+              </Button>
               <Button
                 variant="gold"
                 size="touch"
-                className="w-full"
+                className="flex-[2]"
                 onClick={() => setAbierto(false)}
               >
                 Ver {total} {total === 1 ? "producto" : "productos"}
@@ -495,9 +589,10 @@ export function ChipsActivos({ chips }: { chips: ChipActivo[] }) {
         <button
           type="button"
           onClick={limpiarTodo}
-          className="text-fg-subtle hover:text-fg px-2 py-1.5 text-xs underline underline-offset-4"
+          className="text-gold-light hover:text-gold inline-flex items-center gap-1 px-2 py-1.5 text-xs font-semibold underline underline-offset-4"
         >
-          Limpiar todo
+          <X size={13} aria-hidden />
+          Borrar todo
         </button>
       </li>
     </ul>

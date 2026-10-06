@@ -137,6 +137,43 @@ function esMasVendido(p: Producto): boolean {
   return p.badges.includes("Más vendido");
 }
 
+/** Cuántos productos tiene cada opción de un filtro: `clave → valor → n`. */
+export type Conteos = Record<string, ReadonlyMap<string, number>>;
+
+/**
+ * Cuántos productos quedarían al marcar cada opción, con los **demás**
+ * filtros puestos (los de su propio grupo no cuentan: dentro de un grupo se
+ * combinan con O). Sirve para enseñar el número junto a cada casilla y para
+ * esconder las que dejarían la lista vacía —por ejemplo, las marcas que no
+ * tienen nada en existencia cuando «Solo en existencia» está puesto—.
+ */
+export function contarOpciones(base: Producto[], f: Filtros): Conteos {
+  const sinGrupo = (clave: keyof Filtros): Filtros => ({ ...f, [clave]: [] });
+  const contar = (lista: Producto[], valoresDe: (p: Producto) => readonly string[]) => {
+    const m = new Map<string, number>();
+    for (const p of lista) for (const v of new Set(valoresDe(p))) m.set(v, (m.get(v) ?? 0) + 1);
+    return m;
+  };
+  const promos = (p: Producto) => [
+    ...(p.badges.includes("3x2") ? ["3x2"] : []),
+    ...(tieneRebaja(p) ? ["rebaja"] : []),
+  ];
+  return {
+    genero: contar(aplicarFiltros(base, sinGrupo("genero")), (p) => [p.genero]),
+    familia: contar(aplicarFiltros(base, sinGrupo("familia")), (p) => [p.familia]),
+    marca: contar(aplicarFiltros(base, sinGrupo("marca")), (p) => [p.marca]),
+    conc: contar(aplicarFiltros(base, sinGrupo("concentracion")), (p) => [p.concentracion]),
+    ml: contar(aplicarFiltros(base, sinGrupo("ml")), (p) => p.presentaciones.map((v) => String(v.ml))),
+    ocasion: contar(aplicarFiltros(base, sinGrupo("ocasion")), (p) => p.ocasion),
+    promo: contar(aplicarFiltros(base, sinGrupo("promo")), promos),
+    // Cuántos hay en existencia con todo lo demás puesto: para decir en el
+    // interruptor cuántos quedarían al encenderlo.
+    stock: contar(aplicarFiltros(base, { ...f, soloStock: false }), (p) =>
+      p.presentaciones.some((v) => v.stock > 0) ? ["1"] : [],
+    ),
+  };
+}
+
 /** Cuántos filtros hay activos, para el contador del botón "Filtrar" (§9). */
 export function contarActivos(f: Filtros): number {
   return (
@@ -192,7 +229,7 @@ export function chipsActivos(f: Filtros): ChipActivo[] {
     });
   }
   if (f.soloStock) {
-    chips.push({ clave: "stock", valor: "1", etiqueta: "Solo disponibles" });
+    chips.push({ clave: "stock", valor: "1", etiqueta: "Solo en existencia" });
   }
 
   return chips;
