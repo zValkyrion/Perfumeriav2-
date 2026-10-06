@@ -63,3 +63,7 @@ radar/salida-sitio/
 # carpeta de la receta a mano (radar/.prueba) tampoco se versiona.
 radar/pruebas-locales/.generado/
 radar/.prueba/
+
+# Archivos de trabajo del análisis del PDF del catálogo (imágenes, recortes,
+# borradores). El catálogo real vive en catalogo/*.csv y en DynamoDB.
+catalogo_el_rey/
