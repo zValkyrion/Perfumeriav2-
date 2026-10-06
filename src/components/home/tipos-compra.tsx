@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, CircleArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * Tipos de mayoreo, en círculos.
@@ -203,7 +204,12 @@ const TIPOS: Tipo[] = [
 const PASOS_SOMBRA = 64;
 const AVANCE_SOMBRA = 1.4;
 
-function Pictograma({ tipo }: { tipo: Tipo }) {
+/**
+ * Memorizado: cada pictograma son 65 `<use>` y el carrusel cambia de estado al
+ * desplazarse. Sus props salen de `TIPOS`, que es constante, así que nunca
+ * necesita volver a pintarse.
+ */
+const Pictograma = memo(function Pictograma({ tipo }: { tipo: Tipo }) {
   const recorte = `recorte-tipo-${tipo.clave}`;
   const silueta = `silueta-tipo-${tipo.clave}`;
   return (
@@ -240,43 +246,73 @@ function Pictograma({ tipo }: { tipo: Tipo }) {
       <circle cx="100" cy="100" r="99" fill="none" stroke="#5c5c5c" strokeWidth="1" />
     </svg>
   );
+});
+
+interface EstadoBarra {
+  ancho: number;
+  inicio: number;
+  alInicio: boolean;
+  alFinal: boolean;
+}
+
+function igual(a: EstadoBarra, b: EstadoBarra) {
+  // Diferencias de menos de una milésima no se ven y solo costarían un render.
+  return (
+    Math.abs(a.ancho - b.ancho) < 0.001 &&
+    Math.abs(a.inicio - b.inicio) < 0.001 &&
+    a.alInicio === b.alInicio &&
+    a.alFinal === b.alFinal
+  );
 }
 
 export function TiposCompra() {
   const pista = useRef<HTMLDivElement>(null);
-  const [barra, setBarra] = useState({ ancho: 1, inicio: 0, alInicio: true, alFinal: false });
-
-  // La barra de abajo y las flechas siguen al desplazamiento real del carrusel.
-  const medir = useCallback(() => {
-    const el = pista.current;
-    if (!el) return;
-    const total = el.scrollWidth;
-    const visible = el.clientWidth;
-    const max = Math.max(1, total - visible);
-    const ancho = total > 0 ? Math.min(1, visible / total) : 1;
-    setBarra({
-      ancho,
-      inicio: (el.scrollLeft / max) * (1 - ancho),
-      alInicio: el.scrollLeft <= 2,
-      alFinal: el.scrollLeft >= max - 2,
-    });
-  }, []);
+  const [barra, setBarra] = useState<EstadoBarra>({
+    ancho: 1,
+    inicio: 0,
+    alInicio: true,
+    alFinal: false,
+  });
 
   useEffect(() => {
     const el = pista.current;
     if (!el) return;
+    let cuadro = 0;
+
+    // La barra de abajo y las flechas siguen al desplazamiento real del
+    // carrusel. El evento «scroll» llega varias veces por cuadro: se mide una
+    // sola vez por cuadro y solo se guarda si algo cambió de verdad.
+    const medir = () => {
+      cuadro = 0;
+      const total = el.scrollWidth;
+      const visible = el.clientWidth;
+      const max = Math.max(1, total - visible);
+      const ancho = total > 0 ? Math.min(1, visible / total) : 1;
+      const nuevo: EstadoBarra = {
+        ancho,
+        inicio: (el.scrollLeft / max) * (1 - ancho),
+        alInicio: el.scrollLeft <= 2,
+        alFinal: el.scrollLeft >= max - 2,
+      };
+      setBarra((previo) => (igual(previo, nuevo) ? previo : nuevo));
+    };
+    const programar = () => {
+      if (!cuadro) cuadro = requestAnimationFrame(medir);
+    };
+
     // El ajuste de «snap» puede dejarlo movido unos píxeles al cargar, y eso
     // corta el primer círculo: se arranca siempre desde el principio.
     el.scrollLeft = 0;
     medir();
-    const obs = new ResizeObserver(medir);
+    const obs = new ResizeObserver(programar);
     obs.observe(el);
-    el.addEventListener("scroll", medir, { passive: true });
+    el.addEventListener("scroll", programar, { passive: true });
     return () => {
+      cancelAnimationFrame(cuadro);
       obs.disconnect();
-      el.removeEventListener("scroll", medir);
+      el.removeEventListener("scroll", programar);
     };
-  }, [medir]);
+  }, []);
 
   const mover = (direccion: 1 | -1) => {
     const el = pista.current;
@@ -320,50 +356,67 @@ export function TiposCompra() {
           ))}
         </div>
 
-        {/* Flechas amarillas, a la derecha y centradas con los círculos */}
-        {hayDesplazamiento && (
-          // Centro del círculo (mitad de su ancho + 8 px de aire arriba) menos la
-          // mitad del par de flechas (92 px).
-          <div className="hidden shrink-0 flex-col gap-3 self-start sm:mt-[52px] sm:flex lg:mt-[68px]">
-            <button
-              type="button"
-              onClick={() => mover(1)}
-              disabled={barra.alFinal}
-              aria-label="Ver más tipos de mayoreo"
-              className="grid h-10 w-10 place-items-center rounded-full bg-[#ffc20e] text-black transition-opacity hover:brightness-95 disabled:opacity-40"
-            >
-              <ChevronRight size={22} strokeWidth={2.2} />
-            </button>
-            <button
-              type="button"
-              onClick={() => mover(-1)}
-              disabled={barra.alInicio}
-              aria-label="Ver los tipos anteriores"
-              className="grid h-10 w-10 place-items-center rounded-full bg-[#ffc20e] text-black transition-opacity hover:brightness-95 disabled:opacity-40"
-            >
-              <ChevronLeft size={22} strokeWidth={2.2} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Barra de desplazamiento: riel fino, guía negra y topes en las orillas */}
-      {hayDesplazamiento && (
-        <div className="mt-4 flex items-center gap-2 sm:pr-16" aria-hidden>
-          <button type="button" tabIndex={-1} onClick={() => mover(-1)} className="text-fg grid h-4 w-3 place-items-center">
-            <span className="h-0 w-0 border-y-[4px] border-r-[5px] border-y-transparent border-r-current" />
+        {/* Flechas amarillas, a la derecha y centradas con los círculos.
+            Se pintan siempre y solo se ocultan con `invisible`: montarlas al
+            hidratar cambiaba el ancho del carrusel y movía la página. */}
+        {/* Centro del círculo (mitad de su ancho + 8 px de aire arriba) menos la
+            mitad del par de flechas (92 px). */}
+        <div
+          className={cn(
+            "hidden shrink-0 flex-col gap-3 self-start sm:mt-[52px] sm:flex lg:mt-[68px]",
+            !hayDesplazamiento && "invisible",
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => mover(1)}
+            disabled={barra.alFinal}
+            aria-label="Ver más tipos de mayoreo"
+            className="grid h-10 w-10 place-items-center rounded-full bg-[#ffc20e] text-black transition-opacity hover:brightness-95 disabled:opacity-40"
+          >
+            <ChevronRight size={22} strokeWidth={2.2} />
           </button>
-          <div className="relative h-1.5 flex-1">
-            <span
-              className="absolute inset-y-0 rounded-full bg-black transition-[left] duration-150"
-              style={{ width: `${barra.ancho * 100}%`, left: `${barra.inicio * 100}%` }}
-            />
-          </div>
-          <button type="button" tabIndex={-1} onClick={() => mover(1)} className="text-fg grid h-4 w-3 place-items-center">
-            <span className="h-0 w-0 border-y-[4px] border-l-[5px] border-y-transparent border-l-current" />
+          <button
+            type="button"
+            onClick={() => mover(-1)}
+            disabled={barra.alInicio}
+            aria-label="Ver los tipos anteriores"
+            className="grid h-10 w-10 place-items-center rounded-full bg-[#ffc20e] text-black transition-opacity hover:brightness-95 disabled:opacity-40"
+          >
+            <ChevronLeft size={22} strokeWidth={2.2} />
           </button>
         </div>
-      )}
+      </div>
+
+      {/* Barra de desplazamiento: riel fino, guía negra y topes en las orillas.
+          Igual que las flechas, siempre ocupa su sitio para no empujar lo de
+          abajo al hidratar. */}
+      <div
+        className={cn(
+          "mt-4 flex items-center gap-2 sm:pr-16",
+          !hayDesplazamiento && "invisible",
+        )}
+        aria-hidden
+      >
+        <button type="button" tabIndex={-1} onClick={() => mover(-1)} className="text-fg grid h-4 w-3 place-items-center">
+          <span className="h-0 w-0 border-y-[4px] border-r-[5px] border-y-transparent border-r-current" />
+        </button>
+        <div className="relative h-1.5 flex-1">
+          {/* Se mueve con `transform` (no con `left`) para no recalcular el
+              layout en cada cuadro. El porcentaje de translateX es relativo al
+              ancho de la propia guía, de ahí la división. */}
+          <span
+            className="absolute inset-y-0 left-0 rounded-full bg-black transition-transform duration-150 will-change-transform"
+            style={{
+              width: `${barra.ancho * 100}%`,
+              transform: `translateX(${(barra.inicio / barra.ancho) * 100}%)`,
+            }}
+          />
+        </div>
+        <button type="button" tabIndex={-1} onClick={() => mover(1)} className="text-fg grid h-4 w-3 place-items-center">
+          <span className="h-0 w-0 border-y-[4px] border-l-[5px] border-y-transparent border-l-current" />
+        </button>
+      </div>
     </div>
   );
 }

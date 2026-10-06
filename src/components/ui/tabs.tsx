@@ -24,8 +24,13 @@ function Tabs({
   )
 }
 
+// La altura horizontal va como `h-8` a secas y no como
+// `group-data-horizontal/tabs:h-8`: con la variante, tailwind-merge no la
+// reconocía como rival de un `h-auto` pasado por className y además le ganaba
+// por especificidad, así que las pestañas altas (cuenta, checkout) se salían de
+// la franja. El caso vertical sigue ganando por especificidad con su `h-fit`.
 const tabsListVariants = cva(
-  "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
+  "group/tabs-list inline-flex h-8 w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
   {
     variants: {
       variant: {

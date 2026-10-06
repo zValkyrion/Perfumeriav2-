@@ -63,9 +63,12 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+// El tema activo (mayoreo) es claro. Declararlo oscuro pintaba de negro la barra
+// del navegador en el móvil y los controles nativos (selects, scrollbars,
+// autocompletado) sobre una página clara. El color es el `--color-bg` de mayoreo.
 export const viewport: Viewport = {
-  themeColor: "#0A0A0B",
-  colorScheme: "dark",
+  themeColor: "#f3f4f6",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -78,9 +81,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es-MX"
       // Tema por defecto: mayoreo (claro, acento rojo, sans). El selector de
-      // pruebas puede cambiarlo y el script de abajo restaura lo guardado.
+      // pruebas que lo cambiaba ya no existe. Sin la clase `dark`: el tema es
+      // claro y esa clase activaba las variantes `dark:` de shadcn (inputs y
+      // botones con tintes pensados para fondo negro).
       data-tema="mayoreo"
-      className={`dark ${inter.variable} ${cormorant.variable} h-full antialiased`}
+      className={`${inter.variable} ${cormorant.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

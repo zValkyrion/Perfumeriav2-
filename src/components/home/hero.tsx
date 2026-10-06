@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { Imagen } from "@/components/comunes/imagen";
 
@@ -10,6 +8,10 @@ import { Imagen } from "@/components/comunes/imagen";
  * siendo 100% clickeable hacia el catálogo. Es arte externo; el banner
  * generado de la paca se queda en `public/banner-paca-50.webp` por si hay que
  * volver a él (`npm run banner-paca` lo rehace).
+ *
+ * Es componente de servidor: no tiene estado ni efectos, y marcarlo de cliente
+ * metía en el paquete de la portada el mapa de blurs del catálogo que importa
+ * `Imagen` solo para pintar un enlace con una foto.
  */
 export function Hero() {
   return (

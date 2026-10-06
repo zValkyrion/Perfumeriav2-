@@ -42,11 +42,12 @@ export function BannerPaquete() {
     <Contenedor>
       <div className="grid items-center gap-7 lg:grid-cols-[1fr_1.05fr] lg:gap-12">
         <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border-soft bg-surface shadow-2xl">
+          {/* Sin `priority`: queda bajo el pliegue y precargarla le quitaba
+              ancho de banda al hero, que es el LCP de la portada. */}
           <Imagen
             src={paca.imagen}
             alt={`${paca.nombre}: ${paca.piezas} perfumes surtidos`}
             sizes="(max-width: 1024px) 100vw, 50vw"
-            priority
             className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
           />
           {/* Todos sus modelos llevan la etiqueta «Más vendido»; el paquete en

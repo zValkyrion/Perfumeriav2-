@@ -270,6 +270,10 @@
  *   4. Degradados planos; el degradado metálico es un tic de lujo.
  */
 :root[data-tema="mayoreo"] {
+  /* Controles nativos (selects, scrollbars, autocompletado) en claro, a juego
+     con el `colorScheme` del viewport en app/layout.tsx. */
+  color-scheme: light;
+
   --color-bg: #f3f4f6;
   --color-surface: #ffffff;
   --color-surface-2: #e9ebef;
@@ -715,6 +719,8 @@
     --color-gold-light: #e8c766;
     --color-gold-deep: #8c6f14;
     color: var(--color-fg);
+    /* Un control nativo dentro (un select, un scrollbar) también va en oscuro. */
+    color-scheme: dark;
   }
 
   /**
@@ -845,5 +851,13 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* `Revelar` arranca con opacity 0 y desplazamiento en línea. Con movimiento
+     reducido se muestra desde el HTML, sin esperar a que entre en pantalla
+     (el `!important` es lo único que le gana a un estilo en línea). */
+  [data-revelar] {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -30,8 +31,11 @@ export function AcordeonFAQ({
       {items.map((item, i) => {
         const abreGrupo = item.grupo && item.grupo !== items[i - 1]?.grupo;
 
+        // Fragment y no un <div>: con el envoltorio cada AccordionItem era el
+        // último de su padre, así que `not-last:border-b` no pintaba ningún
+        // separador y el `first:mt-0` del rótulo valía para todos los grupos.
         return (
-          <div key={item.p}>
+          <Fragment key={item.p}>
             {abreGrupo ? (
               <p className="text-gold-light mt-7 mb-1 text-[13px] font-bold tracking-[0.14em] uppercase first:mt-0">
                 {item.grupo}
@@ -46,7 +50,7 @@ export function AcordeonFAQ({
                 {item.r}
               </AccordionContent>
             </AccordionItem>
-          </div>
+          </Fragment>
         );
       })}
     </Accordion>

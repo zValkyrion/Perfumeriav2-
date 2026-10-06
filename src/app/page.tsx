@@ -104,9 +104,11 @@ export default function Home() {
             enlace="/catalogo"
             enlaceTexto="Ver perfumes"
           />
+          {/* Ninguna tarjeta prioritaria: el carrusel queda bajo el pliegue y
+              solo el hero debe precargarse. */}
           <CarruselProductos
             productos={MAS_VENDIDOS.slice(0, 10)}
-            prioritarios={2}
+            prioritarios={0}
           />
         </Contenedor>
       </Seccion>
@@ -135,7 +137,13 @@ export default function Home() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
             {LOTES_DESTACADOS.map((lote) => (
               <Tilt key={lote.slug} className="h-full">
-                <TarjetaLote lote={lote} destacada={lote.masVendido} />
+                {/* h-full: el Tilt ya estira a la altura de la fila; sin esto
+                    cada tarjeta medía lo de su contenido. */}
+                <TarjetaLote
+                  lote={lote}
+                  destacada={lote.masVendido}
+                  className="h-full"
+                />
               </Tilt>
             ))}
           </div>

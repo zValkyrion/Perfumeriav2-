@@ -25,11 +25,12 @@ export function TituloRevelado({
   paso?: number;
   as?: "h1" | "h2" | "p";
 }) {
-  const reducido = useReducedMotion();
   const palabras = texto.split(" ");
 
-  if (reducido) return <Etiqueta className={className}>{texto}</Etiqueta>;
-
+  // Sin ramificar por `useReducedMotion`: el HTML prerenderizado siempre trae
+  // las palabras escondidas y, si el cliente pintaba otro árbol, la hidratación
+  // no casaba. Con movimiento reducido las suelta la regla `[data-revelar]` de
+  // globals.css.
   return (
     <Etiqueta className={className}>
       {/* El texto completo queda accesible; las palabras animadas se ocultan
@@ -42,6 +43,7 @@ export function TituloRevelado({
             className="inline-block overflow-hidden align-bottom"
           >
             <motion.span
+              data-revelar=""
               className="inline-block"
               initial={{ y: "108%" }}
               whileInView={{ y: 0 }}

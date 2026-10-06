@@ -1,11 +1,23 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+
+/*
+ * Movimiento reducido: lo resuelve el CSS, no un `useReducedMotion`.
+ *
+ * Antes se ramificaba el árbol según ese hook. El HTML prerenderizado sale
+ * siempre con la rama animada (`opacity: 0` en línea, porque el servidor no
+ * conoce la preferencia) y en el cliente la primera pasada tomaba la rama
+ * estática: React no corrige atributos al hidratar, así que el estilo en línea
+ * se quedaba y el contenido no aparecía nunca. Ahora el árbol es el mismo en
+ * servidor y cliente, y la regla `[data-revelar]` de globals.css fuerza
+ * `opacity: 1` y quita el desplazamiento cuando se pide menos movimiento.
+ */
 
 /**
  * Entrada de sección: opacity 0→1 y y 16→0, 0.5s, easeOut, una sola vez (§6.7).
- * Con `prefers-reduced-motion` no anima nada y renderiza el contenido tal cual.
+ * Con `prefers-reduced-motion` el contenido se ve tal cual desde el principio.
  */
 export function Revelar({
   children,
@@ -16,12 +28,9 @@ export function Revelar({
   delay?: number;
   className?: string;
 }) {
-  const reducido = useReducedMotion();
-
-  if (reducido) return <div className={className}>{children}</div>;
-
   return (
     <motion.div
+      data-revelar=""
       className={className}
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -43,10 +52,6 @@ export function RevelarLista({
   className?: string;
   paso?: number;
 }) {
-  const reducido = useReducedMotion();
-
-  if (reducido) return <div className={className}>{children}</div>;
-
   return (
     <motion.div
       className={className}
@@ -60,6 +65,7 @@ export function RevelarLista({
       {children.map((hijo, i) => (
         <motion.div
           key={i}
+          data-revelar=""
           variants={{
             oculto: { opacity: 0, y: 16 },
             visible: { opacity: 1, y: 0 },

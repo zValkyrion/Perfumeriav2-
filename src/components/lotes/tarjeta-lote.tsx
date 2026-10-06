@@ -81,7 +81,9 @@ export function TarjetaLote({
           ))}
         </ul>
 
-        <div className="mt-5 flex flex-col gap-2 pt-1 sm:flex-row">
+        {/* `mt-auto` baja el botón al pie: en una fila de tarjetas de igual
+            alto los botones quedan alineados aunque la lista sea más corta. */}
+        <div className="mt-auto flex flex-col gap-2 pt-6 sm:flex-row">
           <BotonAgregarLote
             slug={lote.slug}
             nombre={lote.nombre}

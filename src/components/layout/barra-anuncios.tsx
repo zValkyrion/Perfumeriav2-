@@ -22,8 +22,19 @@ function suscribir(alCambiar: () => void) {
   };
 }
 
+// Respaldo para cuando no se puede escribir: la tira se cierra igual, solo
+// que no se recuerda al recargar.
+let cerradoEnMemoria = false;
+
+// Con almacenamiento bloqueado (Safari privado, cookies de terceros apagadas)
+// `sessionStorage` lanza; sin el try/catch la portada entera se caía al render.
 function leerCliente() {
-  return sessionStorage.getItem(CLAVE) === "1";
+  if (cerradoEnMemoria) return true;
+  try {
+    return sessionStorage.getItem(CLAVE) === "1";
+  } catch {
+    return cerradoEnMemoria;
+  }
 }
 
 function leerServidor() {
@@ -31,7 +42,12 @@ function leerServidor() {
 }
 
 function cerrarAnuncios() {
-  sessionStorage.setItem(CLAVE, "1");
+  cerradoEnMemoria = true;
+  try {
+    sessionStorage.setItem(CLAVE, "1");
+  } catch {
+    // Sin almacenamiento: vale con el respaldo en memoria.
+  }
   for (const avisar of escuchas) avisar();
 }
 
@@ -47,7 +63,9 @@ export function BarraAnuncios() {
     // Alta y con tipografía grande a propósito: es la única franja del sitio
     // que repite las promesas, así que si no se lee de un vistazo no sirve de
     // nada. Va al doble del alto que tenía (36px → 52/60px).
-    <div className="border-border-soft bg-bg relative z-50 h-13 border-y sm:h-15">
+    // `z-10` y no más: con z-50 pasaba por encima de la cabecera fija (z-40)
+    // al hacer scroll. Solo necesita apilar su degradado y su botón.
+    <div className="border-border-soft bg-bg relative z-10 h-13 border-y sm:h-15">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-20"
