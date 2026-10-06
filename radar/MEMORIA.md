@@ -159,7 +159,9 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | `POST /pedidos/consulta` | Rastreo sin cuenta: folio + teléfono. **Sin token**; mismo 404 para folio inexistente y teléfono equivocado |
 | `POST /solicitudes` | Distribuidor, contacto o factura. **Sin token** (si llega, guarda el `sub`) |
 | `GET /admin/pedidos?desde&hasta` | Pedidos del negocio del rango (calendario de México), del más nuevo al más viejo |
-| `GET/PUT /admin/pedidos/{folio}` | Detalle y cambio de estatus, guía, paquetería y notas. PUT con `actualizadoEn` visto: 409 si otro lo cambió |
+| `GET/PUT /admin/pedidos/{folio}` | Detalle y cambio de estatus, guía, paquetería, notas, **datos de entrega** (`contacto`, mientras no esté entregado ni cancelado) y **artículos** (`articulos`, solo «Pendiente»: se recotiza en el servidor). PUT con `actualizadoEn` visto: 409 si otro lo cambió |
+| `POST /admin/pedidos` | El equipo captura un pedido (WhatsApp, teléfono, mostrador): mismo saneado, cotización, folio e idempotencia que la tienda; el historial dice quién |
+| `POST /admin/cotizar` | Lo que costaría con esos artículos y condiciones, sin guardar: lo que enseña el panel mientras arma o edita un pedido |
 | `GET /admin/ventas?desde&hasta` | Resumen de ventas (sin rango: últimos 30 días; máximo 400) |
 | `GET /admin/clientes` · `GET /admin/clientes/detalle?clave=` | Cuentas de Cognito unidas con los compradores de los pedidos |
 | `GET /admin/solicitudes` · `PUT /admin/solicitudes/{id}` | Bandeja de solicitudes con estado y nota (409 por concurrencia) |
@@ -522,7 +524,8 @@ invitaciones, bajas y cierre de sesiones). Tres archivos: el panel del
 catálogo (`probar-admin`), pedidos, ventas, clientes, solicitudes y rastreo con
 las cifras de ventas calculadas a mano (`probar-tienda`, 122) y «Equipo y
 cuentas» (`probar-equipo`, 56: puertas, superadmin por correo verificado,
-solicitudes, aceptar, rechazar, invitar, grupos y acceso). Es **la forma de probar una ruta nueva sin tocar producción**; cómo
+solicitudes, aceptar, rechazar, invitar, grupos y acceso) y la captura y
+edición de pedidos desde el panel (`probar-pedidos-admin`, 29). Es **la forma de probar una ruta nueva sin tocar producción**; cómo
 arrancar la tienda y el panel contra `servidor:local`, con tokens falsos de
 admin y de cliente, está en `pruebas-locales/LEEME.md`.
 
@@ -565,6 +568,52 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-10-05 · Panel de la tienda rediseñado: responsive, tablero y pedidos editables
+
+- **Por qué:** el dueño pidió un panel moderno, cómodo en teléfono y en
+  computadora, con buenas estadísticas, seguimiento de pedidos y poder
+  cambiar el pedido de un cliente. El panel era una columna de 672 px
+  (heredada de la app de campo) que desperdiciaba la pantalla y no dejaba
+  tocar lo que un pedido llevaba.
+- **Dos grupos de rutas, mismas URL:** `app/(campo)` (proveedores) conserva
+  la columna de teléfono en su `layout`; `app/(panel)` (tienda, pedidos,
+  ventas, clientes, solicitudes, catálogo, equipo) usa
+  `components/panel/marco.tsx`: menú lateral fijo en ≥ 1024 px y barra
+  superior con cajón en teléfono (sin barra inferior: los detalles ya traen
+  su barra de acciones abajo). El `max-w-2xl` salió del `<body>`. Las barras
+  fijas del panel llevan `lg:left-64` para no quedar bajo el menú.
+- **Tablero** (`/tienda/`): pendientes de hoy (por cobrar, surtir, enviar, en
+  camino, solicitudes, equipo) que llevan a la lista ya filtrada
+  (`/pedidos/?estatus=`); indicadores del periodo (7/30 días, mes, 90 días)
+  **contra el periodo anterior del mismo largo**; ingresos por día con el
+  periodo anterior punteado; lo más vendido, mejores clientes, formas de pago
+  y descuentos; pedidos recientes. Cada bloque falla por separado.
+- **Gráficas** en `components/panel/graficas.tsx`, SVG propio con crosshair y
+  tooltip. Colores de la paleta categórica validada para daltonismo
+  (`--color-serie-1..3` en `globals.css`): el rojo de marca no se usa en datos
+  porque se lee como «peligro». Se retiró `BarrasDia`.
+- **Pedidos:** tabla completa en computadora (fila entera como enlace) y
+  tarjetas en teléfono; pestañas de estatus con conteo, forma de pago, orden,
+  rango y paginación de 50.
+- **Detalle del pedido:** dos columnas, barra de progreso con fechas, la
+  tarjeta de estatus primero en el teléfono, y dos ediciones nuevas: **datos
+  de entrega** y **artículos** (solo «Pendiente»: después ya se cobró). El
+  total que se ve al editar lo calcula `POST /admin/cotizar` —la misma
+  `cotizar` que cobra—; al guardar el servidor vuelve a cotizar, deja en el
+  historial «de $X a $Y» y pone al día la copia de «Mis pedidos».
+- **Nuevo pedido** (`/pedidos/nuevo/`, botón rojo del menú): para lo que
+  llega por WhatsApp o en persona. Cliente (o uno anterior), artículos del
+  catálogo publicado, forma de pago, envío y cupón, con el total del servidor
+  en vivo. `crearPedido` acepta `por`; la clave de idempotencia se fija al
+  abrir la pantalla.
+- **Pruebas:** `probar-pedidos-admin.mjs` (29): puertas, cotizar sin guardar,
+  capturar con idempotencia, corregir dirección (y cuándo ya no), cambiar
+  artículos (y cuándo ya no), sello viejo, copia de «Mis pedidos» y que el
+  cliente no vea la nota interna.
+- **Verificado** con `servidor:local` en 1440 px y 375 px: tablero, lista,
+  detalle, editar artículos de un pendiente (total y historial), capturar un
+  pedido con escalón de Mayoreo, ventas y la app de campo intacta.
 
 ### 2026-10-05 · Superadmin, «Equipo y cuentas» y adiós al PIN
 

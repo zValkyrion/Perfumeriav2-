@@ -111,7 +111,7 @@ export function VistaClientes() {
   const conteo = (f: (typeof FILTROS)[number]) => todos?.filter(f.cumple).length ?? 0;
 
   return (
-    <main className="p-4 pb-10">
+    <main className="p-4 pb-12 sm:p-6">
       <Cabecera
         titulo="Clientes"
         subtitulo={
@@ -234,7 +234,7 @@ export function VistaClientes() {
         </p>
       ) : (
         <>
-          <ul className="grid gap-2">
+          <ul className="grid gap-2 xl:grid-cols-2">
             {lista.slice(0, limite).map((x) => (
               <FilaCliente key={x.clave} cliente={x} />
             ))}

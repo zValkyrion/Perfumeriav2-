@@ -5,8 +5,8 @@ import Link from "next/link";
 import { ChevronRight, Download, RefreshCw } from "lucide-react";
 import { Boton, Campo, Tarjeta } from "@/components/ui";
 import { Mensaje } from "@/components/catalogo/comun";
+import { GraficaArea } from "@/components/panel/graficas";
 import {
-  BarrasDia,
   Cabecera,
   Dato,
   ErrorCarga,
@@ -103,7 +103,7 @@ export function VistaVentas() {
   };
 
   return (
-    <main className="p-4 pb-10">
+    <main className="p-4 pb-12 sm:p-6">
       <Cabecera
         titulo="Ventas"
         subtitulo={`${rangoLegible(desde, hasta, hoy)} · hora de México`}
@@ -203,10 +203,10 @@ export function VistaVentas() {
       ) : c.error && !alDia ? null : (
         <div
           aria-busy={!alDia}
-          className={cn("grid gap-4 transition-opacity", !alDia && "opacity-50")}
+          className={cn("grid gap-4 transition-opacity xl:grid-cols-2", !alDia && "opacity-50")}
         >
           {!alDia && (
-            <p role="status" className="text-[13px] font-medium text-fg-muted">
+            <p role="status" className="text-[13px] font-medium text-fg-muted xl:col-span-2">
               Leyendo {rangoLegible(desde, hasta, hoy)}… Abajo, todavía las cifras {rangoLegible(d.desde, d.hasta, hoy)}.
             </p>
           )}
@@ -217,7 +217,9 @@ export function VistaVentas() {
             </Mensaje>
           )}
           <Resumen d={d} />
-          <Barras d={d} />
+          <div className="xl:col-span-2">
+            <Barras d={d} />
+          </div>
           <PorEstatus d={d} />
           <Desgloses d={d} />
           <TopProductos d={d} />
@@ -235,7 +237,7 @@ const entero = (n: number) => n.toLocaleString("es-MX");
 
 function Resumen({ d }: { d: ResumenVentas }) {
   return (
-    <section aria-label="Cifras del rango" className="grid grid-cols-2 gap-2 [overflow-wrap:anywhere]">
+    <section aria-label="Cifras del rango" className="grid grid-cols-2 gap-3 [overflow-wrap:anywhere] lg:grid-cols-4 xl:col-span-2">
       <Dato
         className="col-span-2"
         etiqueta="Ingresos"
@@ -273,7 +275,7 @@ function Barras({ d }: { d: ResumenVentas }) {
           : "Solo pedidos vendidos. Las cifras exactas, abajo en «Ver día por día»."
       }
     >
-      <BarrasDia datos={serie} />
+      <GraficaArea datos={serie.map((x) => ({ fecha: x.fecha, valor: x.ingresos }))} formato={pesosCentavos} alto={240} />
       <details className="mt-2">
         <summary className="flex min-h-11 cursor-pointer items-center text-[14px] font-semibold text-info">
           Ver día por día ({conMovimiento.length} {conMovimiento.length === 1 ? "día" : "días"} con pedidos)
@@ -385,7 +387,7 @@ function Desgloses({ d }: { d: ResumenVentas }) {
                   </span>
                 </div>
                 <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-2" aria-hidden>
-                  <div className="h-full rounded-full bg-gold" style={{ width: `${Math.min(100, parte * 100)}%` }} />
+                  <div className="h-full rounded-full bg-[var(--color-serie-1)]" style={{ width: `${Math.min(100, parte * 100)}%` }} />
                 </div>
               </li>
             );

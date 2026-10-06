@@ -122,7 +122,7 @@ export function VistaEquipo() {
   const conteo = (p: (typeof PESTANAS)[number]) => cuentas?.filter(p.cumple).length ?? 0;
 
   return (
-    <main className="p-4 pb-10">
+    <main className="p-4 pb-12 sm:p-6">
       <Cabecera
         titulo="Equipo y cuentas"
         subtitulo={
@@ -237,7 +237,7 @@ export function VistaEquipo() {
                       : "No hay cuentas con el acceso cortado."}
               </p>
             ) : (
-              <ul className="grid gap-2">
+              <ul className="grid items-start gap-2 xl:grid-cols-2">
                 {lista.map((x) => (
                   <FilaCuenta
                     key={x.sub}

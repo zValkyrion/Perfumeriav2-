@@ -67,6 +67,17 @@ export function confirmacionDe(actual: EstatusPedido, nuevo: EstatusPedido): str
   return null;
 }
 
+/**
+ * Copias de `articulosEditables` y `contactoEditable` (`compartido/pedido.ts`):
+ * solo deciden qué botones se enseñan. Si no coincidieran, el servidor
+ * respondería 409 con el motivo, no guardaría de más.
+ */
+export const articulosEditables = (e: EstatusPedido) => e === "Pendiente";
+export const contactoEditable = (e: EstatusPedido) => e !== "Entregado" && e !== "Cancelado";
+
+/** Las etapas de la barra de progreso del detalle, en orden («Cancelado» no es etapa). */
+export const ETAPAS: readonly EstatusPedido[] = ["Pendiente", "Pagado", "En preparación", "En camino", "Entregado"];
+
 /* ── Etiquetas ────────────────────────────────────────────────────────────── */
 
 export const ETIQUETA_METODO: Record<IdPago, string> = {

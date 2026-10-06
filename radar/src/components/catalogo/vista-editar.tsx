@@ -254,7 +254,7 @@ function Editor({
   }
 
   return (
-    <main className="p-4 pb-28">
+    <main className="mx-auto max-w-4xl p-4 pb-28 sm:p-6 sm:pb-28">
       <header className="mb-4">
         <Link
           href={VOLVER}

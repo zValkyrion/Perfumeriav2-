@@ -37,7 +37,19 @@ existe (2026-10-05).
 ## Operar la tienda
 
 Todo sale del **Panel de la tienda** (`/radar/tienda/`, o «Panel admin» en la
-cabecera de la tienda con tu cuenta).
+cabecera de la tienda con tu cuenta). En computadora tiene menú lateral; en el
+teléfono, el menú está en el botón ☰ de arriba y el **+ rojo** captura un
+pedido nuevo.
+
+- **Inicio** dice lo que hay que hacer hoy (por cobrar, surtir, enviar,
+  solicitudes) y cómo va el negocio contra el periodo anterior.
+- **Pedido que llega por WhatsApp o en persona:** «Nuevo pedido». Eliges
+  cliente, artículos, forma de pago y envío; el total lo calcula el servidor
+  con los precios de hoy.
+- **El cliente quiere cambiar su pedido:** en el detalle, «Modificar
+  artículos» (solo mientras está Pendiente: después ya se cobró) o «Editar
+  datos de entrega» (hasta que se entrega). Queda en el historial y el
+  cliente ve el total nuevo.
 
 1. **Llega un pedido** → aparece en «Por cobrar» como `Pendiente`. El cliente
    te escribe por WhatsApp con el folio (la confirmación le arma el mensaje).
@@ -334,6 +346,44 @@ por WhatsApp —que es lo que dice el documento—, no la pongas y déjalo como 
 
 ---
 
+## 10. Para crecer como e-commerce — sugerencias
+
+Lo que recomiendo construir después del panel (2026-10-05), en orden de
+impacto. Ninguno está empezado; cada uno dice qué dato o decisión hace falta.
+
+1. **Inventario real.** Que cada producto tenga existencias, que bajen al
+   confirmar el pago y que el panel avise «quedan 3». Hoy solo existe
+   «agotado sí/no». Es la base de casi todo lo demás. *Falta:* el conteo
+   inicial por producto.
+2. **Cobro que se confirma solo.** Con el webhook de Clip, el pedido pasa a
+   «Pagado» sin que nadie lo toque. *Falta:* la cuenta de Clip con API.
+3. **Avisos automáticos al cliente** en cada cambio de estatus (correo con
+   SES y, si se contrata, WhatsApp Business). Hoy el botón arma el mensaje y
+   tú lo mandas. *Falta:* dominio propio y SES (§3, §4).
+4. **Guías desde el panel** (Envia.com, Skydropx o similar): cotizar el envío,
+   generar la etiqueta y que el rastreo se actualice solo. *Falta:* elegir
+   paquetería o agregador y su cuenta.
+5. **Cupones desde el panel.** Hoy viven en el código
+   (`compartido/reglas.ts`); con una pantalla los creas, les pones vigencia y
+   tope de usos y ves cuánto vendieron.
+6. **Acciones masivas en pedidos:** marcar varios como enviados, imprimir
+   todas las hojas de surtido del día y exportar la lista para la paquetería.
+7. **Margen y utilidad.** Con el costo de cada perfume, el panel calcula la
+   ganancia por pedido, producto y mes, y no solo el ingreso. *Falta:* el
+   costo por producto.
+8. **Carritos abandonados.** Los carritos de quien tiene cuenta ya se
+   guardan; un recordatorio a las 24 horas recupera ventas. *Depende de* §3.
+9. **Facturación CFDI automática** (Facturama o similar) a partir de las
+   solicitudes de factura que ya llegan al panel. *Falta:* el proveedor de
+   timbrado y los datos fiscales del negocio.
+10. **Devoluciones y reembolsos** como estatus propio, con motivo y monto, para
+    que las ventas netas cuadren.
+11. **Rol de almacén:** alguien que solo ve «por surtir» y «por enviar»,
+    sin ventas ni clientes. Se arma con los grupos que ya reparte el
+    superadmin.
+
+---
+
 ## Lo que NO hay que deshacer
 
 Decisiones tomadas con motivo. Si alguien las revierte por descuido, rompe cosas
@@ -352,6 +402,13 @@ que costó descubrir:
   `protect`: borrar la declaración de un recurso (hasta un `sst.Secret`)
   tumba el despliegue entero. Para retirar algo se le quita el `link` o el
   uso, y la declaración se queda.
+- **El total de un pedido editado lo calcula el servidor**, igual que el de uno
+  nuevo. El panel enseña lo que responde `POST /admin/cotizar`; nunca suma por
+  su cuenta. Y los artículos solo se cambian en «Pendiente»: cambiar lo que ya
+  se cobró descuadra la venta.
+- **El panel de la tienda y la app de campo tienen layouts distintos**
+  (`app/(panel)` y `app/(campo)`). La columna de 672 px es de la app de campo;
+  ponerla otra vez en el `<body>` encoge todo el panel.
 - **El botón del panel no es un permiso**, solo un enlace. El permiso vive en el
   grupo del token y lo comprueba la API; la tienda solo decide qué pintar.
 - **El canonical de la tienda no se mueve** hasta que exista el dominio.

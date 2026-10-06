@@ -297,7 +297,25 @@ export interface PedidoPublico {
   estado: string;
 }
 
-/** Cuerpo de `PUT /admin/pedidos/{folio}`. Lo que no venga no se toca. */
+/**
+ * Lo que se cobra de un pedido: los artículos y las condiciones que mueven el
+ * total. Al cambiarlo desde el panel, el servidor vuelve a cotizar con los
+ * precios de ahora — el total nunca lo pone el navegador.
+ */
+export interface ArticulosPedido {
+  items: ItemPedido[];
+  metodo: IdPago;
+  envio: IdEnvio;
+  cupon: string | null;
+}
+
+/**
+ * Cuerpo de `PUT /admin/pedidos/{folio}`. Lo que no venga no se toca.
+ *
+ * `contacto` se puede corregir mientras el pedido no esté entregado ni
+ * cancelado. `articulos` solo mientras siga **Pendiente**: después ya se
+ * cobró, y cambiar el total de algo pagado descuadra la venta.
+ */
 export interface CambioPedidoAdmin {
   estatus?: EstatusPedido;
   /** Va al historial con el cambio de estatus (o sola, con el estatus actual). */
@@ -306,6 +324,25 @@ export interface CambioPedidoAdmin {
   paqueteria?: string | null;
   notaInterna?: string | null;
   notaCliente?: string | null;
+  contacto?: ContactoPedido;
+  articulos?: ArticulosPedido;
   /** Lo último que vio el admin (`PedidoAdmin.actualizadoEn`); 409 si otro lo cambió. */
   actualizadoEn: string | null;
+}
+
+/** ¿Se pueden cambiar sus artículos? Solo antes de cobrarlo. */
+export const articulosEditables = (estatus: EstatusPedido) => estatus === "Pendiente";
+
+/** ¿Se pueden corregir nombre, teléfono y dirección? Mientras siga vivo. */
+export const contactoEditable = (estatus: EstatusPedido) =>
+  estatus !== "Entregado" && estatus !== "Cancelado";
+
+/** Respuesta de `POST /admin/cotizar`: lo que costaría, sin guardar nada. */
+export interface CotizacionAdmin {
+  lineas: LineaPedido[];
+  cifras: CifrasPedido;
+  /** Artículos que no existen (o están agotados u ocultos): no se cobran. */
+  descartados: number;
+  /** La forma de pago que aplica (el contra entrega sobre el tope pasa a Clip). */
+  metodo: IdPago | null;
 }

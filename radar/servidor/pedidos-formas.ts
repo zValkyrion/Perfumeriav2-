@@ -5,6 +5,7 @@ import {
   estatusDe,
   paqueteriaDe,
   urlRastreo,
+  type ArticulosPedido,
   type CambioEstatus,
   type CambioPedidoAdmin,
   type CifrasPedido,
@@ -25,7 +26,7 @@ import {
   type SolicitudEntrada,
   type TipoSolicitud,
 } from "../../compartido/tienda-admin";
-import { cuentaDe, type Nombrador, type Pedido, type PedidoTienda } from "./tienda";
+import { cuentaDe, sanearSolicitud, type Nombrador, type Pedido, type PedidoTienda } from "./tienda";
 
 /**
  * Funciones puras de los pedidos: armar lo que ve cada quien a partir de la
@@ -141,6 +142,8 @@ export function armarPedidoNuevo(a: {
   cotizacion: Cotizacion;
   nombrar: Nombrador;
   cliente: { sub: string; correo: string | null } | null;
+  /** Quién lo registró: el cliente desde la tienda (por defecto) o alguien del equipo. */
+  por?: string;
 }): PedidoTienda {
   return {
     folio: a.folio,
@@ -149,7 +152,14 @@ export function armarPedidoNuevo(a: {
     solicitud: a.solicitud,
     cuenta: cuentaDe(a.cotizacion, a.nombrar),
     cliente: a.cliente,
-    historial: [{ estatus: "Pendiente", en: a.creadoEn, por: "cliente" }],
+    historial: [
+      {
+        estatus: "Pendiente",
+        en: a.creadoEn,
+        por: a.por ?? "cliente",
+        ...(a.por ? { nota: "Pedido capturado desde el panel." } : {}),
+      },
+    ],
     guia: null,
     paqueteria: null,
     notaInterna: null,
@@ -429,6 +439,8 @@ export type CambioLimpio = {
   paqueteria?: string | null;
   notaInterna?: string | null;
   notaCliente?: string | null;
+  contacto?: ContactoPedido;
+  articulos?: ArticulosPedido;
   actualizadoEn: string | null;
 };
 
@@ -493,7 +505,77 @@ export function sanearCambioAdmin(cuerpo: unknown): Saneado<CambioLimpio> {
     if (!r.ok) return r;
     if (r.valor !== undefined) limpio[campo] = r.valor;
   }
+
+  if (c.contacto !== undefined) {
+    const contacto = sanearContactoAdmin(c.contacto);
+    if (!contacto.ok) return contacto;
+    limpio.contacto = contacto.valor;
+  }
+
+  if (c.articulos !== undefined) {
+    const articulos = sanearArticulos(c.articulos);
+    if (!articulos.ok) return articulos;
+    limpio.articulos = articulos.valor;
+  }
   return { ok: true, valor: limpio };
+}
+
+/** Topes de cada campo del contacto: los mismos que acepta la tienda al crear. */
+const LARGOS_CONTACTO: Record<keyof ContactoPedido, number> = {
+  correo: 160,
+  nombre: 120,
+  telefono: 40,
+  calle: 200,
+  colonia: 120,
+  cp: 10,
+  ciudad: 120,
+  estado: 120,
+  referencias: 300,
+};
+
+/**
+ * El contacto que corrige el panel. Llega completo (el formulario manda todos
+ * los campos). Igual que con la guía, un campo demasiado largo es un error y
+ * no se recorta: guardarlo cortado mandaría el paquete a otra dirección.
+ */
+export function sanearContactoAdmin(v: unknown): Saneado<ContactoPedido> {
+  if (typeof v !== "object" || v === null) return { ok: false, error: "El contacto llegó vacío" };
+  const c = v as Record<string, unknown>;
+  const salida = {} as ContactoPedido;
+  for (const [campo, largo] of Object.entries(LARGOS_CONTACTO) as [keyof ContactoPedido, number][]) {
+    const bruto = c[campo] ?? "";
+    if (typeof bruto !== "string") return { ok: false, error: `«${campo}» tiene que ser texto` };
+    const limpio = bruto.trim();
+    if (limpio.length > largo) return { ok: false, error: `«${campo}» no puede pasar de ${largo} caracteres` };
+    salida[campo] = limpio;
+  }
+  if (!salida.nombre) return { ok: false, error: "Falta el nombre del cliente" };
+  if (soloDigitos(salida.telefono).length < 10) return { ok: false, error: "El teléfono necesita 10 dígitos" };
+  if (salida.cp && !/^\d{5}$/.test(salida.cp)) return { ok: false, error: "El código postal son 5 dígitos" };
+  return { ok: true, valor: salida };
+}
+
+/**
+ * Artículos y condiciones de cobro que manda el panel. Reutiliza el saneado de
+ * la tienda (`sanearSolicitud`) con un contacto de relleno, para que un pedido
+ * editado acepte exactamente lo mismo que uno nuevo: ni más artículos, ni
+ * cantidades más grandes, ni formas de pago que la tienda no ofrece.
+ */
+export function sanearArticulos(v: unknown): Saneado<ArticulosPedido> {
+  if (typeof v !== "object" || v === null) return { ok: false, error: "Los artículos llegaron vacíos" };
+  const a = v as Record<string, unknown>;
+  const solicitud = sanearSolicitud({
+    items: a.items,
+    metodo: a.metodo,
+    envio: a.envio,
+    cupon: a.cupon,
+    contacto: { nombre: "-", telefono: "-" },
+  });
+  if (!solicitud) return { ok: false, error: "El pedido necesita al menos un artículo y una forma de pago válida" };
+  return {
+    ok: true,
+    valor: { items: solicitud.items, metodo: solicitud.metodo, envio: solicitud.envio, cupon: solicitud.cupon },
+  };
 }
 
 /* ── Solicitudes ──────────────────────────────────────────────────────── */

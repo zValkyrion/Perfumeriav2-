@@ -162,7 +162,7 @@ export function VistaCatalogo() {
   const actual = PESTANAS.find((p) => p.valor === pestana)!;
 
   return (
-    <main className="p-4 pb-28">
+    <main className="p-4 pb-28 sm:p-6 sm:pb-28">
       <header className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0">
           <Link
@@ -332,7 +332,7 @@ export function VistaCatalogo() {
         </Lista>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-2xl border-t border-border-strong bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="fixed inset-x-0 bottom-0 lg:left-64 mx-auto max-w-2xl border-t border-border-strong bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Link href={enlaceEditar(pestana)} className="block">
           <Boton className="w-full">
             <Plus size={20} />

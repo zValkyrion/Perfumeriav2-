@@ -180,7 +180,7 @@ export function VistaSolicitudes() {
   };
 
   return (
-    <main className="p-4 pb-10">
+    <main className="mx-auto max-w-5xl p-4 pb-12 sm:p-6">
       <Cabecera
         titulo="Solicitudes"
         subtitulo={

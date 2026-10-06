@@ -5,16 +5,22 @@ import {
   QueryCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
-import type { CambioEstatus, PedidoAdmin } from "../../compartido/pedido";
-import { estatusDe } from "../../compartido/pedido";
+import type { CambioEstatus, CotizacionAdmin, PedidoAdmin } from "../../compartido/pedido";
+import { articulosEditables, contactoEditable, estatusDe } from "../../compartido/pedido";
+import { fuenteDeCatalogo } from "../../compartido/catalogo";
+import { cotizar, type ItemPedido } from "../../compartido/cotizacion";
+import { cuentaDe, type PedidoTienda } from "./tienda";
 import type { ClienteAdmin, SolicitudAdmin } from "../../compartido/tienda-admin";
 import { catalogoVigente } from "./catalogo";
 import { cuentaPorSub, esSub, listarCuentas, type ContextoCuentas } from "./cuentas";
-import { esCondicionFallida, leerMeta, type ContextoTienda, type Salida } from "./pedidos";
+import { crearPedido, esCondicionFallida, leerMeta, type ContextoTienda, type Salida } from "./pedidos";
 import {
   armarAdmin,
   armarResumen,
+  cifrasDe,
   claveCliente,
+  lineasDe,
+  sanearArticulos,
   esFecha,
   fechaMexico,
   historialDe,
@@ -169,14 +175,76 @@ export async function cambiarPedidoAdmin(
 
   const actual = estatusDe(p.estatus);
   const cambiaEstatus = cambio.estatus !== undefined && cambio.estatus !== actual;
-  if (cambiaEstatus || cambio.nota) {
+
+  // Lo que se edita del pedido en sí. Se valida contra el estatus **actual**
+  // (no el que se pide en el mismo cambio): primero se corrige, después se
+  // mueve.
+  const notasAuto: string[] = [];
+  if (cambio.contacto) {
+    if (!contactoEditable(actual)) {
+      return { estado: 409, cuerpo: { error: `Un pedido «${actual}» ya no cambia de datos de entrega.` } };
+    }
+    nombres["#sol"] = "solicitud";
+    nombres["#con"] = "contacto";
+    valores[":contacto"] = cambio.contacto;
+    sets.push("#p.#sol.#con = :contacto");
+    notasAuto.push("Datos de entrega corregidos.");
+  }
+
+  let recotizado: PedidoTienda["cuenta"] | null = null;
+  if (cambio.articulos) {
+    if (!articulosEditables(actual)) {
+      return {
+        estado: 409,
+        cuerpo: { error: `Los artículos solo se cambian mientras el pedido está «Pendiente»; este está «${actual}».` },
+      };
+    }
+    const catalogo = await catalogoVigente(ctx.dynamo, ctx.tablaCatalogo);
+    const a = cambio.articulos;
+    const cotizacion = cotizar(a.items, fuenteDeCatalogo(catalogo), { cupon: a.cupon, metodo: a.metodo, envio: a.envio });
+    if (cotizacion.lineas.length === 0) {
+      return { estado: 422, cuerpo: { error: "Ningún artículo existe (o está disponible) en el catálogo" } };
+    }
+    recotizado = cuentaDe(cotizacion, nombradorDe(catalogo));
+    nombres["#sol"] = "solicitud";
+    nombres["#items"] = "items";
+    nombres["#met"] = "metodo";
+    nombres["#env"] = "envio";
+    nombres["#cup"] = "cupon";
+    nombres["#pla"] = "plazo";
+    nombres["#cuenta"] = "cuenta";
+    valores[":items"] = a.items;
+    valores[":met"] = a.metodo;
+    valores[":env"] = a.envio;
+    valores[":cup"] = a.cupon;
+    // Los meses sin intereses solo existen con Clip: al cambiar de forma de
+    // pago se van. Con Clip se conservan los que había.
+    valores[":pla"] = a.metodo === "clip" ? (p.solicitud?.plazo ?? null) : null;
+    valores[":cuenta"] = recotizado;
+    sets.push(
+      "#p.#sol.#items = :items",
+      "#p.#sol.#met = :met",
+      "#p.#sol.#env = :env",
+      "#p.#sol.#cup = :cup",
+      "#p.#sol.#pla = :pla",
+      "#p.#cuenta = :cuenta",
+    );
+    const antes = p.cuenta?.total ?? 0;
+    notasAuto.push(
+      `Artículos modificados: ${recotizado.piezasTotales} piezas, total ${pesos(antes)} → ${pesos(recotizado.total)}.`,
+    );
+  }
+
+  const nota = [cambio.nota, ...notasAuto].filter(Boolean).join("\n");
+  if (cambiaEstatus || nota) {
     // Una nota sin cambio de estatus también queda en el historial, con el
-    // estatus de ahora: lo que el admin escribió no se tira.
+    // estatus de ahora: lo que el admin escribió no se tira. Las correcciones
+    // del pedido dejan la suya sola, para que se vea quién cambió qué.
     const entrada: CambioEstatus = {
       estatus: cambiaEstatus ? cambio.estatus! : actual,
       en: ahora,
       por: quien,
-      ...(cambio.nota ? { nota: cambio.nota } : {}),
+      ...(nota ? { nota } : {}),
     };
     nombres["#hist"] = "historial";
     valores[":base"] = historialDe({ ...p, historial: undefined }, meta.creadoEn);
@@ -219,6 +287,10 @@ export async function cambiarPedidoAdmin(
       // Queda en los registros de la Lambda: quién movió qué, aunque se borre la fila.
       console.log("pedido", folio, "de", actual, "a", cambio.estatus, "por", quien);
     }
+    if (recotizado) {
+      console.log("pedido", folio, "artículos cambiados por", quien, "total", recotizado.total);
+      await actualizarCopia(ctx, p, recotizado, cambio.articulos!.items);
+    }
     const catalogo = await catalogoVigente(ctx.dynamo, ctx.tablaCatalogo);
     const nuevo: PedidoAdmin = armarAdmin(r.Attributes as FilaPedido, nombradorDe(catalogo));
     return { estado: 200, cuerpo: nuevo };
@@ -226,6 +298,74 @@ export async function cambiarPedidoAdmin(
     if (esCondicionFallida(e)) return { estado: 409, cuerpo: { error: OTRO_LO_CAMBIO } };
     throw e;
   }
+}
+
+const pesos = (n: number) =>
+  n.toLocaleString("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
+
+/**
+ * La copia del pedido en «Mis pedidos» (`USER#<sub>`) guarda artículos, total
+ * y piezas para la lista y para «Volver a pedir». Si el pedido cambió de
+ * artículos, se pone al día; si el cliente no tiene cuenta o la copia ya no
+ * existe, no hay nada que hacer. Un fallo aquí no deshace el cambio: «Mis
+ * pedidos» lee estatus y cifras del META, y lo que quedaría desfasado es solo
+ * el botón de volver a pedir.
+ */
+async function actualizarCopia(
+  ctx: ContextoTienda,
+  p: PedidoTienda,
+  cuenta: PedidoTienda["cuenta"],
+  items: ItemPedido[],
+): Promise<void> {
+  const sub = p.cliente?.sub;
+  if (!sub) return;
+  try {
+    await ctx.dynamo.send(
+      new UpdateCommand({
+        TableName: ctx.tabla,
+        Key: { PK: `USER#${sub}`, SK: `PEDIDO#${p.folio}` },
+        UpdateExpression: "SET #p.#total = :total, #p.#piezas = :piezas, #p.#items = :items",
+        ConditionExpression: "attribute_exists(PK)",
+        ExpressionAttributeNames: { "#p": "pedido", "#total": "total", "#piezas": "piezas", "#items": "items" },
+        ExpressionAttributeValues: { ":total": cuenta.total, ":piezas": cuenta.piezasTotales, ":items": items },
+      }),
+    );
+  } catch (e) {
+    if (!esCondicionFallida(e)) console.error("no se pudo poner al día la copia de", p.folio, e);
+  }
+}
+
+/**
+ * `POST /admin/cotizar`: lo que costaría un pedido con estos artículos y
+ * condiciones, con los precios de ahora y sin guardar nada. Es lo que el panel
+ * enseña mientras se arma o se edita un pedido: la cuenta la hace `cotizar`,
+ * la misma función que cobra, para que lo que se ve sea lo que se guarda.
+ */
+export async function cotizarAdmin(ctx: ContextoTienda, cuerpo: unknown): Promise<Salida> {
+  const a = sanearArticulos(cuerpo);
+  if (!a.ok) return { estado: 422, cuerpo: { error: a.error } };
+  const catalogo = await catalogoVigente(ctx.dynamo, ctx.tablaCatalogo);
+  const { items, cupon, metodo, envio } = a.valor;
+  const cotizacion = cotizar(items, fuenteDeCatalogo(catalogo), { cupon, metodo, envio });
+  const cuenta = cuentaDe(cotizacion, nombradorDe(catalogo));
+  const comoPedido = { cuenta } as PedidoTienda;
+  const salida: CotizacionAdmin = {
+    lineas: lineasDe(comoPedido),
+    cifras: cifrasDe(comoPedido),
+    descartados: cuenta.descartados,
+    metodo: cotizacion.metodo,
+  };
+  return { estado: 200, cuerpo: salida };
+}
+
+/**
+ * `POST /admin/pedidos`: el equipo registra un pedido que llegó por WhatsApp,
+ * teléfono o en persona. Pasa por el mismo camino que la tienda —saneado,
+ * cotización en el servidor, folio del contador, clave de idempotencia— y el
+ * historial dice quién lo capturó.
+ */
+export async function crearPedidoAdmin(ctx: ContextoTienda, cuerpo: unknown, quien: string): Promise<Salida> {
+  return crearPedido(ctx, cuerpo, null, { por: quien });
 }
 
 /* ── Ventas ───────────────────────────────────────────────────────────── */

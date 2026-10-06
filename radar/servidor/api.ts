@@ -53,6 +53,8 @@ import {
 } from "./pedidos";
 import {
   cambiarPedidoAdmin,
+  cotizarAdmin,
+  crearPedidoAdmin,
   cambiarSolicitud,
   clientes,
   crearSolicitud,
@@ -486,6 +488,14 @@ async function rutaAdmin(
   const q = evento.queryStringParameters ?? {};
 
   if (metodo === "GET" && ruta === "/admin/pedidos") return deSalida(await listarPedidosAdmin(TIENDA, q));
+  // Un pedido que llegó por WhatsApp o en persona, capturado por el equipo.
+  if (metodo === "POST" && ruta === "/admin/pedidos") {
+    return deSalida(await crearPedidoAdmin(TIENDA, leerCuerpo<unknown>(evento), quien));
+  }
+  // Cuánto costaría, sin guardar: lo que enseña el panel mientras se arma o se edita.
+  if (metodo === "POST" && ruta === "/admin/cotizar") {
+    return deSalida(await cotizarAdmin(TIENDA, leerCuerpo<unknown>(evento)));
+  }
 
   const pedido = ruta.match(/^\/admin\/pedidos\/([^/]+)$/);
   if (pedido) {

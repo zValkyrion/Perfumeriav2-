@@ -1,11 +1,18 @@
 "use client";
 
 import type {
+  ArticulosPedido,
   CambioPedidoAdmin,
+  ContactoPedido,
+  CotizacionAdmin,
   EstatusPedido,
   PedidoAdmin,
+  PedidoRegistrado,
   ResumenPedido,
+  SolicitudPedido,
 } from "../../../compartido/pedido";
+import type { Catalogo } from "../../../compartido/catalogo";
+import type { IdEnvio, IdPago } from "../../../compartido/reglas";
 import type {
   CambioSolicitud,
   ClienteAdmin,
@@ -38,6 +45,12 @@ import { tokenVigente } from "@/lib/sesion";
  */
 
 export type {
+  ArticulosPedido,
+  Catalogo,
+  ContactoPedido,
+  CotizacionAdmin,
+  IdEnvio,
+  IdPago,
   CambioPedidoAdmin,
   CambioSolicitud,
   ClienteAdmin,
@@ -142,6 +155,52 @@ export function cambiarPedidoAdmin(token: string, folio: string, cambio: CambioP
     body: JSON.stringify(cambio),
     escritura: true,
   });
+}
+
+/**
+ * `POST /admin/cotizar`: lo que costaría con estos artículos y condiciones,
+ * con los precios de ahora y sin guardar nada. 422 si no hay artículos o la
+ * forma de pago no existe.
+ */
+export function cotizarPedido(token: string, articulos: ArticulosPedido) {
+  return llamar<CotizacionAdmin>("/admin/cotizar", token, {
+    method: "POST",
+    body: JSON.stringify(articulos),
+    msCorte: 15000,
+  });
+}
+
+/**
+ * `POST /admin/pedidos`: registra un pedido que llegó por WhatsApp o en
+ * persona. Devuelve el folio y el total del servidor. La `clave` evita que un
+ * doble clic cree dos pedidos.
+ */
+export function crearPedidoAdmin(token: string, solicitud: SolicitudPedido & { clave: string }) {
+  return llamar<PedidoRegistrado>("/admin/pedidos", token, {
+    method: "POST",
+    body: JSON.stringify(solicitud),
+    escritura: true,
+  });
+}
+
+/**
+ * El catálogo publicado (`GET /catalogo`, público y en caché un minuto):
+ * para elegir artículos al capturar o editar un pedido. Se guarda en memoria
+ * mientras la pestaña viva: pesa cientos de KB y no cambia a cada momento.
+ */
+let catalogoEnMemoria: Promise<Catalogo> | null = null;
+export function leerCatalogoPublico(): Promise<Catalogo> {
+  if (!BASE) return Promise.reject(new ErrorApi("El panel no tiene API configurada", 0));
+  catalogoEnMemoria ??= fetch(`${BASE}/catalogo`)
+    .then((r) => {
+      if (!r.ok) throw new ErrorApi(`El catálogo respondió ${r.status}`, r.status);
+      return r.json() as Promise<Catalogo>;
+    })
+    .catch((e) => {
+      catalogoEnMemoria = null;
+      throw e instanceof ErrorApi ? e : new ErrorApi("No se pudo leer el catálogo. Revisa la conexión.", 0);
+    });
+  return catalogoEnMemoria;
 }
 
 /* ── Ventas ───────────────────────────────────────────────────────────────── */

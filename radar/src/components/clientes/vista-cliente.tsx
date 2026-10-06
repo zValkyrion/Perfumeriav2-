@@ -67,7 +67,7 @@ export function VistaCliente() {
       );
     }
     return (
-      <main className="p-4 pb-10">
+      <main className="mx-auto max-w-5xl p-4 pb-12 sm:p-6">
         <Cabecera titulo="Cliente" volver={{ href: VOLVER, texto: "Clientes" }} />
         {c.error ? (
           <ErrorCarga mensaje={c.error} recargar={c.recargar} cargando={c.cargando} />
@@ -82,7 +82,7 @@ export function VistaCliente() {
   const pedidos = [...d.pedidos].sort((a, b) => b.creadoEn.localeCompare(a.creadoEn));
 
   return (
-    <main className="p-4 pb-10">
+    <main className="mx-auto max-w-5xl p-4 pb-12 sm:p-6">
       <Cabecera
         titulo={nombreDe(cliente)}
         subtitulo={`${cliente.nivel || "Sin nivel"} · ${conCuenta(cliente) ? "con cuenta" : "compró sin cuenta"}`}

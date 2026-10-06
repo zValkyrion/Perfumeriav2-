@@ -74,7 +74,7 @@ function Seccion({ titulo, pista, children }: { titulo: string; pista?: string; 
 /** El botón de guardar, siempre a mano abajo. */
 function BarraGuardar({ guardando, nuevo }: { guardando: boolean; nuevo: boolean }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-2xl border-t border-border-strong bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div className="fixed inset-x-0 bottom-0 lg:left-64 z-10 mx-auto max-w-2xl border-t border-border-strong bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <Boton type="submit" disabled={guardando} className="w-full">
         {guardando ? "Guardando…" : nuevo ? "Dar de alta" : "Guardar cambios"}
       </Boton>

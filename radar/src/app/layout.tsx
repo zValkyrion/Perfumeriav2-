@@ -32,7 +32,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={inter.variable}>
-      <body className="mx-auto min-h-dvh max-w-2xl">
+      {/* Sin ancho fijo: la app de campo pone su columna en `(campo)/layout`
+          y el panel de la tienda usa la pantalla entera. */}
+      <body className="min-h-dvh">
         {children}
         <RegistrarSW />
       </body>

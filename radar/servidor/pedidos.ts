@@ -126,6 +126,8 @@ export async function crearPedido(
   ctx: ContextoTienda,
   cuerpo: unknown,
   sesion: Identidad | null,
+  /** `por`: el nombre de quien lo capturó desde el panel. Sin él, lo hizo el cliente. */
+  opciones: { por?: string } = {},
 ): Promise<Salida> {
   const sub = sesion?.sub ?? null;
 
@@ -174,6 +176,7 @@ export async function crearPedido(
     cotizacion,
     nombrar: nombradorDe(catalogo),
     cliente: sub ? { sub, correo: sesion?.correo ?? null } : null,
+    por: opciones.por,
   });
 
   const operaciones: NonNullable<ConstructorParameters<typeof TransactWriteCommand>[0]["TransactItems"]> = [

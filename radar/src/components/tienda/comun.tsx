@@ -203,30 +203,34 @@ export function ErrorCarga({ mensaje, recargar, cargando = false }: { mensaje: s
 export function Cabecera({
   titulo,
   subtitulo,
-  volver = { href: "/tienda/", texto: "Panel de la tienda" },
+  volver = null,
   acciones,
 }: {
   titulo: string;
   subtitulo?: React.ReactNode;
-  /** Enlace de regreso; por defecto, el hub de la tienda. `null` para no pintarlo. */
+  /**
+   * Enlace de regreso, para los detalles (cliente → Clientes). Las secciones
+   * no lo llevan: el menú del panel (`components/panel/marco.tsx`) ya está a
+   * la vista en computadora y a un toque en el teléfono.
+   */
   volver?: { href: string; texto: string } | null;
   /** Botones a la derecha (recargar, exportar…). */
   acciones?: React.ReactNode;
 }) {
   return (
-    <header className="mb-3 flex items-start justify-between gap-2">
+    <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
         {volver && (
           <Link
             href={volver.href}
-            className="inline-flex min-h-11 items-center gap-1 text-[13px] font-medium text-fg-subtle"
+            className="mb-1 inline-flex min-h-9 items-center gap-1 text-[13px] font-semibold text-fg-subtle hover:text-fg"
           >
             <ArrowLeft size={15} />
             {volver.texto}
           </Link>
         )}
-        <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
-        {subtitulo && <p className="text-[13px] text-fg-subtle">{subtitulo}</p>}
+        <h1 className="text-[26px] font-bold leading-tight tracking-tight sm:text-[30px]">{titulo}</h1>
+        {subtitulo && <p className="mt-1 text-[14px] text-fg-subtle">{subtitulo}</p>}
       </div>
       {acciones && <div className="flex shrink-0 flex-wrap justify-end gap-2">{acciones}</div>}
     </header>
@@ -267,132 +271,6 @@ export const COLOR_ESTATUS: Record<EstatusPedido, string> = {
 
 export function InsigniaEstatus({ estatus }: { estatus: EstatusPedido }) {
   return <Insignia color={COLOR_ESTATUS[estatus] ?? "var(--color-fg-muted)"}>{estatus}</Insignia>;
-}
-
-/* ── Barras por día ───────────────────────────────────────────────────────── */
-
-/** Un tope «redondo» para el eje: 1, 2, 2.5 o 5 por una potencia de 10. */
-function topeRedondo(max: number): number {
-  if (max <= 0) return 1;
-  const base = 10 ** Math.floor(Math.log10(max));
-  for (const m of [1, 2, 2.5, 5, 10]) if (m * base >= max) return m * base;
-  return 10 * base;
-}
-
-const compacto = (n: number) =>
-  n >= 1_000_000
-    ? `$${(n / 1_000_000).toLocaleString("es-MX", { maximumFractionDigits: 1 })} M`
-    : n >= 1000
-      ? `$${(n / 1000).toLocaleString("es-MX", { maximumFractionDigits: 1 })} k`
-      : `$${Math.round(n)}`;
-
-const diaCorto = (fecha: string) =>
-  new Date(`${fecha}T12:00:00Z`).toLocaleDateString("es-MX", { day: "numeric", month: "short", timeZone: "UTC" });
-
-/**
- * Ingresos por día en barras, SVG a mano (nada de librerías de gráficas).
- *
- * Se dibuja al ancho real del contenedor —se mide— para que el texto de los
- * ejes tenga siempre el mismo tamaño legible en el teléfono y en la
- * computadora; un `viewBox` fijo lo encogería a 6 px en una pantalla angosta.
- * Cada barra lleva su cifra en `<title>` y la gráfica un resumen para lectores
- * de pantalla. Recibe `porDia` de `ResumenVentas` tal cual.
- */
-export function BarrasDia({
-  datos,
-  alto = 180,
-  formato = pesosCentavos,
-}: {
-  datos: readonly { fecha: string; ingresos: number }[];
-  alto?: number;
-  formato?: (n: number) => string;
-}) {
-  const caja = useRef<HTMLDivElement>(null);
-  const [ancho, setAncho] = useState(320);
-  useEffect(() => {
-    const el = caja.current;
-    if (!el) return;
-    const obs = new ResizeObserver(([e]) => {
-      if (e) setAncho(Math.max(200, Math.round(e.contentRect.width)));
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  const total = datos.reduce((s, d) => s + d.ingresos, 0);
-  const max = topeRedondo(Math.max(0, ...datos.map((d) => d.ingresos)));
-  const izq = 48;
-  const abajo = 22;
-  const arriba = 8;
-  const util = ancho - izq - 4;
-  const altoUtil = alto - abajo - arriba;
-  const paso = datos.length ? util / datos.length : util;
-  const barra = Math.max(1, Math.min(28, paso * 0.7));
-  // Etiquetas del eje x sin encimarse: como mucho una cada ~56 px.
-  const cadaCuanto = Math.max(1, Math.ceil(56 / paso));
-  const y = (v: number) => arriba + altoUtil - (v / max) * altoUtil;
-
-  const mejor = datos.reduce<{ fecha: string; ingresos: number } | null>(
-    (m, d) => (!m || d.ingresos > m.ingresos ? d : m),
-    null,
-  );
-  const resumen =
-    datos.length === 0
-      ? "Sin días en el rango."
-      : `Ingresos por día del ${diaCorto(datos[0]!.fecha)} al ${diaCorto(datos.at(-1)!.fecha)}: ` +
-        `${formato(total)} en total` +
-        (mejor && mejor.ingresos > 0 ? `; el mejor día fue el ${diaCorto(mejor.fecha)} con ${formato(mejor.ingresos)}.` : "; ningún día con ingresos.");
-
-  return (
-    <div ref={caja} className="w-full">
-      <svg width={ancho} height={alto} role="img" aria-label={resumen} className="block">
-        {[0, 0.5, 1].map((f) => (
-          <g key={f}>
-            <line x1={izq} x2={ancho - 4} y1={y(max * f)} y2={y(max * f)} stroke="var(--color-border-soft)" />
-            <text
-              x={izq - 6}
-              y={y(max * f)}
-              textAnchor="end"
-              dominantBaseline="middle"
-              fontSize={11}
-              fill="var(--color-fg-subtle)"
-            >
-              {compacto(max * f)}
-            </text>
-          </g>
-        ))}
-        {datos.map((d, i) => {
-          const x = izq + i * paso + (paso - barra) / 2;
-          const h = Math.max(0, y(0) - y(d.ingresos));
-          return (
-            <g key={d.fecha}>
-              <rect
-                x={x}
-                y={y(0) - h}
-                width={barra}
-                height={h}
-                rx={Math.min(3, barra / 3)}
-                fill="var(--color-gold)"
-              >
-                <title>{`${diaCorto(d.fecha)}: ${formato(d.ingresos)}`}</title>
-              </rect>
-              {(i % cadaCuanto === 0 || i === datos.length - 1) && (
-                <text
-                  x={izq + i * paso + paso / 2}
-                  y={alto - 6}
-                  textAnchor="middle"
-                  fontSize={11}
-                  fill="var(--color-fg-subtle)"
-                >
-                  {diaCorto(d.fecha)}
-                </text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
 }
 
 /* ── Formatos ─────────────────────────────────────────────────────────────── */

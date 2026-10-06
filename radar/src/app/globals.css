@@ -49,6 +49,16 @@
   --color-danger: #a3160f;
   --color-info: #1f5fa8;
 
+  /* Series de las gráficas del panel. Los tres primeros colores de la paleta
+     categórica validada (azul, naranja, aqua): pasan la separación para
+     daltonismo en todos los pares. Van en orden fijo, nunca ciclados, y
+     siempre con etiqueta visible (el aqua no llega a 3:1 sobre blanco). El
+     rojo de marca no se usa en datos: se leería como «peligro». */
+  --color-serie-1: #2a78d6;
+  --color-serie-2: #eb6834;
+  --color-serie-3: #1baf7a;
+  --color-serie-1-suave: rgb(42 120 214 / 0.14);
+
   /* Radios — los mismos de la landing */
   --radius: 16px;
   --radius-sm: 6px;
@@ -141,6 +151,19 @@ button {
   /* Eyebrow de sección (§6.2 del DESIGN_NOTES) */
   .eyebrow {
     @apply text-[11px] font-semibold uppercase tracking-[0.2em] text-gold-light;
+  }
+
+  /* Tarjeta del panel de la tienda: borde suave y una sombra mínima que solo
+     separa del fondo gris en pantallas grandes. */
+  .tarjeta-panel {
+    @apply rounded-[var(--radius)] border border-border-soft bg-surface;
+    box-shadow: 0 1px 2px rgb(18 21 26 / 0.04);
+  }
+
+  /* Números de tablero: cifras alineadas que no bailan al cambiar. */
+  .cifra {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
   }
 
   /* Filo de marca para separar sin usar sombra */
