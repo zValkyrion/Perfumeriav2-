@@ -484,6 +484,14 @@ cd radar && npx sst deploy --stage produccion
 cd radar && npx sst secret set Elrey_github_token <token> --stage produccion
 cd radar && npx sst deploy --stage produccion   # hace falta redesplegar
 
+# Cobro con Clip: las dos claves de la API (panel de Clip → Desarrolladores).
+# Igual que arriba, la Lambda no las lee hasta el siguiente despliegue: basta
+# cualquier push a `main` o lanzar a mano el workflow «Desplegar sitio a AWS».
+# El 2026-10-10 se pusieron las de prueba (`test_…`) para probar el flujo:
+# hay que cambiarlas por las reales antes de vender con Clip.
+cd radar && npx sst secret set Elrey_clip_api <clave> --stage produccion
+cd radar && npx sst secret set Elrey_clip_secreto <secreto> --stage produccion
+
 # Ver logs de la API
 aws logs tail /aws/lambda/Elrey_api_produccion --follow
 
