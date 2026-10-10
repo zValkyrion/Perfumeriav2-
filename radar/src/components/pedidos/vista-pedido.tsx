@@ -57,6 +57,7 @@ import {
 import {
   ErrorGuardado,
   cambiarPedidoAdmin,
+  generarCobroPedido,
   leerPedidoAdmin,
   type ArticulosPedido,
   type CambioPedidoAdmin,
@@ -154,6 +155,74 @@ export function VistaPedido() {
       recargar={c.recargar}
       alGuardar={(nuevo) => c.setDatos(nuevo)}
     />
+  );
+}
+
+/**
+ * El cobro con Clip de un pedido pendiente: el enlace por el total exacto, para
+ * copiarlo o abrirlo, o el botón para pedirlo si no hay uno vigente (Clip no
+ * contestó al crear el pedido, venció a los 3 días o cambió el total). Cuando
+ * el cliente paga, Clip avisa y el pedido pasa solo a «Pagado».
+ */
+function TarjetaCobro({
+  pedido: p,
+  generando,
+  generar,
+}: {
+  pedido: PedidoAdmin;
+  generando: boolean;
+  generar: () => void;
+}) {
+  const [copiado, setCopiado] = useState(false);
+  const cobro = p.cobro ?? null;
+
+  const copiar = async () => {
+    if (!cobro) return;
+    try {
+      await navigator.clipboard.writeText(cobro.url);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // Sin permiso de portapapeles: el enlace está a la vista para copiarlo a mano.
+    }
+  };
+
+  return (
+    <Tarjeta titulo="Cobro con Clip" pista={pesosCentavos(p.cifras.total)}>
+      {cobro ? (
+        <div className="grid grid-cols-1 gap-2">
+          <p className="text-[13px] break-all text-fg-muted select-all">{cobro.url}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Boton variante="primario" onClick={copiar}>
+              {copiado ? <Check size={18} /> : <Copy size={18} />}
+              {copiado ? "Copiado" : "Copiar enlace"}
+            </Boton>
+            <a
+              href={cobro.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 text-[14px] font-semibold text-info underline"
+            >
+              <ExternalLink size={16} />
+              Abrir
+            </a>
+          </div>
+          <p className="text-[12px] text-fg-subtle">
+            {cobro.expiraEn ? `Vale hasta el ${fechaHora(cobro.expiraEn)}. ` : ""}
+            El botón de WhatsApp del cliente ya lo lleva en el mensaje. Al pagar, el pedido pasa solo a «Pagado».
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-2">
+          <p className="text-[13px] text-fg-muted">
+            Este pedido no tiene un enlace de cobro vigente por su total de ahora.
+          </p>
+          <Boton variante="primario" onClick={generar} disabled={generando} className="w-full">
+            Generar enlace de cobro
+          </Boton>
+        </div>
+      )}
+    </Tarjeta>
   );
 }
 
@@ -319,6 +388,21 @@ function Detalle({
     } catch (e) {
       if (e instanceof ErrorGuardado && e.estado === 409) setConflicto(true);
       setMensaje({ tono: "error", texto: e instanceof Error ? e.message : "No se pudo guardar" });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  /** Pide a Clip un enlace de cobro por el total de ahora. */
+  const generarCobro = async () => {
+    setGuardando(true);
+    setMensaje(null);
+    setConflicto(false);
+    try {
+      alGuardar(await generarCobroPedido(token, p.folio));
+      setMensaje({ tono: "ok", texto: "Enlace de cobro listo. Cópialo o mándalo por WhatsApp." });
+    } catch (e) {
+      setMensaje({ tono: "error", texto: e instanceof Error ? e.message : "No se pudo generar el cobro" });
     } finally {
       setGuardando(false);
     }
@@ -496,6 +580,10 @@ function Detalle({
           <div className="grid min-w-0 gap-4">
           {/* ── Estatus (computadora) ── */}
           <div className="hidden lg:block">{tarjetaEstatus}</div>
+
+          {p.estatus === "Pendiente" && p.metodo === "clip" && (
+            <TarjetaCobro pedido={p} generando={guardando} generar={generarCobro} />
+          )}
 
           {/* ── Envío y rastreo ── */}
           <Tarjeta titulo="Envío y rastreo" pista={`Envío ${envioTexto(p.envio)}`}>

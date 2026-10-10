@@ -484,12 +484,16 @@ export function ComoPagar({
   metodo,
   plazo,
   total,
+  urlPago,
 }: {
   folio: string;
   metodo: IdPago | null;
   plazo: number | null;
   total: number;
+  /** El enlace de cobro de este pedido, por su total exacto. Sin él se usa el enlace fijo, si hay. */
+  urlPago?: string | null;
 }) {
+  const enlaceClip = urlPago || CLIP_LINK;
   const forma = etiquetaPago(metodo, plazo);
   const texto = [
     `Hola, quiero pagar mi pedido ${folio} por ${fmt(total)} MXN.`,
@@ -500,9 +504,11 @@ export function ComoPagar({
 
   const instrucciones =
     metodo === "clip"
-      ? CLIP_LINK
-        ? "Paga con tarjeta o en efectivo en la pantalla segura de Clip y mándanos el comprobante por WhatsApp con tu folio."
-        : "Escríbenos por WhatsApp con tu folio y te mandamos el enlace de cobro de Clip para pagar con tarjeta o en efectivo."
+      ? urlPago
+        ? "Paga con tarjeta en la pantalla segura de Clip. En cuanto Clip confirma el pago, tu pedido pasa solo a «Pagado»."
+        : CLIP_LINK
+          ? "Paga con tarjeta o en efectivo en la pantalla segura de Clip y mándanos el comprobante por WhatsApp con tu folio."
+          : "Escríbenos por WhatsApp con tu folio y te mandamos el enlace de cobro de Clip para pagar con tarjeta o en efectivo."
       : metodo === "transferencia"
         ? HAY_DATOS_BANCARIOS
           ? "Transfiere el total exacto por SPEI o deposita en ventanilla, y mándanos el comprobante por WhatsApp con tu folio."
@@ -545,16 +551,18 @@ export function ComoPagar({
       ) : null}
 
       <div className="grid gap-2">
-        {metodo === "clip" && CLIP_LINK ? (
+        {metodo === "clip" && enlaceClip ? (
           <Button asChild variant="gold" size="touch-lg" className="w-full">
-            <a href={CLIP_LINK} target="_blank" rel="noopener noreferrer">
+            {/* El enlace propio del pedido se abre aquí mismo: Clip devuelve al
+                rastreo al terminar. El fijo, que no sabe volver, en otra pestaña. */}
+            <a href={enlaceClip} {...(urlPago ? {} : { target: "_blank" })} rel="noopener noreferrer">
               Pagar {fmt(total)} con Clip
             </a>
           </Button>
         ) : null}
         <Button
           asChild
-          variant={metodo === "clip" && CLIP_LINK ? "outline" : "gold"}
+          variant={metodo === "clip" && enlaceClip ? "outline" : "gold"}
           size="touch-lg"
           className="w-full"
         >

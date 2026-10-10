@@ -364,8 +364,13 @@ export async function cotizarAdmin(ctx: ContextoTienda, cuerpo: unknown): Promis
  * cotización en el servidor, folio del contador, clave de idempotencia— y el
  * historial dice quién lo capturó.
  */
-export async function crearPedidoAdmin(ctx: ContextoTienda, cuerpo: unknown, quien: string): Promise<Salida> {
-  return crearPedido(ctx, cuerpo, null, { por: quien });
+export async function crearPedidoAdmin(
+  ctx: ContextoTienda,
+  cuerpo: unknown,
+  quien: string,
+  host: string | null = null,
+): Promise<Salida> {
+  return crearPedido(ctx, cuerpo, null, { por: quien, host });
 }
 
 /* ── Ventas ───────────────────────────────────────────────────────────── */

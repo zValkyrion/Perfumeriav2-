@@ -10,6 +10,7 @@ import { fuenteDeCatalogo } from "../../compartido/catalogo";
 import { cotizar } from "../../compartido/cotizacion";
 import { estatusDe, type CambioEstatus, type ResumenPedido } from "../../compartido/pedido";
 import { catalogoVigente } from "./catalogo";
+import { generarCobro } from "./clip";
 import type { Identidad } from "./identidad";
 import {
   armarDetalle,
@@ -126,8 +127,11 @@ export async function crearPedido(
   ctx: ContextoTienda,
   cuerpo: unknown,
   sesion: Identidad | null,
-  /** `por`: el nombre de quien lo capturó desde el panel. Sin él, lo hizo el cliente. */
-  opciones: { por?: string } = {},
+  /**
+   * `por`: el nombre de quien lo capturó desde el panel. Sin él, lo hizo el cliente.
+   * `host`: el dominio de esta API, para decirle a Clip a dónde avisar del pago.
+   */
+  opciones: { por?: string; host?: string | null } = {},
 ): Promise<Salida> {
   const sub = sesion?.sub ?? null;
 
@@ -242,7 +246,17 @@ export async function crearPedido(
     throw e;
   }
 
-  return { estado: 201, cuerpo: registradoDe(pedido) };
+  // El enlace de cobro se pide con el pedido ya guardado: si Clip tarda o
+  // falla, la compra no se pierde — queda «Pendiente» y se cobra por WhatsApp
+  // o generando el enlace después desde el panel.
+  let conCobro: FilaPedido | null = null;
+  try {
+    conCobro = await generarCobro(ctx, pedido, opciones.host ?? null);
+  } catch (e) {
+    console.error("clip: no se pudo crear el enlace de", folio, e);
+  }
+
+  return { estado: 201, cuerpo: registradoDe(conCobro?.pedido ?? pedido) };
 }
 
 async function pedidoDeClave(ctx: ContextoTienda, clave: string): Promise<FilaPedido | null> {

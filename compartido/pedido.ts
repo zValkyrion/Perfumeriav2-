@@ -179,6 +179,19 @@ export interface PedidoRegistrado {
   descuentoTransferencia: number;
   /** La forma de pago que aplica (el contra entrega sobre el tope pasa a Clip). */
   metodo: IdPago;
+  /** Enlace de cobro de Clip por el total exacto. Falta si no se paga con Clip o Clip no contestó. */
+  urlPago?: string | null;
+}
+
+/**
+ * El enlace de cobro vigente de un pedido: solo existe mientras está
+ * «Pendiente», se paga con Clip y el enlace es por el total de ahora.
+ */
+export interface CobroPedido {
+  url: string;
+  monto: number;
+  /** ISO; Clip los vence a los 3 días. */
+  expiraEn: string | null;
 }
 
 /* ── Lo que se lee de un pedido ───────────────────────────────────────── */
@@ -246,6 +259,8 @@ export interface PedidoDetalle {
    * porque ese dato no se guardó. Se enseña lo que hay, sin inventar el resto.
    */
   heredado: boolean;
+  /** Para pagar con Clip ahora mismo; `null` si no hay enlace vigente. */
+  cobro?: CobroPedido | null;
 }
 
 export interface PedidoAdmin extends PedidoDetalle {
@@ -295,6 +310,8 @@ export interface PedidoPublico {
   nombre: string;
   ciudad: string;
   estado: string;
+  /** Para pagar con Clip ahora mismo; `null` si no hay enlace vigente. */
+  cobro?: CobroPedido | null;
 }
 
 /**

@@ -590,6 +590,60 @@ export const cognito = http.createServer((req, res) => {
   });
 });
 
+/* ── Clip ─────────────────────────────────────────────────────────────────── */
+
+/** id → el cobro tal como lo devuelve `GET /v2/checkout/{id}`. */
+export const cobrosClip = new Map();
+/** `caido`: Clip contesta 500 a todo. `llamadas`: cuántas veces se le habló. */
+export const ajustesClip = { caido: false, llamadas: 0 };
+export const CLAVES_CLIP = { api: "test_clave-falsa", secreto: "secreto-falso" };
+
+export const clip = http.createServer((req, res) => {
+  let cuerpo = "";
+  req.on("data", (c) => (cuerpo += c));
+  req.on("end", () => {
+    const contestar = (estado, datos) => {
+      res.statusCode = estado;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify(datos));
+    };
+    ajustesClip.llamadas++;
+    if (ajustesClip.caido) return contestar(500, { message: "Clip caído (falso)" });
+    const esperada = `Basic ${Buffer.from(`${CLAVES_CLIP.api}:${CLAVES_CLIP.secreto}`).toString("base64")}`;
+    if (req.headers.authorization !== esperada) return contestar(401, { message: "Unauthorized" });
+
+    const ruta = req.url.split("?")[0];
+    if (req.method === "POST" && ruta === "/v2/checkout") {
+      const d = JSON.parse(cuerpo || "{}");
+      // Como Clip: sin monto, moneda, descripción o URLs de regreso, no hay enlace.
+      if (!(d.amount > 0) || d.currency !== "MXN" || !d.purchase_description || !d.redirection_url?.success) {
+        return contestar(400, { message: "Bad request (falso)" });
+      }
+      const id = `cobro-falso-${String(cobrosClip.size + 1).padStart(4, "0")}`;
+      const cobro = {
+        payment_request_id: id,
+        payment_request_url: `http://127.0.0.1:${clip.address().port}/pagar/${id}`,
+        status: "CHECKOUT_CREATED",
+        amount: d.amount,
+        currency: d.currency,
+        purchase_description: d.purchase_description,
+        redirection_url: d.redirection_url,
+        metadata: d.metadata ?? null,
+        webhook_url: d.webhook_url ?? null,
+        expires_at: new Date(Date.now() + 3 * 86400000).toISOString(),
+      };
+      cobrosClip.set(id, cobro);
+      return contestar(200, cobro);
+    }
+    const consulta = ruta.match(/^\/v2\/checkout\/([^/]+)$/);
+    if (req.method === "GET" && consulta) {
+      const cobro = cobrosClip.get(decodeURIComponent(consulta[1]));
+      return cobro ? contestar(200, cobro) : contestar(404, { message: "Not found" });
+    }
+    contestar(404, { message: `Ruta de Clip no simulada: ${req.method} ${ruta}` });
+  });
+});
+
 /* ── Arranque ─────────────────────────────────────────────────────────────── */
 
 const escuchar = (servidor) =>
@@ -612,11 +666,20 @@ export const entorno = {
   SST_RESOURCE_Elrey_usuarios: JSON.stringify({ id: "us-east-1_falso" }),
   SST_RESOURCE_Elrey_web: JSON.stringify({ id: "cliente-falso" }),
   SST_RESOURCE_Elrey_github_token: JSON.stringify({ value: "" }),
+  SST_RESOURCE_Elrey_clip_api: JSON.stringify({ value: CLAVES_CLIP.api }),
+  SST_RESOURCE_Elrey_clip_secreto: JSON.stringify({ value: CLAVES_CLIP.secreto }),
+  ELREY_SITIO: "https://tienda.prueba",
 };
 
 export async function arrancar() {
-  const [pDynamo, pS3, pCognito] = await Promise.all([escuchar(dynamo), escuchar(s3), escuchar(cognito)]);
+  const [pDynamo, pS3, pCognito, pClip] = await Promise.all([
+    escuchar(dynamo),
+    escuchar(s3),
+    escuchar(cognito),
+    escuchar(clip),
+  ]);
   Object.assign(entorno, {
+    ELREY_CLIP_URL: `http://127.0.0.1:${pClip}`,
     AWS_ENDPOINT_URL_DYNAMODB: `http://127.0.0.1:${pDynamo}`,
     AWS_ENDPOINT_URL_S3: `http://127.0.0.1:${pS3}`,
     AWS_ENDPOINT_URL_COGNITO_IDENTITY_PROVIDER: `http://127.0.0.1:${pCognito}`,
@@ -628,6 +691,7 @@ export function cerrar() {
   dynamo.close();
   s3.close();
   cognito.close();
+  clip.close();
 }
 
 /** El catálogo del repositorio cargado en la tabla, como lo dejó la carga del CSV. */

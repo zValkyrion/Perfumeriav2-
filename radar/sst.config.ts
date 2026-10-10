@@ -45,6 +45,16 @@ export default $config({
     // por defecto —el despliegue no falla sin él—; entonces el panel guarda
     // igual y lo publica el siguiente push.
     const githubToken = new sst.Secret("Elrey_github_token", "");
+    //
+    // Las claves de la API de Clip (panel de Clip → Desarrolladores). Con ellas
+    // la API crea un enlace de cobro por pedido y confirma los pagos. Vacías
+    // por defecto: sin ellas la tienda funciona igual y el cobro se acuerda
+    // por WhatsApp. Las de prueba empiezan por `test_` y no cobran de verdad.
+    const clipApi = new sst.Secret("Elrey_clip_api", "");
+    const clipSecreto = new sst.Secret("Elrey_clip_secreto", "");
+    // A dónde vuelve el comprador después de pagar. Fijo aquí porque el sitio
+    // depende de la API y no al revés; se cambia el día que haya dominio propio.
+    const urlSitio = process.env.ELREY_SITIO ?? "https://devfq5kjop78h.cloudfront.net";
     // De dónde se pide el despliegue. En la CI lo dice GitHub; a mano, el de
     // siempre.
     const repositorio = process.env.GITHUB_REPOSITORY ?? "zValkyrion/Perfumeriav2-";
@@ -265,10 +275,12 @@ export default $config({
         imagenes,
         fotos,
         githubToken,
+        clipApi,
+        clipSecreto,
         usuarios,
         clienteWeb,
       ],
-      environment: { ELREY_REPOSITORIO: repositorio },
+      environment: { ELREY_REPOSITORIO: repositorio, ELREY_SITIO: urlSitio },
       name: `Elrey_api_${$app.stage}`,
       memory: "512 MB",
       timeout: "20 seconds",

@@ -178,7 +178,7 @@ const pesos = (n: number) =>
  * panel vive en el mismo dominio) para mandar al cliente a `/rastreo`.
  */
 export function mensajeCliente(
-  p: Pick<PedidoAdmin, "folio" | "estatus" | "guia" | "paqueteria" | "urlRastreo" | "metodo" | "cifras" | "contacto">,
+  p: Pick<PedidoAdmin, "folio" | "estatus" | "guia" | "paqueteria" | "urlRastreo" | "metodo" | "cifras" | "contacto" | "cobro">,
   origen: string,
 ): string {
   const nombre = primerNombre(p.contacto.nombre);
@@ -195,7 +195,9 @@ export function mensajeCliente(
         p.metodo === "transferencia"
           ? " Para confirmarlo solo falta tu transferencia; aquí te compartimos los datos."
           : p.metodo === "clip"
-            ? " Para confirmarlo solo falta el pago con tarjeta; aquí te mandamos el enlace de Clip."
+            ? p.cobro
+              ? ` Para confirmarlo solo falta el pago con tarjeta. Paga aquí, en la pantalla segura de Clip: ${p.cobro.url}`
+              : " Para confirmarlo solo falta el pago con tarjeta; aquí te mandamos el enlace de Clip."
             : p.metodo === "contra"
               ? " Lo pagas al recibirlo. ¿Nos confirmas que la dirección está bien?"
               : " Para confirmarlo solo falta el pago.";

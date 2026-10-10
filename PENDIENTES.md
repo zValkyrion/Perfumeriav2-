@@ -183,6 +183,40 @@ cd radar; npx.cmd sst secret set Elrey_github_token --stage produccion
 
 ---
 
+## 2.2 Cobro con Clip — construido el 2026-10-10, faltan tus claves
+
+**Qué hace.** Cada pedido con Clip nace con su enlace de cobro por el total
+exacto: el cliente lo ve al confirmar, en el rastreo y en «Mis pedidos», y tú
+en el detalle del pedido (para copiarlo o mandarlo por WhatsApp). Cuando paga,
+el pedido pasa solo a «Pagado».
+
+**Qué falta** (lo haces tú: son credenciales de tu cuenta de Clip):
+
+1. En el panel de Clip → **Desarrolladores**, copia la **clave API** y la
+   **clave secreta de producción** (las reales, no las que empiezan por
+   `test_`).
+2. En PowerShell, con la sesión de AWS, una por una (SST pide el valor y no
+   queda en el historial):
+
+```bash
+cd radar; npx.cmd sst secret set Elrey_clip_api --stage produccion
+```
+
+```bash
+cd radar; npx.cmd sst secret set Elrey_clip_secreto --stage produccion
+```
+
+3. Haz un push (o vuelve a correr el workflow) para que la Lambda las lea.
+
+**No pongas las claves de prueba en producción**: con ellas los enlaces no
+cobran dinero real y un pago con tarjeta de prueba marcaría el pedido como
+«Pagado». Sirven para probar en local.
+
+Mientras no estén, todo sigue como antes: el pedido se registra y el cobro se
+acuerda por WhatsApp.
+
+---
+
 ## 3. Dominio propio
 
 **Por qué.** Desbloquea tres cosas de golpe: la URL fea de CloudFront, el
@@ -305,7 +339,7 @@ tienes. Cada pieza ya está cableada y funciona sin ella.
 | Qué falta | Dónde se pone | Qué pasa mientras no esté |
 | --- | --- | --- |
 | **Identificador del pixel de Meta** (15 dígitos) | Variable `META_PIXEL` del repositorio en GitHub | No se carga el pixel: ni script, ni cookie, ni una petición a Facebook |
-| **Enlace de cobro de Clip** (`https://pay.clip.mx/…`) | Variable `CLIP_LINK` | El pedido se cierra igual y el cobro se acuerda por WhatsApp |
+| **Claves de la API de Clip** | Secretos `Elrey_clip_api` y `Elrey_clip_secreto` (§2.2) | El pedido se cierra igual y el cobro se acuerda por WhatsApp. El enlace fijo (`CLIP_LINK`) ya no hace falta |
 | **Webhook de avisos** (Make, Zapier, n8n…) | Variable `WEBHOOK_PEDIDOS` | El aviso va solo por WhatsApp, desde el botón de la confirmación |
 | **CLABE, banco y titular** | `NEXT_PUBLIC_CLABE`, `NEXT_PUBLIC_BANCO`, `NEXT_PUBLIC_TITULAR` | El checkout dice la verdad: las instrucciones van por WhatsApp |
 
@@ -359,8 +393,9 @@ impacto. Ninguno está empezado; cada uno dice qué dato o decisión hace falta.
    confirmar el pago y que el panel avise «quedan 3». Hoy solo existe
    «agotado sí/no». Es la base de casi todo lo demás. *Falta:* el conteo
    inicial por producto.
-2. **Cobro que se confirma solo.** Con el webhook de Clip, el pedido pasa a
-   «Pagado» sin que nadie lo toque. *Falta:* la cuenta de Clip con API.
+2. ~~**Cobro que se confirma solo.**~~ ✅ Construido el 2026-10-10 (§2.2):
+   enlace de Clip por pedido y paso automático a «Pagado». *Falta:* poner las
+   claves de producción.
 3. **Avisos automáticos al cliente** en cada cambio de estatus (correo con
    SES y, si se contrata, WhatsApp Business). Hoy el botón arma el mensaje y
    tú lo mandas. *Falta:* dominio propio y SES (§3, §4).

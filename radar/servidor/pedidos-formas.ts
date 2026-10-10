@@ -9,6 +9,7 @@ import {
   type CambioEstatus,
   type CambioPedidoAdmin,
   type CifrasPedido,
+  type CobroPedido,
   type ContactoPedido,
   type LineaPedido,
   type PedidoAdmin,
@@ -176,7 +177,24 @@ export function registradoDe(p: PedidoTienda): PedidoRegistrado {
     comision: p.cuenta.comision,
     descuentoTransferencia: p.cuenta.descuentoTransferencia,
     metodo: p.cuenta.metodo ?? p.solicitud.metodo,
+    urlPago: cobroDe(p)?.url ?? null,
   };
+}
+
+const centavos = (n: number) => Math.round(n * 100);
+
+/**
+ * El cobro que se le puede enseñar a quien va a pagar: solo si el pedido sigue
+ * «Pendiente», se paga con Clip, el enlace no venció y **es por el total de
+ * ahora**. Si el panel cambió los artículos, el enlace viejo deja de salir.
+ */
+export function cobroDe(p: PedidoTienda, ahora = new Date()): CobroPedido | null {
+  const pago = p.pago;
+  if (!pago?.url || estatusDe(p.estatus) !== "Pendiente") return null;
+  if ((p.cuenta?.metodo ?? p.solicitud?.metodo) !== "clip") return null;
+  if (centavos(pago.monto) !== centavos(p.cuenta?.total ?? -1)) return null;
+  if (pago.expiraEn && new Date(pago.expiraEn).getTime() <= ahora.getTime()) return null;
+  return { url: pago.url, monto: pago.monto, expiraEn: pago.expiraEn };
 }
 
 /* ── Leer ─────────────────────────────────────────────────────────────── */
@@ -297,6 +315,7 @@ export function armarAdmin(fila: FilaPedido, nombrar?: Nombrador): PedidoAdmin {
     cifras: cifrasDe(p),
     cancelable: estatus === "Pendiente",
     heredado: false,
+    cobro: cobroDe(p),
     cliente: { sub: p.cliente?.sub ?? null, correoCuenta: p.cliente?.correo ?? null },
     notaInterna: nulo(p.notaInterna),
   };
@@ -423,6 +442,7 @@ export function armarPublico(fila: FilaPedido, nombrar?: Nombrador): PedidoPubli
     nombre: d.contacto.nombre.trim().split(/\s+/)[0] ?? "",
     ciudad: d.contacto.ciudad,
     estado: d.contacto.estado,
+    cobro: d.cobro ?? null,
   };
 }
 

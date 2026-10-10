@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, MessageCircle, Package, Truck } from "lucide-react";
+import { Check, CreditCard, MessageCircle, Package, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Contenedor } from "@/components/comunes/layout";
 import { Imagen } from "@/components/comunes/imagen";
@@ -61,7 +61,9 @@ export function VistaConfirmacion() {
    * dejar al comprador esperando un correo que no va a llegar solo.
    */
   const siguientePaso = {
-    clip: CLIP_LINK
+    clip: pedido.urlPago
+      ? "Si prefieres pagar de otra forma o tienes una duda, mándanos tu pedido por WhatsApp y lo vemos contigo."
+      : CLIP_LINK
       ? "Abrimos la pantalla de Clip en otra pestaña. Si se cerró, mándanos un WhatsApp y te reenviamos el enlace de cobro."
       : "Mándanos tu pedido por WhatsApp y te devolvemos el enlace de cobro de Clip para pagar con tarjeta o en efectivo.",
     transferencia:
@@ -74,6 +76,7 @@ export function VistaConfirmacion() {
   // Folio puesto por este navegador porque el servidor no contestó: no existe
   // en la tienda, no se puede rastrear y solo viaja por WhatsApp.
   const local = esFolioLocal(pedido.folio);
+  const cobroClip = pedido.metodoId === "clip" && !local ? (pedido.urlPago ?? null) : null;
 
   return (
     <Contenedor className="py-10 lg:py-16">
@@ -111,15 +114,47 @@ export function VistaConfirmacion() {
             tienda necesita que ocurra: el cobro se acuerda por WhatsApp en los
             tres métodos, y un botón perdido al final de la página deja pedidos
             confirmados que nadie llega a cobrar. */}
-        <div className="border-gold/35 bg-gold-muted mt-8 rounded-lg border p-5">
+        {/* Con enlace de cobro propio, pagar es el paso: el monto ya va puesto
+            y, al pagar, el pedido pasa solo a «Pagado». El WhatsApp queda
+            debajo, como alternativa. */}
+        {cobroClip ? (
+          <div className="border-gold/35 bg-gold-muted mt-8 rounded-lg border p-5">
+            <p className="mb-1.5 flex items-center gap-2 font-medium">
+              <CreditCard size={17} className="text-gold" aria-hidden />
+              Falta un paso: paga tu pedido
+            </p>
+            <p className="text-fg-muted mb-4 text-sm leading-relaxed">
+              Se abre la pantalla segura de Clip con el total de tu pedido ya
+              puesto. En cuanto se confirma el pago lo empezamos a preparar.
+            </p>
+            <Button asChild variant="gold" size="touch-lg" className="w-full">
+              <a href={cobroClip} rel="noopener noreferrer">
+                Pagar&nbsp;
+                <Precio valor={pedido.total} moneda />
+                &nbsp;con Clip
+              </a>
+            </Button>
+            <p className="text-fg-subtle mt-2.5 text-center text-[11px]">
+              El enlace vale 3 días. Lo encuentras también en «Rastrear mi pedido».
+            </p>
+          </div>
+        ) : null}
+
+        <div
+          className={
+            cobroClip
+              ? "border-border-soft bg-surface mt-4 rounded-lg border p-5"
+              : "border-gold/35 bg-gold-muted mt-8 rounded-lg border p-5"
+          }
+        >
           <p className="mb-1.5 flex items-center gap-2 font-medium">
             <MessageCircle size={17} className="text-gold" aria-hidden />
-            Falta un paso: mándanos tu pedido
+            {cobroClip ? "¿Prefieres verlo por WhatsApp?" : "Falta un paso: mándanos tu pedido"}
           </p>
           <p className="text-fg-muted mb-4 text-sm leading-relaxed">
             {siguientePaso}
           </p>
-          <Button asChild variant="gold" size="touch-lg" className="w-full">
+          <Button asChild variant={cobroClip ? "outline" : "gold"} size="touch-lg" className="w-full">
             <a href={whatsapp} target="_blank" rel="noopener noreferrer">
               Enviar mi pedido por WhatsApp
             </a>

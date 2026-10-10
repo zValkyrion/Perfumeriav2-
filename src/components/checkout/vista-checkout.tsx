@@ -477,6 +477,7 @@ export function VistaCheckout() {
       total: registrado?.total ?? total,
       piezas: resumen.piezasTotales,
       items: vendibles,
+      ...(registrado?.urlPago ? { urlPago: registrado.urlPago } : {}),
     };
 
     // El aviso a la tienda: si hay webhook configurado, sale ahora mismo con
@@ -1131,7 +1132,7 @@ function PasoPago({
             texto={
               CLIP_LINK
                 ? "Al confirmar te llevamos a la pantalla segura de Clip. Puedes pagar con tarjeta de crédito o débito, o en efectivo en tiendas afiliadas. Tu pedido queda apartado mientras completas el pago."
-                : "Aceptamos crédito, débito y efectivo a través de Clip. Al confirmar tu pedido te mandamos el enlace de cobro por WhatsApp al número que dejaste, y lo apartamos mientras tanto."
+                : "Aceptamos crédito, débito y efectivo a través de Clip. Al confirmar tu pedido te damos el enlace de cobro con el total exacto (o te lo mandamos por WhatsApp al número que dejaste), y lo apartamos mientras tanto."
             }
           />
 

@@ -363,6 +363,22 @@ export type PedidoTienda = {
   notaCliente?: string | null;
   /** Sello de concurrencia (ISO): el panel lo manda de vuelta al cambiar el pedido. */
   actualizadoEn?: string;
+  /** El enlace de cobro de Clip, si se generó (`servidor/clip.ts`). */
+  pago?: PagoClip;
+  /** Pagos que Clip avisó y no se pudieron dar por buenos solos: ya anotados en el historial. */
+  avisosClip?: string[];
+};
+
+/** El enlace de cobro de un pedido. `monto` es por cuánto se creó: si el total cambia, ya no sirve. */
+export type PagoClip = {
+  proveedor: "clip";
+  /** `payment_request_id` de Clip. */
+  id: string;
+  url: string;
+  monto: number;
+  creadoEn: string;
+  expiraEn: string | null;
+  pagadoEn?: string;
 };
 
 /** Nombre y presentación de una línea, como foto del momento de la compra. */

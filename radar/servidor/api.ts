@@ -64,6 +64,7 @@ import {
   pedidoAdmin,
   ventas,
 } from "./tienda-admin";
+import { avisoClip, generarCobroAdmin } from "./clip";
 import type { ContextoCuentas } from "./cuentas";
 import { catalogoPublico, disponibilidadDe } from "../../compartido/catalogo";
 import {
@@ -137,7 +138,7 @@ const CUENTAS = (): ContextoCuentas =>
   (cuentasCtx ??= { cognito: new CognitoIdentityProviderClient({}), pool: Resource.Elrey_usuarios.id });
 
 type Evento = {
-  requestContext: { http: { method: string; path: string } };
+  requestContext: { http: { method: string; path: string }; domainName?: string };
   headers: Record<string, string | undefined>;
   queryStringParameters?: Record<string, string | undefined> | null;
   pathParameters?: Record<string, string | undefined> | null;
@@ -191,6 +192,15 @@ function leerCuerpo<T>(evento: Evento): T | null {
 
 function sesionDe(evento: Evento): Promise<Identidad | null> {
   return identificar(evento.headers.authorization ?? evento.headers.Authorization);
+}
+
+/**
+ * El dominio público de esta API, para que Clip sepa a dónde avisar de un
+ * pago. Sale de API Gateway, no de una cabecera que el navegador pueda poner.
+ */
+function hostDe(evento: Evento): string | null {
+  const host = evento.requestContext.domainName ?? "";
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(host) ? host : null;
 }
 
 type Respuesta = {
@@ -263,7 +273,15 @@ async function enrutar(evento: Evento): Promise<Respuesta> {
     // viene, solo sirve para ligar el pedido a su cuenta y a «Mis pedidos».
     if (metodo === "POST" && ruta === "/pedidos") {
       const sesion = await sesionDe(evento).catch(() => null);
-      return deSalida(await crearPedido(TIENDA, leerCuerpo<unknown>(evento), sesion));
+      return deSalida(
+        await crearPedido(TIENDA, leerCuerpo<unknown>(evento), sesion, { host: hostDe(evento) }),
+      );
+    }
+
+    // El aviso de Clip cuando alguien paga. Público porque lo llama Clip, y sin
+    // firma: `avisoClip` no cree nada del cuerpo, se lo pregunta a Clip.
+    if (metodo === "POST" && ruta === "/clip/webhook") {
+      return deSalida(await avisoClip(TIENDA, leerCuerpo<unknown>(evento)));
     }
 
     // Seguir un pedido sin cuenta, con su folio y el teléfono del pedido.
@@ -490,7 +508,14 @@ async function rutaAdmin(
   if (metodo === "GET" && ruta === "/admin/pedidos") return deSalida(await listarPedidosAdmin(TIENDA, q));
   // Un pedido que llegó por WhatsApp o en persona, capturado por el equipo.
   if (metodo === "POST" && ruta === "/admin/pedidos") {
-    return deSalida(await crearPedidoAdmin(TIENDA, leerCuerpo<unknown>(evento), quien));
+    return deSalida(await crearPedidoAdmin(TIENDA, leerCuerpo<unknown>(evento), quien, hostDe(evento)));
+  }
+  // Generar (o regenerar) el enlace de cobro de Clip de un pedido pendiente.
+  const cobro = ruta.match(/^\/admin\/pedidos\/([^/]+)\/cobro$/);
+  if (cobro && metodo === "POST") {
+    const folio = folioDeRuta(cobro[1]!);
+    if (!folio) return json(404, { error: "No existe ese pedido" });
+    return deSalida(await generarCobroAdmin(TIENDA, folio, hostDe(evento)));
   }
   // Cuánto costaría, sin guardar: lo que enseña el panel mientras se arma o se edita.
   if (metodo === "POST" && ruta === "/admin/cotizar") {

@@ -71,6 +71,7 @@ Región **us-east-1**. Cuenta **637423567003**. Etapa: `produccion`.
 | CloudFront | distribución de `Elrey_radar` | Sirve el sitio |
 | SSM | `Elrey_pin`, `Elrey_jwt_secreto` | Muertos desde el 2026-10-05 (PIN retirado): declarados sin `link` porque `protect` no deja borrarlos. **No hacer `sst secret remove`**: sin valor, falla el despliegue |
 | SSM | `Elrey_github_token` | Token de GitHub para publicar desde el panel. Vacío por defecto |
+| SSM | `Elrey_clip_api`, `Elrey_clip_secreto` | Claves de la API de Clip para el cobro por pedido. Vacías por defecto: sin ellas no hay enlace ni aviso y se cobra por WhatsApp. **En producción van las reales**, no las `test_` (con esas un pago de mentira marcaría el pedido «Pagado») |
 | Cognito | `Elrey_usuarios` (`us-east-1_qpU8tmkIB`) | Identidad y grupos |
 
 ### La excepción a `Elrey_`
@@ -161,6 +162,8 @@ Una sola Lambda (`servidor/api.ts`) que enruta por su cuenta desde la ruta
 | `GET /admin/pedidos?desde&hasta` | Pedidos del negocio del rango (calendario de México), del más nuevo al más viejo |
 | `GET/PUT /admin/pedidos/{folio}` | Detalle y cambio de estatus, guía, paquetería, notas, **datos de entrega** (`contacto`, mientras no esté entregado ni cancelado) y **artículos** (`articulos`, solo «Pendiente»: se recotiza en el servidor). PUT con `actualizadoEn` visto: 409 si otro lo cambió |
 | `POST /admin/pedidos` | El equipo captura un pedido (WhatsApp, teléfono, mostrador): mismo saneado, cotización, folio e idempotencia que la tienda; el historial dice quién |
+| `POST /admin/pedidos/{folio}/cobro` | Genera o regenera el enlace de cobro de Clip por el total de ahora. Solo «Pendiente» y con forma de pago Clip (409 si no); 503 sin las claves; 502 si Clip no contesta |
+| `POST /clip/webhook` | El aviso de Clip cuando alguien paga. **Sin token y sin firma**: del cuerpo solo se lee el id del cobro y todo lo demás se le pregunta a Clip. Contesta 200 siempre, salvo 503 si no se pudo preguntar (Clip reintenta) |
 | `POST /admin/cotizar` | Lo que costaría con esos artículos y condiciones, sin guardar: lo que enseña el panel mientras arma o edita un pedido |
 | `GET /admin/ventas?desde&hasta` | Resumen de ventas (sin rango: últimos 30 días; máximo 400) |
 | `GET /admin/clientes` · `GET /admin/clientes/detalle?clave=` | Cuentas de Cognito unidas con los compradores de los pedidos |
@@ -525,7 +528,8 @@ catálogo (`probar-admin`), pedidos, ventas, clientes, solicitudes y rastreo con
 las cifras de ventas calculadas a mano (`probar-tienda`, 122) y «Equipo y
 cuentas» (`probar-equipo`, 56: puertas, superadmin por correo verificado,
 solicitudes, aceptar, rechazar, invitar, grupos y acceso) y la captura y
-edición de pedidos desde el panel (`probar-pedidos-admin`, 29). Es **la forma de probar una ruta nueva sin tocar producción**; cómo
+edición de pedidos desde el panel (`probar-pedidos-admin`, 29) y el cobro con
+Clip contra un Clip falso (`probar-clip`, 30, y `probar-clip-sin-claves`, 5). Es **la forma de probar una ruta nueva sin tocar producción**; cómo
 arrancar la tienda y el panel contra `servidor:local`, con tokens falsos de
 admin y de cliente, está en `pruebas-locales/LEEME.md`.
 
@@ -568,6 +572,52 @@ del módulo.
 ## 7. Bitácora de cambios
 
 Formato: **fecha · qué cambió · por qué · nueva implementación.**
+
+### 2026-10-10 · Cobro con Clip: un enlace por pedido y el pago se confirma solo
+
+- **Qué:** cada pedido que se paga con Clip nace con su enlace de cobro por el
+  total exacto, y cuando el cliente paga el pedido pasa solo a «Pagado».
+- **Por qué:** el cobro se acordaba a mano por WhatsApp (mandar el enlace,
+  esperar el comprobante, marcar el pedido). El enlace fijo
+  (`NEXT_PUBLIC_CLIP_LINK`) no sabía de montos ni de folios.
+- **Implementación:** `servidor/clip.ts`. Al crear el pedido (`crearPedido`,
+  también los capturados en el panel), con el pedido **ya guardado**, se pide
+  el enlace a `POST https://api.payclip.com/v2/checkout` (Basic con las dos
+  claves) y se guarda en `pedido.pago`. Si Clip tarda más de 6 s o falla, el
+  pedido se queda sin enlace y la compra sigue: se genera después desde el
+  panel (`POST /admin/pedidos/{folio}/cobro`).
+- **El aviso no viene firmado.** `POST /clip/webhook` es público y cualquiera
+  puede mandarle un «ya se pagó». Por eso del cuerpo solo se lee
+  `payment_request_id`; el estatus, el monto y el folio
+  (`metadata.external_reference`) se le preguntan a Clip con nuestras claves.
+  Solo si Clip dice `CHECKOUT_COMPLETED`, el pedido sigue «Pendiente» **y el
+  monto pagado es el total de ahora**, pasa a «Pagado» (historial firmado
+  `Clip`). Un pago que no cuadra —pagaron un enlace viejo tras cambiar los
+  artículos, o el pedido ya estaba cancelado— **no** se da por bueno: deja una
+  nota en el historial, una vez por pago (`pedido.avisosClip`).
+- **El enlace solo se enseña si sirve** (`cobroDe`): pedido «Pendiente», forma
+  de pago Clip, sin vencer (Clip los vence a los 3 días) y por el total de
+  ahora. Cambiar los artículos lo retira solo; no hace falta borrarlo.
+- **`pedido.pago` no mueve `actualizadoEn`** al generarse (no es algo que el
+  panel edite y le daría un 409 a quien tiene el pedido abierto); el pago sí.
+- **A dónde avisa Clip:** `webhook_url` va en cada cobro, armado con el dominio
+  de API Gateway de la propia petición (`requestContext.domainName`). No hay
+  que configurar nada en el panel de Clip.
+- **Tienda:** la confirmación enseña «Pagar $X con Clip» como paso principal;
+  el rastreo y «Mis pedidos» también (`ComoPagar` con `urlPago`). Clip
+  devuelve al comprador a `/rastreo/?folio=`.
+- **Panel:** tarjeta «Cobro con Clip» en el detalle (copiar, abrir, generar) y
+  el mensaje de WhatsApp de un pedido pendiente ya lleva el enlace.
+- **Config:** secretos `Elrey_clip_api` y `Elrey_clip_secreto` (vacíos por
+  defecto) y `ELREY_SITIO` (a dónde vuelve el comprador; cambiarlo cuando haya
+  dominio propio). `ELREY_CLIP_URL` solo existe para apuntar al Clip falso de
+  las pruebas.
+- **Pruebas:** `probar-clip.mjs` (30) y `probar-clip-sin-claves.mjs` (5), con
+  un Clip falso en `servicios-falsos.mjs`. El cuerpo real se comprobó contra el
+  sandbox de Clip: acepta `metadata` y `webhook_url`, devuelve `amount` como
+  número y contesta 400 a un id que no existe.
+- **Pendiente:** los meses sin intereses elegidos en el checkout no viajan al
+  enlace (se configuran en la cuenta de Clip); no hay reembolso desde el panel.
 
 ### 2026-10-05 · Panel de la tienda rediseñado: responsive, tablero y pedidos editables
 

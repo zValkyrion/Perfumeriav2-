@@ -22,6 +22,14 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "Elrey_clip_api": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "Elrey_clip_secreto": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "Elrey_github_token": {
       "type": "sst.sst.Secret"
       "value": string

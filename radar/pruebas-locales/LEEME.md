@@ -24,6 +24,11 @@ archivo en su propio proceso:
 - `probar-equipo.mjs` — «Equipo y cuentas»: el superadmin por correo
   verificado, las puertas de `/superadmin`, pedir entrar al equipo, aceptar,
   rechazar, invitar, grupos y cortar el acceso.
+- `probar-pedidos-admin.mjs` — capturar y editar pedidos desde el panel.
+- `probar-clip.mjs` y `probar-clip-sin-claves.mjs` — el cobro con Clip contra
+  un Clip falso (`clip` en `servicios-falsos.mjs`): el enlace que nace con el
+  pedido, los avisos de pago falsos y verdaderos, y la ruta del panel. El
+  segundo corre sin claves, como está producción hasta que se pongan.
 
 La CI (`.github/workflows/aws.yml`) lo corre antes de pedir credenciales a AWS.
 Funciona igual en Windows y en Linux. Necesita las dependencias de las dos apps

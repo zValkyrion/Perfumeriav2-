@@ -158,6 +158,18 @@ export function cambiarPedidoAdmin(token: string, folio: string, cambio: CambioP
 }
 
 /**
+ * `POST /admin/pedidos/{folio}/cobro`: genera (o regenera) el enlace de cobro
+ * de Clip por el total de ahora. Solo en pedidos «Pendiente» que se pagan con
+ * Clip (409 si no); 503 si el servidor no tiene las claves de Clip.
+ */
+export function generarCobroPedido(token: string, folio: string) {
+  return llamar<PedidoAdmin>(`/admin/pedidos/${encodeURIComponent(folio)}/cobro`, token, {
+    method: "POST",
+    escritura: true,
+  });
+}
+
+/**
  * `POST /admin/cotizar`: lo que costaría con estos artículos y condiciones,
  * con los precios de ahora y sin guardar nada. 422 si no hay artículos o la
  * forma de pago no existe.

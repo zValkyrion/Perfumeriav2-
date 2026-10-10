@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { empaquetar } from "./empaquetar.mjs";
 
 const AQUI = import.meta.dirname;
-const ARCHIVOS = ["probar-admin.mjs", "probar-tienda.mjs", "probar-equipo.mjs", "probar-pedidos-admin.mjs"];
+const ARCHIVOS = ["probar-admin.mjs", "probar-tienda.mjs", "probar-equipo.mjs", "probar-pedidos-admin.mjs", "probar-clip.mjs", "probar-clip-sin-claves.mjs"];
 
 await empaquetar();
 

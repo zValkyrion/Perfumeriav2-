@@ -65,6 +65,8 @@ export interface PedidoConfirmado {
   total: number;
   piezas: number;
   items: ItemCarrito[];
+  /** Enlace de cobro de Clip por el total exacto, si el servidor lo creó. */
+  urlPago?: string;
 }
 
 interface Estado {

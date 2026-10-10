@@ -421,6 +421,7 @@ function Detalle({
                 metodo={pedido.metodo}
                 plazo={pedido.plazo}
                 total={pedido.cifras.total}
+                urlPago={pedido.cobro?.url}
               />
             ) : null}
 
