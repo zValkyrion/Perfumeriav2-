@@ -505,7 +505,7 @@ export function ComoPagar({
   const instrucciones =
     metodo === "clip"
       ? urlPago
-        ? "Paga con tarjeta en la pantalla segura de Clip. En cuanto Clip confirma el pago, tu pedido pasa solo a «Pagado»."
+        ? "Paga en la pantalla segura de Clip: ahí elige «Tarjeta de crédito/débito» o «Pago en efectivo». En cuanto Clip confirma el pago, tu pedido pasa solo a «Pagado»."
         : CLIP_LINK
           ? "Paga con tarjeta o en efectivo en la pantalla segura de Clip y mándanos el comprobante por WhatsApp con tu folio."
           : "Escríbenos por WhatsApp con tu folio y te mandamos el enlace de cobro de Clip para pagar con tarjeta o en efectivo."

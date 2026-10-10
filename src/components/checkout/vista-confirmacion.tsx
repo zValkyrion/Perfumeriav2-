@@ -125,7 +125,8 @@ export function VistaConfirmacion() {
             </p>
             <p className="text-fg-muted mb-4 text-sm leading-relaxed">
               Se abre la pantalla segura de Clip con el total de tu pedido ya
-              puesto. En cuanto se confirma el pago lo empezamos a preparar.
+              puesto. Ahí elige «Tarjeta de crédito/débito» o «Pago en
+              efectivo». En cuanto se confirma el pago lo empezamos a preparar.
             </p>
             <Button asChild variant="gold" size="touch-lg" className="w-full">
               <a href={cobroClip} rel="noopener noreferrer">
