@@ -87,10 +87,14 @@ El código ya soporta cada una; falta el dato o la decisión:
 - **3x2 del hero:** la portada anuncia «3X2 en toda la tienda» y ningún
   producto tiene la etiqueta, así que no se cobra. O se etiquetan modelos con
   «3x2» en `/radar/catalogo/`, o se cambia el arte.
-- **Precio de los paquetes desde 20 piezas:** hoy sale más caro que comprar las
-  mismas piezas sueltas con su descuento. Y sus textos del catálogo dicen
-  «Precio de Importador Directo» y «el mejor precio unitario que damos»
+- ~~Precio de los paquetes desde 20 piezas.~~ ✅ 2026-10-10: quedaron un 5 %
+  por debajo de comprar las mismas piezas sueltas con su descuento ($7,599,
+  $11,249, $14,949 y $18,649; el de 10 no cambió). Si cambian los precios de
+  lista de sus modelos hay que volver a revisarlos. El arte guardado
+  `public/banner-paca-50.webp` trae el precio viejo: `npm run banner-paca` lo
+  rehace. **Sigue abierto:** sus textos dicen «Precio de Importador Directo»
   (se editan en `/radar/catalogo/`, tipo lote).
+- **Hero:** el dueño va a mandar la imagen que reemplaza al 3x2.
 - **Familias, géneros, los 14 ocultos y los 5 de cuidado de la piel** del
   catálogo (`catalogo/revision.csv`).
 - **Correo y redes:** `contacto@elreydelosperfumes.mx` es de un dominio que no

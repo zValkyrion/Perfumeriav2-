@@ -12382,7 +12382,7 @@
       "nombre": "Paquete Emprendedor",
       "tema": "Mixto",
       "piezas": 20,
-      "precio": 8199,
+      "precio": 7599,
       "modelos": [
         "0001",
         "0002",
@@ -12405,7 +12405,7 @@
       "nombre": "Paquete Negocio",
       "tema": "Mixto",
       "piezas": 30,
-      "precio": 12149,
+      "precio": 11249,
       "modelos": [
         "0001",
         "0002",
@@ -12430,7 +12430,7 @@
       "nombre": "Paquete Mayorista",
       "tema": "Mixto",
       "piezas": 40,
-      "precio": 15999,
+      "precio": 14949,
       "modelos": [
         "0001",
         "0002",
@@ -12457,7 +12457,7 @@
       "nombre": "Paquete Super Mayorista",
       "tema": "Mixto",
       "piezas": 50,
-      "precio": 19749,
+      "precio": 18649,
       "modelos": [
         "0001",
         "0002",

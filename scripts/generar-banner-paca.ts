@@ -23,8 +23,8 @@ const H = 890;
 const SEGURO = 230;
 
 /** Las cifras del Paquete Super Mayorista, en un solo sitio. */
-const PRECIO = "$19,749";
-const POR_PIEZA = "$395";
+const PRECIO = "$18,649";
+const POR_PIEZA = "$373";
 
 const ORO = { claro: "#E8C766", medio: "#C9A227", oscuro: "#6E570F" };
 
