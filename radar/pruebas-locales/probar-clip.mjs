@@ -185,6 +185,33 @@ pagarEnClip(cobroC.payment_request_id);
 r = await avisar(cobroC.payment_request_id);
 ok("pago de un pedido ya cancelado: sigue cancelado y queda avisado", meta(folioC).estatus === "Cancelado" && /ya estaba «Cancelado»/.test(meta(folioC).historial.at(-1).nota ?? ""), meta(folioC).historial.at(-1).nota);
 
+/* ── El aviso no llegó (o viene en camino) ────────────────────────────────── */
+
+// Quien paga vuelve al rastreo en el acto: al abrir el pedido se pregunta a Clip.
+r = await comprar("clip");
+const folioD = r.json.folio;
+ajustesClip.caido = true;
+r = await pedir("POST", "/pedidos/consulta", { cuerpo: { folio: folioD, telefono: CONTACTO.telefono } });
+ajustesClip.caido = false;
+ok("con Clip caído, el rastreo enseña el pedido como está", r.estado === 200 && r.json.estatus === "Pendiente" && Boolean(r.json.cobro));
+pagarEnClip(meta(folioD).pago.id);
+r = await pedir("POST", "/pedidos/consulta", { cuerpo: { folio: folioD, telefono: CONTACTO.telefono } });
+ok("pagado sin aviso: el rastreo lo descubre y lo enseña «Pagado»", r.estado === 200 && r.json.estatus === "Pagado" && !r.json.cobro && meta(folioD).historial.at(-1).por === "Clip", r.json?.estatus);
+const largoD = meta(folioD).historial.length;
+await avisar(meta(folioD).pago.id);
+ok("…y el aviso, cuando por fin llega, no repite nada", meta(folioD).historial.length === largoD);
+
+r = await comprar("clip");
+const folioE = r.json.folio;
+pagarEnClip(meta(folioE).pago.id);
+r = await pedir("GET", `/admin/pedidos/${folioE}`, { tok: ADMIN });
+ok("el panel también lo descubre al abrir el pedido", r.json?.estatus === "Pagado" && r.json.historial.at(-1).por === "Clip");
+
+r = await pedir("POST", "/pedidos", { tok: CLIENTE, cuerpo: { items: ITEMS, metodo: "clip", envio: "estandar", contacto: CONTACTO } });
+pagarEnClip(meta(r.json.folio).pago.id);
+r = await pedir("GET", `/pedidos/${r.json.folio}`, { tok: CLIENTE });
+ok("y «Mis pedidos», al abrir el detalle", r.json?.estatus === "Pagado" && !r.json.cobro);
+
 // Sin claves de Clip (como está producción hasta que el dueño las ponga) se
 // prueba en `probar-clip-sin-claves.mjs`: SST lee sus recursos al cargar la
 // Lambda, así que hace falta otro proceso.

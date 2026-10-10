@@ -35,14 +35,14 @@ function autorizacion(): string | null {
 
 export const hayClip = () => autorizacion() !== null;
 
-async function llamarClip(ruta: string, cuerpo?: unknown): Promise<Record<string, unknown>> {
+async function llamarClip(ruta: string, cuerpo?: unknown, espera = ESPERA_MS): Promise<Record<string, unknown>> {
   const auth = autorizacion();
   if (!auth) throw new Error("Clip no está configurado");
   const r = await fetch(`${base()}${ruta}`, {
     method: cuerpo === undefined ? "GET" : "POST",
     headers: { authorization: auth, accept: "application/json", "content-type": "application/json" },
     body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
-    signal: AbortSignal.timeout(ESPERA_MS),
+    signal: AbortSignal.timeout(espera),
   });
   const texto = await r.text();
   if (!r.ok) throw new Error(`Clip respondió ${r.status}: ${texto.slice(0, 300)}`);
@@ -167,14 +167,47 @@ export async function avisoClip(ctx: ContextoTienda, cuerpo: unknown): Promise<S
     console.error("clip: no se pudo consultar el cobro", id, e);
     return { estado: 503, cuerpo: { error: "No se pudo confirmar con Clip" } };
   }
-  if (!/COMPLETED$/.test(String(cobro.status ?? ""))) return LISTO;
+  await aplicarCobro(ctx, id, cobro);
+  return LISTO;
+}
+
+/**
+ * Al abrir un pedido «Pendiente» que tiene enlace, se le pregunta a Clip si ya
+ * se pagó. El aviso puede tardar unos segundos (o no llegar), y quien acaba de
+ * pagar vuelve al rastreo en el acto: sin esto vería «Pendiente» y el botón de
+ * pagar otra vez. Si Clip no contesta rápido, se enseña el pedido como está.
+ */
+export async function conciliarPago(ctx: ContextoTienda, meta: FilaPedido): Promise<FilaPedido> {
+  const pago = meta.pedido.pago;
+  if (!pago?.id || pago.pagadoEn || estatusDe(meta.pedido.estatus) !== "Pendiente" || !hayClip()) return meta;
+  // Un pago que ya se anotó como «no cuadra» lo resuelve el equipo, no otra consulta.
+  if (meta.pedido.avisosClip?.includes(pago.id)) return meta;
+  // Un enlace vencido hace más de un día ya no se va a pagar.
+  if (pago.expiraEn && Date.now() - new Date(pago.expiraEn).getTime() > 86400000) return meta;
+  try {
+    const cobro = await llamarClip(`/v2/checkout/${encodeURIComponent(pago.id)}`, undefined, 4000);
+    if (!/COMPLETED$/.test(String(cobro.status ?? ""))) return meta;
+    await aplicarCobro(ctx, pago.id, cobro);
+    return (await leerMeta(ctx, meta.pedido.folio)) ?? meta;
+  } catch (e) {
+    console.error("clip: no se pudo conciliar", meta.pedido.folio, e);
+    return meta;
+  }
+}
+
+/**
+ * Lo que Clip dice de un cobro, llevado al pedido. `cobro` viene **de Clip**
+ * (nunca del cuerpo de un aviso): de ahí salen el estatus, el monto y el folio.
+ */
+async function aplicarCobro(ctx: ContextoTienda, id: string, cobro: Record<string, unknown>): Promise<void> {
+  if (!/COMPLETED$/.test(String(cobro.status ?? ""))) return;
 
   const referencia = (cobro.metadata as { external_reference?: unknown } | null | undefined)?.external_reference;
   const folio = typeof referencia === "string" ? folioDeRuta(referencia) : null;
   const meta = folio ? await leerMeta(ctx, folio) : null;
   if (!folio || !meta) {
     console.error("clip: pago completado sin pedido", id, referencia);
-    return LISTO;
+    return;
   }
 
   const p = meta.pedido;
@@ -221,15 +254,15 @@ export async function avisoClip(ctx: ContextoTienda, cuerpo: unknown): Promise<S
     } catch (e) {
       if (!esCondicionFallida(e)) throw e;
     }
-    return LISTO;
+    return;
   }
 
   // El mismo aviso otra vez (Clip repite) sobre un pedido que ya cobró este pago.
-  if (p.pago?.pagadoEn && p.pago.id === id) return LISTO;
+  if (p.pago?.pagadoEn && p.pago.id === id) return;
   // Se pagó, pero no se puede dar por bueno solo: otro monto (el pedido cambió
   // después de mandar el enlace) o un pedido que ya no estaba pendiente. Queda
   // escrito en el historial para que el equipo lo resuelva; una vez por pago.
-  if (p.avisosClip?.includes(id)) return LISTO;
+  if (p.avisosClip?.includes(id)) return;
   const nota = cuadra
     ? `Clip recibió un pago de ${pesos(monto)} cuando el pedido ya estaba «${estatus}». Revisar.`
     : `Clip recibió un pago de ${pesos(monto)}, pero el total del pedido es ${pesos(p.cuenta?.total ?? 0)}. Revisar.`;
@@ -250,5 +283,4 @@ export async function avisoClip(ctx: ContextoTienda, cuerpo: unknown): Promise<S
     }),
   );
   console.error("clip: pago que no cuadra", folio, id, monto, estatus);
-  return LISTO;
 }

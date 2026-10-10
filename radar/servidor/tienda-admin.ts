@@ -12,6 +12,7 @@ import { cotizar, type ItemPedido } from "../../compartido/cotizacion";
 import { cuentaDe, type PedidoTienda } from "./tienda";
 import type { ClienteAdmin, SolicitudAdmin } from "../../compartido/tienda-admin";
 import { catalogoVigente } from "./catalogo";
+import { conciliarPago } from "./clip";
 import { cuentaPorSub, esSub, listarCuentas, type ContextoCuentas } from "./cuentas";
 import { crearPedido, esCondicionFallida, leerMeta, type ContextoTienda, type Salida } from "./pedidos";
 import {
@@ -133,8 +134,11 @@ export async function listarPedidosAdmin(
 export async function pedidoAdmin(ctx: ContextoTienda, folio: string): Promise<Salida> {
   const meta = await leerMeta(ctx, folio);
   if (!meta) return { estado: 404, cuerpo: { error: `No existe el pedido ${folio}` } };
-  const catalogo = await catalogoVigente(ctx.dynamo, ctx.tablaCatalogo);
-  return { estado: 200, cuerpo: armarAdmin(meta, nombradorDe(catalogo)) };
+  const [al, catalogo] = await Promise.all([
+    conciliarPago(ctx, meta),
+    catalogoVigente(ctx.dynamo, ctx.tablaCatalogo),
+  ]);
+  return { estado: 200, cuerpo: armarAdmin(al, nombradorDe(catalogo)) };
 }
 
 /**

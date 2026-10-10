@@ -10,7 +10,7 @@ import { fuenteDeCatalogo } from "../../compartido/catalogo";
 import { cotizar } from "../../compartido/cotizacion";
 import { estatusDe, type CambioEstatus, type ResumenPedido } from "../../compartido/pedido";
 import { catalogoVigente } from "./catalogo";
-import { generarCobro } from "./clip";
+import { conciliarPago, generarCobro } from "./clip";
 import type { Identidad } from "./identidad";
 import {
   armarDetalle,
@@ -364,8 +364,11 @@ export async function pedidoDelCliente(ctx: ContextoTienda, sub: string, folio: 
   const [meta, copia] = await Promise.all([leerMeta(ctx, folio), leerCopia(ctx, sub, folio)]);
   if (meta) {
     if (!esDuenoDe(meta, sub, copia)) return NO_ENCONTRADO;
-    const catalogo = await catalogoVigente(ctx.dynamo, ctx.tablaCatalogo);
-    return { estado: 200, cuerpo: armarDetalle(meta, nombradorDe(catalogo)) };
+    const [al, catalogo] = await Promise.all([
+      conciliarPago(ctx, meta),
+      catalogoVigente(ctx.dynamo, ctx.tablaCatalogo),
+    ]);
+    return { estado: 200, cuerpo: armarDetalle(al, nombradorDe(catalogo)) };
   }
   if (copia) {
     const catalogo = await catalogoVigente(ctx.dynamo, ctx.tablaCatalogo);
@@ -455,6 +458,10 @@ export async function consultarPedido(ctx: ContextoTienda, cuerpo: unknown): Pro
   if (!meta) return SIN_COINCIDENCIA;
   const delPedido = ultimos10(meta.pedido.solicitud?.contacto?.telefono ?? "");
   if (delPedido.length < 10 || delPedido !== telefono) return SIN_COINCIDENCIA;
-  const catalogo = await catalogoVigente(ctx.dynamo, ctx.tablaCatalogo);
-  return { estado: 200, cuerpo: armarPublico(meta, nombradorDe(catalogo)) };
+  // Aquí es donde Clip devuelve a quien acaba de pagar.
+  const [al, catalogo] = await Promise.all([
+    conciliarPago(ctx, meta),
+    catalogoVigente(ctx.dynamo, ctx.tablaCatalogo),
+  ]);
+  return { estado: 200, cuerpo: armarPublico(al, nombradorDe(catalogo)) };
 }

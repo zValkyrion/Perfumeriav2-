@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { RefreshCw, Search } from "lucide-react";
@@ -13,6 +13,7 @@ import { formatearTelefono } from "@/components/checkout/esquemas";
 import { consultarPedido, ErrorRemoto, haySincronizacion } from "@/lib/cuenta-remota";
 import { formatoFechaLarga } from "@/lib/format";
 import { hayLogin, useSesion } from "@/lib/sesion";
+import { useTienda } from "@/store/tienda";
 import type { PedidoPublico } from "@/types";
 import { AvisoTiendaPrincipal } from "./aviso-tienda-principal";
 import {
@@ -69,11 +70,33 @@ type Estado =
 
 function Rastreo({ folioInicial }: { folioInicial: string }) {
   const [folio, setFolio] = useState(folioInicial);
-  const [telefono, setTelefono] = useState("");
+  const [telefonoEscrito, setTelefono] = useState("");
   const [estado, setEstado] = useState<Estado>({ tipo: "inicio" });
   const [errores, setErrores] = useState<{ folio?: string; telefono?: string }>({});
 
-  async function consultar() {
+  // Quien vuelve de pagar con Clip llega aquí con su folio en la dirección. Si
+  // es el pedido que este mismo navegador acaba de hacer, el teléfono ya se
+  // sabe (está en su comprobante guardado): se consulta sin volver a pedirlo.
+  // El teléfono sigue sin viajar en la URL.
+  const hidratado = useTienda((s) => s.hidratado);
+  const ultimo = useTienda((s) => s.ultimoPedido);
+  const automatico = useRef(false);
+  useEffect(() => {
+    if (automatico.current || !hidratado) return;
+    automatico.current = true;
+    if (!folioInicial || ultimo?.folio !== folioInicial || !ultimo.telefono) return;
+    const delPedido = formatearTelefono(ultimo.telefono);
+    void (async () => {
+      await Promise.resolve();
+      setTelefono(delPedido);
+      await consultar(delPedido);
+    })();
+    // Solo al hidratar: después manda lo que la persona escriba.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hidratado]);
+
+  async function consultar(telefonoDado?: string) {
+    const telefono = telefonoDado ?? telefonoEscrito;
     const f = folio.trim().toUpperCase();
     const nuevos: typeof errores = {};
     if (f.length < 4) nuevos.folio = "Escribe el folio completo, por ejemplo REY-2026-02001";
@@ -173,7 +196,7 @@ function Rastreo({ folioInicial }: { folioInicial: string }) {
               type="tel"
               inputMode="tel"
               autoComplete="tel"
-              value={telefono}
+              value={telefonoEscrito}
               onChange={(e) => setTelefono(formatearTelefono(e.target.value))}
               placeholder="477 123 4567"
               className="h-12"

@@ -537,7 +537,7 @@ las cifras de ventas calculadas a mano (`probar-tienda`, 122) y «Equipo y
 cuentas» (`probar-equipo`, 56: puertas, superadmin por correo verificado,
 solicitudes, aceptar, rechazar, invitar, grupos y acceso) y la captura y
 edición de pedidos desde el panel (`probar-pedidos-admin`, 29) y el cobro con
-Clip contra un Clip falso (`probar-clip`, 30, y `probar-clip-sin-claves`, 5). Es **la forma de probar una ruta nueva sin tocar producción**; cómo
+Clip contra un Clip falso (`probar-clip`, 35, y `probar-clip-sin-claves`, 5). Es **la forma de probar una ruta nueva sin tocar producción**; cómo
 arrancar la tienda y el panel contra `servidor:local`, con tokens falsos de
 admin y de cliente, está en `pruebas-locales/LEEME.md`.
 
@@ -603,6 +603,13 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
   `Clip`). Un pago que no cuadra —pagaron un enlace viejo tras cambiar los
   artículos, o el pedido ya estaba cancelado— **no** se da por bueno: deja una
   nota en el historial, una vez por pago (`pedido.avisosClip`).
+- **No se depende solo del aviso** (`conciliarPago`): al abrir un pedido
+  «Pendiente» con enlace —en el rastreo, en «Mis pedidos» o en el panel— se le
+  pregunta a Clip si ya se pagó (4 s de espera; si no contesta, se enseña como
+  está). Quien paga vuelve al rastreo en el acto, a veces antes que el aviso:
+  sin esto vería «Pendiente» y el botón de pagar otra vez. Las listas no
+  concilian, solo el detalle. El rastreo, si el folio es el del último pedido
+  de ese navegador, se consulta solo con el teléfono de su comprobante.
 - **El enlace solo se enseña si sirve** (`cobroDe`): pedido «Pendiente», forma
   de pago Clip, sin vencer (Clip los vence a los 3 días) y por el total de
   ahora. Cambiar los artículos lo retira solo; no hace falta borrarlo.
@@ -620,7 +627,7 @@ Formato: **fecha · qué cambió · por qué · nueva implementación.**
   defecto) y `ELREY_SITIO` (a dónde vuelve el comprador; cambiarlo cuando haya
   dominio propio). `ELREY_CLIP_URL` solo existe para apuntar al Clip falso de
   las pruebas.
-- **Pruebas:** `probar-clip.mjs` (30) y `probar-clip-sin-claves.mjs` (5), con
+- **Pruebas:** `probar-clip.mjs` (35) y `probar-clip-sin-claves.mjs` (5), con
   un Clip falso en `servicios-falsos.mjs`. El cuerpo real se comprobó contra el
   sandbox de Clip: acepta `metadata` y `webhook_url`, devuelve `amount` como
   número y contesta 400 a un id que no existe.
